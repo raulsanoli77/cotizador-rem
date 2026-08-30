@@ -21,7 +21,7 @@ export interface QuotePDFProps {
   subtotal: number;
   moneda: 'USD' | 'MXN';
   config: {
-    empresa: { nombre: string; rfc?: string; direccion?: string };
+    empresa: { nombre: string; rfc?: string; direccion?: string; email?: string; telefono?: string };
     logoUrl?: string;
     textLegal: string;
   };
