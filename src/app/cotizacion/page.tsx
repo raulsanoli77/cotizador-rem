@@ -29,6 +29,7 @@ export default function CotizacionPage() {
   const { isAuthenticated, lead } = useAuth();
   const [mostrarGatekeeper, setMostrarGatekeeper] = useState(false);
   const [mostrarAddressForm, setMostrarAddressForm] = useState(false);
+  const [autoDownloadPDF, setAutoDownloadPDF] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
 
@@ -202,6 +203,8 @@ export default function CotizacionPage() {
                       items={items}
                       subtotal={obtenerSubtotal()}
                       moneda={monedaVenta}
+                      autoDownload={autoDownloadPDF}
+                      onDownloaded={() => setAutoDownloadPDF(false)}
                     />
                   ) : (
                     <button
@@ -244,7 +247,13 @@ export default function CotizacionPage() {
       <Footer />
 
       {mostrarGatekeeper && (
-        <GatekeeperForm onSuccess={() => setMostrarGatekeeper(false)} onCancel={() => setMostrarGatekeeper(false)} />
+        <GatekeeperForm 
+          onSuccess={() => {
+            setMostrarGatekeeper(false);
+            setAutoDownloadPDF(true);
+          }} 
+          onCancel={() => setMostrarGatekeeper(false)} 
+        />
       )}
       
       {mostrarAddressForm && (

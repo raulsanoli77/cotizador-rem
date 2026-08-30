@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Download, Loader2 } from 'lucide-react';
 import { QuotePDFDocument, generarFolio } from '@/lib/pdf/quote-template';
@@ -13,6 +13,8 @@ interface PDFDownloadButtonProps {
   items: ItemCarrito[];
   subtotal: number;
   moneda: 'USD' | 'MXN';
+  autoDownload?: boolean;
+  onDownloaded?: () => void;
 }
 
 export default function PDFDownloadButton({
@@ -20,8 +22,18 @@ export default function PDFDownloadButton({
   items,
   subtotal,
   moneda,
+  autoDownload,
+  onDownloaded,
 }: PDFDownloadButtonProps) {
   const [generando, setGenerando] = useState(false);
+  const hasAutoDownloaded = useRef(false);
+
+  useEffect(() => {
+    if (autoDownload && !hasAutoDownloaded.current) {
+      hasAutoDownloaded.current = true;
+      handleDownload();
+    }
+  }, [autoDownload]);
 
   const handleDownload = async () => {
     setGenerando(true);
@@ -93,6 +105,7 @@ export default function PDFDownloadButton({
       alert('Error al generar el PDF. Intenta de nuevo.');
     } finally {
       setGenerando(false);
+      onDownloaded?.();
     }
   };
 
