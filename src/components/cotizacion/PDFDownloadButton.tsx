@@ -45,6 +45,22 @@ export default function PDFDownloadButton({
         total: item.producto.precio_venta * item.cantidad,
       }));
 
+      // Obtener configuración
+      const { supabase } = await import('@/lib/supabase/client');
+      const { data: configData } = await supabase.from('configuracion').select('*');
+      
+      let empresa = { nombre: 'REM Industrial', rfc: '', direccion: '', email: '', telefono: '' };
+      let logoUrl = undefined;
+      let textLegal = 'Términos y condiciones sujetos a cambio sin previo aviso. Cotización válida por 15 días.';
+      
+      if (configData) {
+        configData.forEach((item: any) => {
+          if (item.clave === 'empresa' && item.valor) empresa = { ...empresa, ...item.valor };
+          if (item.clave === 'apariencia' && item.valor?.logo_url) logoUrl = item.valor.logo_url;
+          if (item.clave === 'pdf_config' && item.valor?.text_legal) textLegal = item.valor.text_legal;
+        });
+      }
+
       // Generar PDF blob en el cliente
       const blob = await pdf(
         <QuotePDFDocument
@@ -59,6 +75,7 @@ export default function PDFDownloadButton({
           partidas={partidas}
           subtotal={subtotal}
           moneda={moneda}
+          config={{ empresa, logoUrl, textLegal }}
         />
       ).toBlob();
 

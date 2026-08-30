@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 export interface QuotePDFProps {
   folio: string;
@@ -20,6 +20,11 @@ export interface QuotePDFProps {
   }>;
   subtotal: number;
   moneda: 'USD' | 'MXN';
+  config: {
+    empresa: { nombre: string; rfc?: string; direccion?: string };
+    logoUrl?: string;
+    textLegal: string;
+  };
 }
 
 export function generarFolio(): string {
@@ -200,6 +205,7 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
   partidas,
   subtotal,
   moneda,
+  config,
 }) => (
   <Document>
     <Page size="LETTER" style={styles.page}>
@@ -208,10 +214,14 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.companyInfo}>
-          <Text style={styles.companyName}>REM Industrial</Text>
+          {config.logoUrl ? (
+            <Image src={config.logoUrl} style={{ width: 120, marginBottom: 8 }} />
+          ) : (
+            <Text style={styles.companyName}>{config.empresa.nombre}</Text>
+          )}
           <Text style={styles.tagline}>Integrador Técnico de Herramientas Industriales</Text>
-          <Text style={styles.companyDetails}>RFC: [RFC PLACEHOLDER]</Text>
-          <Text style={styles.companyDetails}>Dirección: [DIRECCIÓN PLACEHOLDER]</Text>
+          {config.empresa.rfc && <Text style={styles.companyDetails}>RFC: {config.empresa.rfc}</Text>}
+          {config.empresa.direccion && <Text style={styles.companyDetails}>Dirección: {config.empresa.direccion}</Text>}
         </View>
         <View style={styles.quoteInfo}>
           <Text style={styles.quoteTitle}>COTIZACIÓN</Text>
@@ -278,16 +288,13 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
       {/* Legal Disclaimers */}
       <View style={styles.disclaimerSection}>
         <Text style={styles.disclaimerText}>
-          El costo de flete no está contemplado en este documento y se añadirá en la cotización formal.
-        </Text>
-        <Text style={styles.disclaimerText}>
-          La disponibilidad de stock y los tiempos de entrega definitivos se indicarán en la cotización formal.
+          {config.textLegal}
         </Text>
       </View>
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text>Este documento es una cotización rápida con carácter informativo. Para una cotización formal contacte a ventas@remindustrial.com</Text>
+        <Text>Este documento es una cotización rápida con carácter informativo. Para una cotización formal contacte a {config.empresa.email || 'ventas@remindustrial.com'}</Text>
       </View>
     </Page>
   </Document>
