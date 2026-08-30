@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const resolvedParams = await params;
     const supabase = createAdminClient();
     const { error } = await supabase
       .from('leads')
       .delete()
-      .eq('id', params.id);
+      .eq('id', resolvedParams.id);
 
     if (error) {
       console.error('[API/leads/DELETE] Error:', error);
