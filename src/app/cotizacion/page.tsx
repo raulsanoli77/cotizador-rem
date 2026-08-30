@@ -14,7 +14,7 @@ import { formatearPrecio } from '@/lib/pricing/engine';
 // Importar PDF dinámicamente (solo client-side)
 const PDFDownloadButton = dynamic(
   () => import('@/components/cotizacion/PDFDownloadButton'),
-  { ssr: false, loading: () => <button disabled className="flex-1 bg-blue-400 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" />Cargando PDF...</button> }
+  { ssr: false, loading: () => <button disabled className="flex-1 bg-brand-400 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" />Cargando PDF...</button> }
 );
 
 export default function CotizacionPage() {
@@ -119,7 +119,7 @@ export default function CotizacionPage() {
               <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-gray-700 mb-2">Tu carrito está vacío</h2>
               <p className="text-gray-500 mb-6">Agrega productos del catálogo para generar una cotización.</p>
-              <Link href="/catalogo" className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+              <Link href="/catalogo" className="inline-block bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
                 Ir al Catálogo
               </Link>
             </div>
@@ -127,8 +127,8 @@ export default function CotizacionPage() {
             <div className="space-y-6">
               {/* Datos del lead si está autenticado */}
               {isAuthenticated && lead && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-brand-50 border border-brand-200 rounded-xl p-4">
+                  <p className="text-sm text-brand-800">
                     <span className="font-semibold">Cliente:</span> {lead.nombre_completo} — {lead.empresa} — {lead.email}
                   </p>
                 </div>
@@ -162,7 +162,7 @@ export default function CotizacionPage() {
                       {items.map((item) => (
                         <tr key={item.producto.id}>
                           <td className="px-4 py-3">
-                            <p className="text-xs text-blue-600 font-semibold">{item.producto.marca}</p>
+                            <p className="text-xs text-brand-600 font-semibold">{item.producto.marca}</p>
                             <p className="text-sm font-medium text-gray-900">{item.producto.numero_parte}</p>
                           </td>
                           <td className="px-4 py-3">
@@ -215,7 +215,7 @@ export default function CotizacionPage() {
                 ) : (
                   <button
                     onClick={handleDescargarPDF}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                   >
                     <Download className="h-5 w-5" />
                     Descargar Cotización PDF

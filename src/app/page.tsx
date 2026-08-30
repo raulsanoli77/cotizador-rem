@@ -15,12 +15,12 @@ export default function Home() {
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
               Herramientas Industriales de Alto Rendimiento
             </h1>
-            <p className="text-xl md:text-2xl mb-10 text-blue-100">
+            <p className="text-xl md:text-2xl mb-10 text-brand-100">
               Catálogo en línea con cotización instantánea para talleres de maquinado y maquiladoras
             </p>
             <Link 
               href="/catalogo" 
-              className="inline-block bg-[#2563eb] hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors text-lg"
+              className="inline-block bg-[#2563eb] hover:bg-brand-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors text-lg"
             >
               Ver Catálogo
             </Link>
@@ -33,7 +33,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Feature 1 */}
               <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center">
-                <div className="bg-blue-50 p-4 rounded-full mb-6">
+                <div className="bg-brand-50 p-4 rounded-full mb-6">
                   <Search className="h-8 w-8 text-[#2563eb]" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-slate-800">Catálogo Técnico</h3>
@@ -44,7 +44,7 @@ export default function Home() {
               
               {/* Feature 2 */}
               <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center">
-                <div className="bg-blue-50 p-4 rounded-full mb-6">
+                <div className="bg-brand-50 p-4 rounded-full mb-6">
                   <FileText className="h-8 w-8 text-[#2563eb]" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-slate-800">Cotización Instantánea</h3>
@@ -55,7 +55,7 @@ export default function Home() {
               
               {/* Feature 3 */}
               <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center">
-                <div className="bg-blue-50 p-4 rounded-full mb-6">
+                <div className="bg-brand-50 p-4 rounded-full mb-6">
                   <Headphones className="h-8 w-8 text-[#2563eb]" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 text-slate-800">Atención Personalizada</h3>

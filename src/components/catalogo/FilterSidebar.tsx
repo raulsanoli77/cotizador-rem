@@ -25,7 +25,7 @@ export default function FilterSidebar({ campos, filtrosActivos, onFiltroChange, 
           <h2 className="font-semibold text-gray-900">Filtros</h2>
         </div>
         {tieneFiltros && (
-          <button onClick={onLimpiarFiltros} className="text-xs text-blue-600 hover:text-blue-800">Limpiar</button>
+          <button onClick={onLimpiarFiltros} className="text-xs text-brand-600 hover:text-brand-800">Limpiar</button>
         )}
       </div>
 
@@ -39,7 +39,7 @@ export default function FilterSidebar({ campos, filtrosActivos, onFiltroChange, 
           <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
             {marcas.map((m) => (
               <label key={m} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900">
-                <input type="radio" name="marca" checked={filtrosActivos['marca'] === m} onChange={() => onFiltroChange('marca', filtrosActivos['marca'] === m ? null : m)} className="text-blue-600" />
+                <input type="radio" name="marca" checked={filtrosActivos['marca'] === m} onChange={() => onFiltroChange('marca', filtrosActivos['marca'] === m ? null : m)} className="text-brand-600" />
                 {m}
               </label>
             ))}
@@ -58,14 +58,14 @@ export default function FilterSidebar({ campos, filtrosActivos, onFiltroChange, 
             <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
               {campo.opciones.map((op) => (
                 <label key={op} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input type="radio" name={campo.nombre} checked={filtrosActivos[campo.nombre] === op} onChange={() => onFiltroChange(campo.nombre, filtrosActivos[campo.nombre] === op ? null : op)} className="text-blue-600" />
+                  <input type="radio" name={campo.nombre} checked={filtrosActivos[campo.nombre] === op} onChange={() => onFiltroChange(campo.nombre, filtrosActivos[campo.nombre] === op ? null : op)} className="text-brand-600" />
                   {op}
                 </label>
               ))}
             </div>
           )}
           {seccionesAbiertas[campo.nombre] && campo.tipo === 'texto' && (
-            <input type="text" placeholder={`Buscar ${campo.nombre.toLowerCase()}...`} value={(filtrosActivos[campo.nombre] as string) || ''} onChange={(e) => onFiltroChange(campo.nombre, e.target.value || null)} className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            <input type="text" placeholder={`Buscar ${campo.nombre.toLowerCase()}...`} value={(filtrosActivos[campo.nombre] as string) || ''} onChange={(e) => onFiltroChange(campo.nombre, e.target.value || null)} className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
           )}
         </div>
       ))}

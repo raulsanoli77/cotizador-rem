@@ -83,7 +83,7 @@ export default function PDFDownloadButton({
     <button
       onClick={handleDownload}
       disabled={generando}
-      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+      className="flex-1 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
     >
       {generando ? (
         <>

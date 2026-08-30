@@ -21,8 +21,8 @@ export default function Header() {
       <div className="max-w-7xl mx-auto h-full px-4 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-          <Wrench className="h-6 w-6 text-blue-400" />
-          <span>REM <span className="text-blue-400">Industrial</span></span>
+          <Wrench className="h-6 w-6 text-brand-400" />
+          <span>REM <span className="text-brand-400">Industrial</span></span>
         </Link>
 
         {/* Nav Desktop */}
@@ -46,7 +46,7 @@ export default function Header() {
           >
             <ShoppingCart className="h-5 w-5" />
             {cantidadItems > 0 && (
-              <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-brand-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                 {cantidadItems}
               </span>
             )}

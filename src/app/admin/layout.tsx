@@ -46,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
       </div>
     );
   }
@@ -69,7 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-slate-800">
-          <LayoutDashboard className="h-5 w-5 text-blue-400 mr-2" />
+          <LayoutDashboard className="h-5 w-5 text-brand-400 mr-2" />
           <span className="font-bold text-lg">Admin REM</span>
         </div>
         <nav className="flex-1 py-4 space-y-1 px-3">
@@ -79,7 +79,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${isActive ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
               >
                 <item.icon className="h-5 w-5 mr-3 shrink-0" />
                 <span className="font-medium text-sm">{item.name}</span>

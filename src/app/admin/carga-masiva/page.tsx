@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { UploadCloud, FileType, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { parsearExcelProductos, type ParseResult } from '@/lib/excel/parser';
+import ExcelTemplateDownloader from '@/components/admin/ExcelTemplateDownloader';
 
 export default function AdminCargaMasiva() {
   const [file, setFile] = useState<File | null>(null);
@@ -69,14 +70,14 @@ export default function AdminCargaMasiva() {
           {/* Uploader Box */}
           <div 
             className={`border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
-              isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white hover:bg-gray-50'
+              isDragging ? 'border-brand-500 bg-brand-50' : 'border-gray-300 bg-white hover:bg-gray-50'
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={onDrop}
           >
             <input type="file" accept=".xlsx, .xls" className="hidden" ref={fileInputRef} onChange={onFileSelect} />
-            <UploadCloud className={`mx-auto h-12 w-12 mb-4 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
+            <UploadCloud className={`mx-auto h-12 w-12 mb-4 ${isDragging ? 'text-brand-500' : 'text-gray-400'}`} />
             <h3 className="text-lg font-semibold text-gray-900 mb-1">Arrastra tu archivo Excel aquí</h3>
             <p className="text-sm text-gray-500 mb-4">Solo formatos .xlsx o .xls</p>
             <button 
@@ -128,7 +129,7 @@ export default function AdminCargaMasiva() {
                     <button
                       onClick={handleUpload}
                       disabled={uploading}
-                      className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 disabled:bg-blue-400"
+                      className="w-full bg-brand-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-brand-700 disabled:bg-brand-400"
                     >
                       {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <UploadCloud className="h-5 w-5" />}
                       {uploading ? 'Importando a la Base de Datos...' : 'Confirmar e Importar Productos'}
@@ -142,9 +143,15 @@ export default function AdminCargaMasiva() {
         
         {/* Help Column */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 self-start">
-          <h3 className="font-semibold text-gray-900 mb-4 border-b pb-2">Instrucciones</h3>
+          <h3 className="font-semibold text-gray-900 mb-4 border-b pb-2">Instrucciones y Plantillas</h3>
+          
+          <div className="mb-6 p-4 bg-brand-50 rounded-lg border border-brand-100">
+            <p className="text-sm text-brand-800 font-medium mb-3">Descarga una plantilla inteligente para evitar errores:</p>
+            <ExcelTemplateDownloader />
+          </div>
+
           <p className="text-sm text-gray-600 mb-4">
-            El archivo Excel debe contener los siguientes encabezados obligatorios (primera fila):
+            Si creas tu propio archivo, asegúrate de tener estos encabezados obligatorios:
           </p>
           <ul className="text-sm text-gray-600 space-y-2 mb-6 list-disc list-inside bg-gray-50 p-3 rounded-lg">
             <li><span className="font-medium text-gray-900">SKU_Interno</span> (Único)</li>
@@ -160,7 +167,7 @@ export default function AdminCargaMasiva() {
             <li>Imagen_URL</li>
           </ul>
           <p className="text-sm text-gray-600">
-            <strong>Nota:</strong> Cualquier otra columna agregada (ej. Diámetro, Flautas, Recubrimiento) se guardará automáticamente como <span className="text-blue-600">Especificación Técnica Dinámica</span>.
+            <strong>Nota:</strong> Cualquier otra columna (ej. Diametro, Flautas) generada por nuestras plantillas se guarda como <span className="text-brand-600">Especificación Dinámica</span>.
           </p>
         </div>
       </div>

@@ -27,7 +27,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
         )}
       </div>
       <div className="p-4">
-        <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide mb-1">{producto.marca}</p>
+        <p className="text-xs text-brand-600 font-semibold uppercase tracking-wide mb-1">{producto.marca}</p>
         <h3 className="font-bold text-gray-900 text-sm mb-1 line-clamp-1">{producto.numero_parte}</h3>
         <p className="text-xs text-gray-500 mb-3">{producto.categoria}</p>
         {specsEntries.length > 0 && (
@@ -46,7 +46,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
           </span>
           <button
             onClick={() => agregarItem(producto)}
-            className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors"
+            className="bg-brand-600 hover:bg-brand-700 text-white p-2 rounded-lg transition-colors"
             title="Agregar al carrito"
           >
             <Plus className="h-4 w-4" />

@@ -37,7 +37,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               {items.map((item) => (
                 <div key={item.producto.id} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-blue-600 font-semibold">{item.producto.marca}</p>
+                    <p className="text-xs text-brand-600 font-semibold">{item.producto.marca}</p>
                     <p className="text-sm font-medium text-gray-900 truncate">{item.producto.numero_parte}</p>
                     <p className="text-xs text-gray-500">{formatearPrecio(item.producto.precio_venta, item.producto.moneda_venta)} c/u</p>
                     <div className="flex items-center gap-2 mt-2">
@@ -62,7 +62,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   {formatearPrecio(obtenerSubtotal(), monedaVenta)}
                 </span>
               </div>
-              <a href="/cotizacion" className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-3 rounded-xl font-semibold transition-colors">
+              <a href="/cotizacion" className="block w-full bg-brand-600 hover:bg-brand-700 text-white text-center py-3 rounded-xl font-semibold transition-colors">
                 Ver Cotización
               </a>
             </div>

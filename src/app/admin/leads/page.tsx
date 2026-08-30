@@ -25,7 +25,7 @@ export default function AdminLeads() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Leads Capturados (Gatekeeper)</h1>
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+          <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-brand-600" /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -47,7 +47,7 @@ export default function AdminLeads() {
                         <div className="text-gray-500">{lead.empresa}</div>
                       </td>
                       <td className="px-6 py-4 space-y-1">
-                        <div className="flex items-center text-gray-600"><Mail className="h-3.5 w-3.5 mr-2" /> <a href={`mailto:${lead.email}`} className="hover:text-blue-600 hover:underline">{lead.email}</a></div>
+                        <div className="flex items-center text-gray-600"><Mail className="h-3.5 w-3.5 mr-2" /> <a href={`mailto:${lead.email}`} className="hover:text-brand-600 hover:underline">{lead.email}</a></div>
                         <div className="flex items-center text-gray-600"><Phone className="h-3.5 w-3.5 mr-2" /> {lead.telefono}</div>
                       </td>
                       <td className="px-6 py-4 text-gray-500">

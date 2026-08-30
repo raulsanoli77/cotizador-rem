@@ -155,7 +155,7 @@ export default function CatalogoPage() {
               onClick={() => { setCategoriaActiva(null); setFiltrosActivos({}); }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 !categoriaActiva
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-brand-600 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
               }`}
             >
@@ -167,7 +167,7 @@ export default function CatalogoPage() {
                 onClick={() => { setCategoriaActiva(cat.nombre); setFiltrosActivos({}); }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   categoriaActiva === cat.nombre
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-brand-600 text-white'
                     : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                 }`}
               >
@@ -193,7 +193,7 @@ export default function CatalogoPage() {
             <div className="flex-1">
               {loading ? (
                 <div className="flex items-center justify-center py-16">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-600" />
                 </div>
               ) : (
                 <ProductGrid productos={productos} />

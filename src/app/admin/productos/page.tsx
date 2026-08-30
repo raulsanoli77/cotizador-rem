@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import type { Producto } from '@/types';
-import { Loader2, Plus, Edit, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminProductos() {
@@ -37,14 +37,22 @@ export default function AdminProductos() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
-        <Link href="/admin/carga-masiva" className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-blue-700">
-          <Plus className="h-4 w-4" /> Importar Excel
-        </Link>
+        <div className="flex gap-3">
+          <Link href="/admin/productos/imagenes" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-gray-50">
+            <ImageIcon className="h-4 w-4" /> Gestor Imágenes
+          </Link>
+          <Link href="/admin/productos/nuevo" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-gray-50">
+            <Plus className="h-4 w-4" /> Agregar Individual
+          </Link>
+          <Link href="/admin/carga-masiva" className="bg-brand-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-brand-700">
+            <Plus className="h-4 w-4" /> Importar Excel
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+          <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-brand-600" /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -81,7 +89,7 @@ export default function AdminProductos() {
                         </button>
                       </td>
                       <td className="px-6 py-3 flex justify-center gap-3">
-                        <button className="text-blue-600 hover:text-blue-900" title="Editar (Próximamente)"><Edit className="h-4 w-4" /></button>
+                        <button className="text-brand-600 hover:text-brand-900" title="Editar (Próximamente)"><Edit className="h-4 w-4" /></button>
                         <button className="text-red-600 hover:text-red-900" title="Eliminar (Próximamente)"><Trash2 className="h-4 w-4" /></button>
                       </td>
                     </tr>

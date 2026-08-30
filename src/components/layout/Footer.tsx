@@ -11,8 +11,8 @@ export default function Footer() {
           {/* Empresa */}
           <div>
             <div className="flex items-center gap-2 font-bold text-xl mb-4">
-              <Wrench className="h-6 w-6 text-blue-400" />
-              <span>REM <span className="text-blue-400">Industrial</span></span>
+              <Wrench className="h-6 w-6 text-brand-400" />
+              <span>REM <span className="text-brand-400">Industrial</span></span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">
               Integrador t\u00e9cnico de herramientas industriales para talleres de

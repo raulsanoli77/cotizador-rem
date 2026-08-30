@@ -59,24 +59,24 @@ export default function GatekeeperForm({ onSuccess, onCancel }: GatekeeperFormPr
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input type="text" placeholder="Nombre completo" value={form.nombre_completo} onChange={(e) => handleChange('nombre_completo', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="text" placeholder="Nombre completo" value={form.nombre_completo} onChange={(e) => handleChange('nombre_completo', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
           <div className="relative">
             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input type="text" placeholder="Empresa" value={form.empresa} onChange={(e) => handleChange('empresa', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="text" placeholder="Empresa" value={form.empresa} onChange={(e) => handleChange('empresa', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input type="email" placeholder="Correo electrónico corporativo" value={form.email} onChange={(e) => handleChange('email', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="email" placeholder="Correo electrónico corporativo" value={form.email} onChange={(e) => handleChange('email', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input type="tel" placeholder="Teléfono" value={form.telefono} onChange={(e) => handleChange('telefono', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <input type="tel" placeholder="Teléfono" value={form.telefono} onChange={(e) => handleChange('telefono', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
 
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2">
+          <button type="submit" disabled={loading} className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-brand-300 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2">
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {loading ? 'Registrando...' : 'Continuar'}
           </button>

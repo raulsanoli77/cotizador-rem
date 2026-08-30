@@ -29,7 +29,7 @@ export default function SearchBar({ onSearch, placeholder = 'Buscar por número 
         value={query}
         onChange={(e) => { setQuery(e.target.value); if (!e.target.value) onSearch(''); }}
         placeholder={placeholder}
-        className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+        className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent shadow-sm"
       />
       {query && (
         <button type="button" onClick={handleClear} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
