@@ -1,0 +1,250 @@
+'use client';
+
+import { useState } from 'react';
+import { Trash2, Minus, Plus, Download, Send, ShoppingCart, Loader2, CheckCircle } from 'lucide-react';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+import GatekeeperForm from '@/components/cotizacion/GatekeeperForm';
+import { useCartStore } from '@/stores/cart-store';
+import { useAuth } from '@/hooks/useAuth';
+import { formatearPrecio } from '@/lib/pricing/engine';
+
+// Importar PDF dinámicamente (solo client-side)
+const PDFDownloadButton = dynamic(
+  () => import('@/components/cotizacion/PDFDownloadButton'),
+  { ssr: false, loading: () => <button disabled className="flex-1 bg-blue-400 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"><Loader2 className="h-5 w-5 animate-spin" />Cargando PDF...</button> }
+);
+
+export default function CotizacionPage() {
+  const items = useCartStore((s) => s.items);
+  const actualizarCantidad = useCartStore((s) => s.actualizarCantidad);
+  const removerItem = useCartStore((s) => s.removerItem);
+  const limpiarCarrito = useCartStore((s) => s.limpiarCarrito);
+  const obtenerSubtotal = useCartStore((s) => s.obtenerSubtotal);
+  const monedaVenta = useCartStore((s) => s.monedaVenta);
+
+  const { isAuthenticated, lead } = useAuth();
+  const [mostrarGatekeeper, setMostrarGatekeeper] = useState(false);
+  const [accionPendiente, setAccionPendiente] = useState<'pdf' | 'solicitar' | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [enviado, setEnviado] = useState(false);
+
+  // Preparar partidas para PDF y API
+  const prepararPartidas = () =>
+    items.map((item) => ({
+      producto_id: item.producto.id,
+      sku_interno: item.producto.sku_interno,
+      numero_parte: item.producto.numero_parte,
+      marca: item.producto.marca,
+      descripcion: item.producto.categoria,
+      descripcion_tecnica: Object.entries(item.producto.especificaciones_tecnicas)
+        .slice(0, 3)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ') || item.producto.categoria,
+      cantidad: item.cantidad,
+      precio_unitario: item.producto.precio_venta,
+      total: item.producto.precio_venta * item.cantidad,
+      moneda: item.producto.moneda_venta,
+    }));
+
+  const handleDescargarPDF = () => {
+    if (!isAuthenticated) {
+      setAccionPendiente('pdf');
+      setMostrarGatekeeper(true);
+      return;
+    }
+    // El botón de PDF se renderiza directamente cuando está autenticado
+  };
+
+  const handleSolicitarFormal = async () => {
+    if (!isAuthenticated || !lead) {
+      setAccionPendiente('solicitar');
+      setMostrarGatekeeper(true);
+      return;
+    }
+
+    setEnviando(true);
+    try {
+      const partidas = prepararPartidas();
+      const response = await fetch('/api/cotizaciones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead_id: lead.id,
+          partidas,
+          subtotal: obtenerSubtotal(),
+          moneda_venta: monedaVenta,
+          tipo_cambio_usado: null, // TODO: pasar TC real
+          formula_aplicada: items[0]?.producto.formula_aplicada || null,
+          enviar_notificacion: true,
+          lead_info: {
+            nombre_completo: lead.nombre_completo,
+            empresa: lead.empresa,
+            email: lead.email,
+            telefono: lead.telefono,
+          },
+        }),
+      });
+
+      if (!response.ok) throw new Error('Error al enviar');
+      setEnviado(true);
+    } catch (error) {
+      console.error('Error al solicitar cotización:', error);
+      alert('Error al enviar la solicitud. Intenta de nuevo.');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const handleGatekeeperSuccess = () => {
+    setMostrarGatekeeper(false);
+    if (accionPendiente === 'solicitar') {
+      // Delay para que el state se actualice
+      setTimeout(() => handleSolicitarFormal(), 100);
+    }
+    setAccionPendiente(null);
+  };
+
+  return (
+    <>
+      <Header />
+      <main className="min-h-screen bg-gray-50 pt-20 pb-12">
+        <div className="max-w-5xl mx-auto px-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">Cotización Rápida</h1>
+
+          {items.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+              <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-gray-700 mb-2">Tu carrito está vacío</h2>
+              <p className="text-gray-500 mb-6">Agrega productos del catálogo para generar una cotización.</p>
+              <Link href="/catalogo" className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                Ir al Catálogo
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Datos del lead si está autenticado */}
+              {isAuthenticated && lead && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">Cliente:</span> {lead.nombre_completo} — {lead.empresa} — {lead.email}
+                  </p>
+                </div>
+              )}
+
+              {/* Mensaje de éxito */}
+              {enviado && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-green-800">¡Solicitud enviada exitosamente!</p>
+                    <p className="text-xs text-green-700">Nuestro equipo de ventas te contactará con la cotización formal, tiempos de entrega y disponibilidad.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tabla de partidas */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left text-xs font-semibold text-gray-500 uppercase px-4 py-3">Producto</th>
+                        <th className="text-center text-xs font-semibold text-gray-500 uppercase px-4 py-3">Cantidad</th>
+                        <th className="text-right text-xs font-semibold text-gray-500 uppercase px-4 py-3">P. Unitario</th>
+                        <th className="text-right text-xs font-semibold text-gray-500 uppercase px-4 py-3">Total</th>
+                        <th className="px-4 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {items.map((item) => (
+                        <tr key={item.producto.id}>
+                          <td className="px-4 py-3">
+                            <p className="text-xs text-blue-600 font-semibold">{item.producto.marca}</p>
+                            <p className="text-sm font-medium text-gray-900">{item.producto.numero_parte}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-2">
+                              <button onClick={() => actualizarCantidad(item.producto.id, item.cantidad - 1)} className="p-1 hover:bg-gray-100 rounded"><Minus className="h-3 w-3" /></button>
+                              <span className="text-sm font-medium w-8 text-center">{item.cantidad}</span>
+                              <button onClick={() => actualizarCantidad(item.producto.id, item.cantidad + 1)} className="p-1 hover:bg-gray-100 rounded"><Plus className="h-3 w-3" /></button>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-gray-700">
+                            {formatearPrecio(item.producto.precio_venta, item.producto.moneda_venta)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                            {formatearPrecio(item.producto.precio_venta * item.cantidad, item.producto.moneda_venta)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => removerItem(item.producto.id)} className="p-1 hover:bg-red-50 rounded text-red-500"><Trash2 className="h-4 w-4" /></button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Subtotal */}
+                <div className="bg-gray-50 border-t px-4 py-4 flex items-center justify-between">
+                  <button onClick={limpiarCarrito} className="text-sm text-red-500 hover:text-red-700">Vaciar carrito</button>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">Subtotal</p>
+                    <p className="text-2xl font-bold text-gray-900">{formatearPrecio(obtenerSubtotal(), monedaVenta)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Leyendas legales */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+                <p className="text-xs text-amber-800">⚠️ El costo de flete no está contemplado en este documento y se añadirá en la cotización formal.</p>
+                <p className="text-xs text-amber-800">⚠️ La disponibilidad de stock y los tiempos de entrega definitivos se indicarán en la cotización formal.</p>
+              </div>
+
+              {/* Acciones */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                {isAuthenticated && lead ? (
+                  <PDFDownloadButton
+                    cliente={lead}
+                    items={items}
+                    subtotal={obtenerSubtotal()}
+                    moneda={monedaVenta}
+                  />
+                ) : (
+                  <button
+                    onClick={handleDescargarPDF}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Download className="h-5 w-5" />
+                    Descargar Cotización PDF
+                  </button>
+                )}
+
+                <button
+                  onClick={handleSolicitarFormal}
+                  disabled={enviando || enviado}
+                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  {enviando ? (
+                    <><Loader2 className="h-5 w-5 animate-spin" />Enviando...</>
+                  ) : enviado ? (
+                    <><CheckCircle className="h-5 w-5" />Solicitud Enviada</>
+                  ) : (
+                    <><Send className="h-5 w-5" />Solicitar Cotización Formal</>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+      <Footer />
+
+      {mostrarGatekeeper && (
+        <GatekeeperForm onSuccess={handleGatekeeperSuccess} onCancel={() => setMostrarGatekeeper(false)} />
+      )}
+    </>
+  );
+}
