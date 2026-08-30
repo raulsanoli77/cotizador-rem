@@ -28,13 +28,6 @@ export default function PDFDownloadButton({
   const [generando, setGenerando] = useState(false);
   const hasAutoDownloaded = useRef(false);
 
-  useEffect(() => {
-    if (autoDownload && !hasAutoDownloaded.current) {
-      hasAutoDownloaded.current = true;
-      handleDownload();
-    }
-  }, [autoDownload]);
-
   const handleDownload = async () => {
     setGenerando(true);
     try {
@@ -108,6 +101,13 @@ export default function PDFDownloadButton({
       onDownloaded?.();
     }
   };
+
+  useEffect(() => {
+    if (autoDownload && !hasAutoDownloaded.current) {
+      hasAutoDownloaded.current = true;
+      handleDownload();
+    }
+  }, [autoDownload]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <button
