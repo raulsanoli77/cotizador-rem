@@ -8,8 +8,8 @@ import { supabase } from '@/lib/supabase/client';
 
 export default function Header() {
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const obtenerCantidadTotal = useCartStore((s) => s.obtenerCantidadTotal);
-  const cantidadItems = obtenerCantidadTotal();
+  const items = useCartStore((s) => s.items);
+  const cantidadItems = items.reduce((acc, item) => acc + item.cantidad, 0);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [titulo, setTitulo] = useState('REM Industrial');
 
