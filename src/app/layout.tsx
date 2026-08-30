@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { createServerClient } from '@/lib/supabase/server';
 
+// Forzar que siempre lea datos frescos de la BD
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata(): Promise<Metadata> {
   const supabase = createServerClient();
   const { data } = await supabase.from('configuracion').select('valor').eq('clave', 'apariencia').single();
