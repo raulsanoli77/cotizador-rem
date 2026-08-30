@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import GatekeeperForm from '@/components/cotizacion/GatekeeperForm';
+import AddressForm from '@/components/cotizacion/AddressForm';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuth } from '@/hooks/useAuth';
 import { formatearPrecio } from '@/lib/pricing/engine';
@@ -27,6 +28,7 @@ export default function CotizacionPage() {
 
   const { isAuthenticated, lead } = useAuth();
   const [mostrarGatekeeper, setMostrarGatekeeper] = useState(false);
+  const [mostrarAddressForm, setMostrarAddressForm] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
 
@@ -47,14 +49,6 @@ export default function CotizacionPage() {
       total: item.producto.precio_venta * item.cantidad,
       moneda: item.producto.moneda_venta,
     }));
-
-  const handleGenerarCotizacion = () => {
-    if (!isAuthenticated) {
-      setMostrarGatekeeper(true);
-      return;
-    }
-    // Ya está autenticado, los botones ya están visibles
-  };
 
   const handleSolicitarFormal = async () => {
     if (!isAuthenticated || !lead) return;
@@ -78,6 +72,8 @@ export default function CotizacionPage() {
             empresa: lead.empresa,
             email: lead.email,
             telefono: lead.telefono,
+            direccion: lead.direccion, // now has address
+            codigo_postal: lead.codigo_postal,
           },
         }),
       });
@@ -90,10 +86,6 @@ export default function CotizacionPage() {
     } finally {
       setEnviando(false);
     }
-  };
-
-  const handleGatekeeperSuccess = () => {
-    setMostrarGatekeeper(false);
   };
 
   return (
@@ -118,8 +110,13 @@ export default function CotizacionPage() {
               {isAuthenticated && lead && (
                 <div className="bg-brand-50 border border-brand-200 rounded-xl p-4">
                   <p className="text-sm text-brand-800">
-                    <span className="font-semibold">Cliente:</span> {lead.nombre_completo} — {lead.empresa} — {lead.email}
+                    <span className="font-semibold">Cliente:</span> {lead.nombre_completo} — {lead.empresa} {lead.email && !lead.email.includes('no-email.rem') ? `— ${lead.email}` : ''}
                   </p>
+                  {lead.direccion && (
+                    <p className="text-sm text-brand-700 mt-1">
+                      <span className="font-semibold">Envío a:</span> {lead.direccion}, CP {lead.codigo_postal}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -129,7 +126,7 @@ export default function CotizacionPage() {
                   <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-green-800">¡Solicitud enviada exitosamente!</p>
-                    <p className="text-xs text-green-700">Nuestro equipo de ventas te contactará con la cotización formal, tiempos de entrega, disponibilidad y datos bancarios.</p>
+                    <p className="text-xs text-green-700">Nuestro equipo de ventas te contactará pronto con la cotización formal (incluyendo el envío a tu domicilio), tiempos de entrega y datos bancarios.</p>
                   </div>
                 </div>
               )}
@@ -195,17 +192,31 @@ export default function CotizacionPage() {
               </div>
 
               {/* Acciones */}
-              {isAuthenticated && lead ? (
-                <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row gap-3">
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  
+                  {/* BOTÓN 1: PDF (Baja fricción) */}
+                  {isAuthenticated && lead ? (
                     <PDFDownloadButton
                       cliente={lead}
                       items={items}
                       subtotal={obtenerSubtotal()}
                       moneda={monedaVenta}
                     />
+                  ) : (
                     <button
-                      onClick={handleSolicitarFormal}
+                      onClick={() => setMostrarGatekeeper(true)}
+                      className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Download className="h-5 w-5" />
+                      Descargar Cotización PDF
+                    </button>
+                  )}
+
+                  {/* BOTÓN 2: Solicitud Formal (Alta intención - solo si ya pasó el filtro 1) */}
+                  {isAuthenticated && lead && (
+                    <button
+                      onClick={() => setMostrarAddressForm(true)}
                       disabled={enviando || enviado}
                       className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                     >
@@ -217,20 +228,15 @@ export default function CotizacionPage() {
                         <><Send className="h-5 w-5" />Solicitar Cotización Formal</>
                       )}
                     </button>
-                  </div>
-                  <p className="text-xs text-gray-500 text-center">
-                    Al solicitar la cotización formal, nuestro equipo le enviará precios definitivos, disponibilidad, tiempos de entrega y datos bancarios.
-                  </p>
+                  )}
+
                 </div>
-              ) : (
-                <button
-                  onClick={handleGenerarCotizacion}
-                  className="w-full bg-brand-600 hover:bg-brand-700 text-white py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 text-lg"
-                >
-                  <FileText className="h-6 w-6" />
-                  Generar Mi Cotización
-                </button>
-              )}
+                {isAuthenticated && !enviado && (
+                   <p className="text-xs text-gray-500 text-center mt-2">
+                     *Si requieres una cotización formal con costos de flete, haz clic en el botón verde.
+                   </p>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -238,7 +244,17 @@ export default function CotizacionPage() {
       <Footer />
 
       {mostrarGatekeeper && (
-        <GatekeeperForm onSuccess={handleGatekeeperSuccess} onCancel={() => setMostrarGatekeeper(false)} />
+        <GatekeeperForm onSuccess={() => setMostrarGatekeeper(false)} onCancel={() => setMostrarGatekeeper(false)} />
+      )}
+      
+      {mostrarAddressForm && (
+        <AddressForm 
+          onSuccess={() => {
+            setMostrarAddressForm(false);
+            handleSolicitarFormal();
+          }} 
+          onCancel={() => setMostrarAddressForm(false)} 
+        />
       )}
     </>
   );

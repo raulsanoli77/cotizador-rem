@@ -11,14 +11,14 @@ export function useAuth() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as Lead;
         setLead(parsed);
         setIsAuthenticated(true);
       }
     } catch {
-      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
     }
   }, []);
 
@@ -30,14 +30,14 @@ export function useAuth() {
     });
     if (!response.ok) throw new Error('Error al registrar lead');
     const leadData: Lead = await response.json();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(leadData));
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(leadData));
     setLead(leadData);
     setIsAuthenticated(true);
     return leadData;
   }, []);
 
   const cerrarSesion = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
     setLead(null);
     setIsAuthenticated(false);
   }, []);

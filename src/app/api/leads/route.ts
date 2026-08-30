@@ -4,11 +4,11 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nombre_completo, empresa, email, telefono } = body;
+    const { nombre_completo, empresa, email, telefono, direccion, codigo_postal } = body;
 
-    if (!nombre_completo || !empresa || !email || !telefono) {
+    if (!nombre_completo || !empresa) {
       return NextResponse.json(
-        { error: 'Todos los campos son obligatorios' },
+        { error: 'Nombre y empresa son obligatorios' },
         { status: 400 }
       );
     }
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('leads')
       .upsert(
-        { nombre_completo, empresa, email, telefono },
+        { nombre_completo, empresa, email, telefono, direccion, codigo_postal },
         { onConflict: 'email' }
       )
       .select()

@@ -4,6 +4,8 @@ export interface Lead {
   empresa: string;
   email: string;
   telefono: string;
+  direccion?: string;
+  codigo_postal?: string;
   created_at: string;
   token_sesion: string;
 }
@@ -13,4 +15,6 @@ export interface LeadFormData {
   empresa: string;
   email: string;
   telefono: string;
+  direccion?: string;
+  codigo_postal?: string;
 }

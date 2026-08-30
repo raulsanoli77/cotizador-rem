@@ -28,19 +28,25 @@ export default function GatekeeperForm({ onSuccess, onCancel }: GatekeeperFormPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nombre_completo || !form.empresa || !form.email || !form.telefono) {
-      setError('Todos los campos son obligatorios');
+    if (!form.nombre_completo || !form.empresa) {
+      setError('Nombre y empresa son obligatorios');
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
-      setError('Ingresa un correo electrónico válido');
+    if (!form.email && !form.telefono) {
+      setError('Debes proporcionar un correo electrónico o un teléfono');
       return;
     }
 
     setLoading(true);
     try {
-      await registrarLead(form);
+      // Si no proporcionó correo (solo teléfono), generamos uno falso temporal
+      // para cumplir con la regla de la base de datos (email NOT NULL UNIQUE)
+      const dataToSubmit = { ...form };
+      if (!dataToSubmit.email) {
+        dataToSubmit.email = `tel_${dataToSubmit.telefono.replace(/\D/g, '')}@no-email.rem`;
+      }
+
+      await registrarLead(dataToSubmit);
       onSuccess();
     } catch {
       setError('Error al registrar. Intenta de nuevo.');
@@ -53,8 +59,8 @@ export default function GatekeeperForm({ onSuccess, onCancel }: GatekeeperFormPr
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-1">Completa tus datos</h2>
-        <p className="text-sm text-gray-500 mb-6">Para descargar tu cotización en PDF, necesitamos tus datos de contacto.</p>
+        <h2 className="text-xl font-bold text-gray-900 mb-1">Descargar Cotización</h2>
+        <p className="text-sm text-gray-500 mb-6">Para generar tu PDF, compártenos tus datos principales.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
@@ -67,11 +73,11 @@ export default function GatekeeperForm({ onSuccess, onCancel }: GatekeeperFormPr
           </div>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input type="email" placeholder="Correo electrónico corporativo" value={form.email} onChange={(e) => handleChange('email', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <input type="email" placeholder="Correo electrónico (o deja tu teléfono)" value={form.email} onChange={(e) => handleChange('email', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input type="tel" placeholder="Teléfono" value={form.telefono} onChange={(e) => handleChange('telefono', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <input type="tel" placeholder="Teléfono (o deja tu correo)" value={form.telefono} onChange={(e) => handleChange('telefono', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
