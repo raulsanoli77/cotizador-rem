@@ -12,6 +12,8 @@ import { useCartStore } from '@/stores/cart-store';
 import { useAuth } from '@/hooks/useAuth';
 import { formatearPrecio } from '@/lib/pricing/engine';
 
+import { useAuthStore } from '@/stores/auth-store';
+
 // Importar PDF dinámicamente (solo client-side)
 const PDFDownloadButton = dynamic(
   () => import('@/components/cotizacion/PDFDownloadButton'),
@@ -52,7 +54,9 @@ export default function CotizacionPage() {
     }));
 
   const handleSolicitarFormal = async () => {
-    if (!isAuthenticated || !lead) return;
+    // LEER DIRECTAMENTE DEL ESTADO GLOBAL PARA GARANTIZAR DATOS FRESCOS
+    const freshLead = useAuthStore.getState().lead;
+    if (!freshLead) return;
 
     setEnviando(true);
     try {
@@ -61,7 +65,7 @@ export default function CotizacionPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lead_id: lead.id,
+          lead_id: freshLead.id,
           partidas,
           subtotal: obtenerSubtotal(),
           moneda_venta: monedaVenta,
@@ -69,12 +73,12 @@ export default function CotizacionPage() {
           formula_aplicada: items[0]?.producto.formula_aplicada || null,
           enviar_notificacion: true,
           lead_info: {
-            nombre_completo: lead.nombre_completo,
-            empresa: lead.empresa,
-            email: lead.email,
-            telefono: lead.telefono,
-            direccion: lead.direccion, // now has address
-            codigo_postal: lead.codigo_postal,
+            nombre_completo: freshLead.nombre_completo,
+            empresa: freshLead.empresa,
+            email: freshLead.email,
+            telefono: freshLead.telefono,
+            direccion: freshLead.direccion, // now has address
+            codigo_postal: freshLead.codigo_postal,
           },
         }),
       });
