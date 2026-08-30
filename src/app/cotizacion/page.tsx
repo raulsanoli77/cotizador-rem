@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trash2, Minus, Plus, Download, Send, ShoppingCart, Loader2, CheckCircle } from 'lucide-react';
+import { Download, Send, ShoppingCart, Loader2, CheckCircle, Minus, Plus, Trash2, FileText } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Header from '@/components/layout/Header';
@@ -27,11 +27,10 @@ export default function CotizacionPage() {
 
   const { isAuthenticated, lead } = useAuth();
   const [mostrarGatekeeper, setMostrarGatekeeper] = useState(false);
-  const [accionPendiente, setAccionPendiente] = useState<'pdf' | 'solicitar' | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
 
-  // Preparar partidas para PDF y API
+  // Preparar partidas para API
   const prepararPartidas = () =>
     items.map((item) => ({
       producto_id: item.producto.id,
@@ -49,21 +48,16 @@ export default function CotizacionPage() {
       moneda: item.producto.moneda_venta,
     }));
 
-  const handleDescargarPDF = () => {
+  const handleGenerarCotizacion = () => {
     if (!isAuthenticated) {
-      setAccionPendiente('pdf');
       setMostrarGatekeeper(true);
       return;
     }
-    // El botón de PDF se renderiza directamente cuando está autenticado
+    // Ya está autenticado, los botones ya están visibles
   };
 
   const handleSolicitarFormal = async () => {
-    if (!isAuthenticated || !lead) {
-      setAccionPendiente('solicitar');
-      setMostrarGatekeeper(true);
-      return;
-    }
+    if (!isAuthenticated || !lead) return;
 
     setEnviando(true);
     try {
@@ -76,7 +70,7 @@ export default function CotizacionPage() {
           partidas,
           subtotal: obtenerSubtotal(),
           moneda_venta: monedaVenta,
-          tipo_cambio_usado: null, // TODO: pasar TC real
+          tipo_cambio_usado: null,
           formula_aplicada: items[0]?.producto.formula_aplicada || null,
           enviar_notificacion: true,
           lead_info: {
@@ -100,11 +94,6 @@ export default function CotizacionPage() {
 
   const handleGatekeeperSuccess = () => {
     setMostrarGatekeeper(false);
-    if (accionPendiente === 'solicitar') {
-      // Delay para que el state se actualice
-      setTimeout(() => handleSolicitarFormal(), 100);
-    }
-    setAccionPendiente(null);
   };
 
   return (
@@ -140,7 +129,7 @@ export default function CotizacionPage() {
                   <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-green-800">¡Solicitud enviada exitosamente!</p>
-                    <p className="text-xs text-green-700">Nuestro equipo de ventas te contactará con la cotización formal, tiempos de entrega y disponibilidad.</p>
+                    <p className="text-xs text-green-700">Nuestro equipo de ventas te contactará con la cotización formal, tiempos de entrega, disponibilidad y datos bancarios.</p>
                   </div>
                 </div>
               )}
@@ -199,43 +188,49 @@ export default function CotizacionPage() {
 
               {/* Leyendas legales */}
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-                <p className="text-xs text-amber-800">⚠️ El costo de flete no está contemplado en este documento y se añadirá en la cotización formal.</p>
-                <p className="text-xs text-amber-800">⚠️ La disponibilidad de stock y los tiempos de entrega definitivos se indicarán en la cotización formal.</p>
+                <p className="text-xs text-amber-800 font-semibold">⚠️ Importante sobre esta cotización rápida:</p>
+                <p className="text-xs text-amber-800">• No incluye costo de flete.</p>
+                <p className="text-xs text-amber-800">• No incluye tiempos de entrega ni disponibilidad de stock.</p>
+                <p className="text-xs text-amber-800">• Esta información junto con los datos bancarios para su compra le será enviada en la cotización formal.</p>
               </div>
 
               {/* Acciones */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                {isAuthenticated && lead ? (
-                  <PDFDownloadButton
-                    cliente={lead}
-                    items={items}
-                    subtotal={obtenerSubtotal()}
-                    moneda={monedaVenta}
-                  />
-                ) : (
-                  <button
-                    onClick={handleDescargarPDF}
-                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Download className="h-5 w-5" />
-                    Descargar Cotización PDF
-                  </button>
-                )}
-
+              {isAuthenticated && lead ? (
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <PDFDownloadButton
+                      cliente={lead}
+                      items={items}
+                      subtotal={obtenerSubtotal()}
+                      moneda={monedaVenta}
+                    />
+                    <button
+                      onClick={handleSolicitarFormal}
+                      disabled={enviando || enviado}
+                      className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                    >
+                      {enviando ? (
+                        <><Loader2 className="h-5 w-5 animate-spin" />Enviando...</>
+                      ) : enviado ? (
+                        <><CheckCircle className="h-5 w-5" />Solicitud Enviada</>
+                      ) : (
+                        <><Send className="h-5 w-5" />Solicitar Cotización Formal</>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 text-center">
+                    Al solicitar la cotización formal, nuestro equipo le enviará precios definitivos, disponibilidad, tiempos de entrega y datos bancarios.
+                  </p>
+                </div>
+              ) : (
                 <button
-                  onClick={handleSolicitarFormal}
-                  disabled={enviando || enviado}
-                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                  onClick={handleGenerarCotizacion}
+                  className="w-full bg-brand-600 hover:bg-brand-700 text-white py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 text-lg"
                 >
-                  {enviando ? (
-                    <><Loader2 className="h-5 w-5 animate-spin" />Enviando...</>
-                  ) : enviado ? (
-                    <><CheckCircle className="h-5 w-5" />Solicitud Enviada</>
-                  ) : (
-                    <><Send className="h-5 w-5" />Solicitar Cotización Formal</>
-                  )}
+                  <FileText className="h-6 w-6" />
+                  Generar Mi Cotización
                 </button>
-              </div>
+              )}
             </div>
           )}
         </div>

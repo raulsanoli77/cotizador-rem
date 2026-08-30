@@ -35,7 +35,7 @@ export async function enviarNotificacionVentas(
 
   try {
     const { data, error } = await resend.emails.send({
-      from: 'REM Industrial <noreply@remindustrial.com>',
+      from: 'REM Industrial <onboarding@resend.dev>',
       to: [destinatario],
       subject: `Nueva Solicitud de Cotización - ${params.folio} | ${params.lead.empresa}`,
       html: generarHTMLNotificacion(params),

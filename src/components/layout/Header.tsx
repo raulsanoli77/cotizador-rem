@@ -1,14 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Wrench, ShoppingCart, Menu, X } from 'lucide-react';
+import { ShoppingCart, Menu, X } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
+import { supabase } from '@/lib/supabase/client';
 
 export default function Header() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const obtenerCantidadTotal = useCartStore((s) => s.obtenerCantidadTotal);
   const cantidadItems = obtenerCantidadTotal();
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [titulo, setTitulo] = useState('REM Industrial');
+
+  useEffect(() => {
+    async function fetchBranding() {
+      const { data } = await supabase.from('configuracion').select('valor').eq('clave', 'apariencia').single();
+      if (data?.valor) {
+        if (data.valor.logo_url) setLogoUrl(data.valor.logo_url);
+        if (data.valor.titulo) setTitulo(data.valor.titulo);
+      }
+    }
+    fetchBranding();
+  }, []);
 
   const enlaces = [
     { href: '/', label: 'Inicio' },
@@ -17,12 +31,15 @@ export default function Header() {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-[#0f172a] text-white shadow-lg">
+    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-brand-900 text-white shadow-lg">
       <div className="max-w-7xl mx-auto h-full px-4 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-          <Wrench className="h-6 w-6 text-brand-400" />
-          <span>REM <span className="text-brand-400">Industrial</span></span>
+          {logoUrl ? (
+            <img src={logoUrl} alt={titulo} className="h-10 object-contain" />
+          ) : (
+            <span>{titulo}</span>
+          )}
         </Link>
 
         {/* Nav Desktop */}
@@ -63,7 +80,7 @@ export default function Header() {
 
       {/* Menu Móvil */}
       {menuAbierto && (
-        <nav className="md:hidden bg-[#0f172a] border-t border-gray-800 px-4 py-4 space-y-3">
+        <nav className="md:hidden bg-brand-900 border-t border-white/10 px-4 py-4 space-y-3">
           {enlaces.map((e) => (
             <Link
               key={e.href}

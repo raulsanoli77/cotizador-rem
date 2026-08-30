@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { Download, Loader2 } from 'lucide-react';
-import { QuotePDFDocument, generarFolio, formatearMoneda } from '@/lib/pdf/quote-template';
+import { QuotePDFDocument, generarFolio } from '@/lib/pdf/quote-template';
+import { supabase } from '@/lib/supabase/client';
 import type { Lead } from '@/types/lead';
 import type { ItemCarrito } from '@/types/quote';
 
@@ -46,12 +47,11 @@ export default function PDFDownloadButton({
       }));
 
       // Obtener configuración
-      const { supabase } = await import('@/lib/supabase/client');
       const { data: configData } = await supabase.from('configuracion').select('*');
       
       let empresa = { nombre: 'REM Industrial', rfc: '', direccion: '', email: '', telefono: '' };
-      let logoUrl = undefined;
-      let textLegal = 'Términos y condiciones sujetos a cambio sin previo aviso. Cotización válida por 15 días.';
+      let logoUrl: string | undefined = undefined;
+      let textLegal = 'Esta cotización rápida no incluye costo de flete, tiempos de entrega ni disponibilidad. Estos datos le serán enviados junto con la cotización formal y datos bancarios para su compra.';
       
       if (configData) {
         configData.forEach((item: any) => {
