@@ -1,32 +1,24 @@
-# Plan de Mejoras: Simplificación de Envío y Estandarización de Nomenclatura
+# Plan de Corrección: Formato en Correo y Vista Web
 
-Me alegra mucho que la arquitectura anterior haya funcionado perfectamente. Entiendo totalmente el cambio de enfoque: para cotizar un flete estándar (FedEx/DHL) no necesitamos saturar al cliente pidiendo la calle exacta, basta con saber a qué ciudad y código postal va.
+He revisado a profundidad el código basándome en tus capturas de pantalla y ya encontré exactamente qué pasó y cómo lo vamos a corregir sin tocar ni romper la lógica de Vercel que ya reparamos.
 
-Además, el requerimiento de estandarizar la nomenclatura técnica en los PDFs y Correos es una excelente decisión para darle una imagen mucho más profesional e industrial a las cotizaciones.
+## 1. Problema del Correo ("Endmills")
+**¿Por qué pasó?** 
+Cuando la página web recolecta los artículos del carrito para enviárselos a la API y que esta dispare el correo, el sistema estaba empaquetando dos variables:
+- `descripcion_tecnica`: CORTADOR 1/8" 4FL CARBURO... (El nuevo formato).
+- `descripcion` (normal): Endmills (El nombre crudo).
 
-Aquí está el plan de acción seguro para aplicar estos cambios sin romper nada de lo que ya funciona:
+La plantilla del correo de Resend está programada estructuralmente para leer siempre la variable `descripcion` normal, por lo que ignoró nuestro nuevo texto industrial.
+**La Solución:** 
+Modificaré el "empaquetador" (`page.tsx`) para que sobrescriba el campo principal `descripcion` con nuestro formato industrial. Al hacer esto, el correo automáticamente imprimirá el texto correcto sin tener que modificar la estructura interna de las notificaciones (minimizando cualquier riesgo de romper el envío).
 
-## 1. Simplificación del Formulario de Envío (`AddressForm.tsx`)
-- **Acción:** Retiraré los campos detallados (Calle, Colonia, Números, etc.).
-- **Nuevos Campos:** Dejaré únicamente **Código Postal**, **Estado** y **Ciudad** (los tres serán obligatorios).
-- **Protección de Base de Datos:** Estos tres datos se ensamblarán internamente como `"CP: [codigo], [Ciudad], [Estado]"` y se guardarán en la misma columna de texto que ya usamos. Así no rompemos el exportador a Excel ni las tablas de la base de datos.
-
-## 2. Estandarización de la Descripción Técnica (PDF y Correo)
-- **Acción:** Crearé una función centralizada (un "Formateador") que se encargará de leer las características crudas del producto y transformarlas exactamente al formato que solicitaste.
-- **Lógica de Formateo que aplicaré:**
-  1. **Categoría:** Si la categoría original es "Endmills", la traducirá a `CORTADOR`.
-  2. **Diámetro:** Agregará el símbolo de pulgadas (`"`).
-  3. **Filos/Flautas:** Le agregará la terminación `FL` (Ej: `4FL`).
-  4. **Material y Recubrimiento:** Se imprimirán tal cual (Ej: `CARBURO ALTIN`).
-  5. **Radio:** Si existe, se agregará (Ej: `R .030`). Si el producto no tiene radio, se omitirá limpiamente sin dejar espacios raros.
-  6. **Largos:** Al Largo de Corte se le agregará `" CORTE` y al Largo Total `" LARGO`.
-  7. **Mayúsculas:** Todo el ensamble final pasará por un filtro `.toUpperCase()` para garantizar que siempre esté en mayúsculas.
-  8. **Resultado Esperado:** `CORTADOR 1/8" 4FL CARBURO ALTIN R .030 1/2" CORTE, 1-1/2" LARGO`
-- **¿Dónde se aplicará?**
-  - Se inyectará en la creación del archivo **PDF** (`PDFDownloadButton.tsx`).
-  - Se inyectará en el cuerpo del **Correo Electrónico** que recibe el equipo de ventas.
-  - *Sugerencia extra:* También lo inyectaré visualmente en la tabla del **Carrito de Compras** en la página web, para que el cliente vea exactamente la misma descripción profesional antes de descargarla.
+## 2. Problema visual de "CP" duplicado (Extra detectado en tu captura)
+**¿Por qué pasó?**
+En tu primera captura, noté que arriba dice: `Envío a: CP: 31124, dsfsd, dsfsd, CP 31124`. 
+El código de la página web tenía una instrucción antigua que decía: *Imprime la dirección y luego agrégale ", CP [número]" al final*. Como nuestro nuevo mini-formulario de envío ya guarda el texto completo como `"CP: 31124, Ciudad, Estado"`, la página lo está imprimiendo dos veces.
+**La Solución:**
+Limpiaré esa línea en la vista web (`page.tsx`) para que solo imprima la dirección limpia una sola vez, quedando perfecta: `Envío a: CP: 31124, dsfsd, dsfsd`.
 
 ---
 > [!IMPORTANT]
-> **Aprobación Requerida:** Todo el sistema actual está estable. Esta actualización modificará cómo se construyen las descripciones, pero respetará el flujo de base de datos. ¿Estás de acuerdo con la regla de formato para las descripciones? Si es así, procedo a programarlo.
+> **Aprobación Requerida:** Todo el mecanismo de creación de PDFs y envío de correos sigue intacto y estable. Estos dos cambios son solo de "etiquetado" de datos y limpieza visual. ¿Me das luz verde para aplicar este plan y dejarlo listo?

@@ -43,8 +43,7 @@ export default function CotizacionPage() {
       sku_interno: item.producto.sku_interno,
       numero_parte: item.producto.numero_parte,
       marca: item.producto.marca,
-      descripcion: item.producto.categoria,
-      descripcion_tecnica: formatearDescripcionProducto(item.producto),
+      descripcion: formatearDescripcionProducto(item.producto),
       cantidad: item.cantidad,
       precio_unitario: item.producto.precio_venta,
       total: item.producto.precio_venta * item.cantidad,
@@ -117,7 +116,7 @@ export default function CotizacionPage() {
                   </p>
                   {lead.direccion && (
                     <p className="text-sm text-brand-700 mt-1">
-                      <span className="font-semibold">Envío a:</span> {lead.direccion}, CP {lead.codigo_postal}
+                      <span className="font-semibold">Envío a:</span> {lead.direccion}
                     </p>
                   )}
                 </div>
