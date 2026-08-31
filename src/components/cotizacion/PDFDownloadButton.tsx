@@ -15,6 +15,7 @@ interface PDFDownloadButtonProps {
   moneda: 'USD' | 'MXN';
   autoDownload?: boolean;
   onDownloaded?: () => void;
+  variant?: 'primary' | 'text';
 }
 
 export default function PDFDownloadButton({
@@ -24,6 +25,7 @@ export default function PDFDownloadButton({
   moneda,
   autoDownload,
   onDownloaded,
+  variant = 'primary',
 }: PDFDownloadButtonProps) {
   const [generando, setGenerando] = useState(false);
   const hasAutoDownloaded = useRef(false);
@@ -108,6 +110,19 @@ export default function PDFDownloadButton({
       handleDownload();
     }
   }, [autoDownload]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (variant === 'text') {
+    return (
+      <button
+        onClick={handleDownload}
+        disabled={generando}
+        className="text-sm font-medium text-brand-600 hover:text-brand-800 underline transition-colors flex items-center justify-center gap-1.5 py-2 mx-auto disabled:opacity-50"
+      >
+        {generando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+        {generando ? 'Generando PDF...' : 'Volver a descargar cotización rápida'}
+      </button>
+    );
+  }
 
   return (
     <button

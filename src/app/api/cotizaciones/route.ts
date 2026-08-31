@@ -54,15 +54,20 @@ export async function POST(request: NextRequest) {
         day: 'numeric',
       });
 
-      // Fire and forget - no bloquear la respuesta
-      enviarNotificacionVentas({
-        lead: lead_info,
-        partidas,
-        subtotal: subtotal || 0,
-        moneda: moneda_venta || 'MXN',
-        folio,
-        fecha,
-      }).catch((err) => console.error('[API/cotizaciones] Error enviando email:', err));
+      try {
+        await enviarNotificacionVentas({
+          lead: lead_info,
+          partidas,
+          subtotal: subtotal || 0,
+          moneda: moneda_venta || 'MXN',
+          folio,
+          fecha,
+        });
+      } catch (err) {
+        console.error('[API/cotizaciones] Error enviando email:', err);
+        // We still return success since the quote was saved, but maybe warn the UI?
+        // For now, logging is sufficient.
+      }
     }
 
     return NextResponse.json({

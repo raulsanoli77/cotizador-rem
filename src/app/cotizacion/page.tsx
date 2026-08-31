@@ -198,49 +198,55 @@ export default function CotizacionPage() {
 
               {/* Acciones */}
               <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  
-                  {/* BOTÓN 1: PDF (Baja fricción) */}
-                  {isAuthenticated && lead ? (
-                    <PDFDownloadButton
-                      cliente={lead}
-                      items={items}
-                      subtotal={obtenerSubtotal()}
-                      moneda={monedaVenta}
-                      autoDownload={autoDownloadPDF}
-                      onDownloaded={() => setAutoDownloadPDF(false)}
-                    />
-                  ) : (
+                <div className="flex flex-col gap-3">
+                  {!isAuthenticated ? (
+                    // Usuario NUEVO: Solo ve 1 botón (Descargar PDF rápido)
                     <button
                       onClick={() => setMostrarGatekeeper(true)}
-                      className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                      className="w-full bg-brand-600 hover:bg-brand-700 text-white py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                     >
                       <Download className="h-5 w-5" />
                       Descargar Cotización PDF
                     </button>
-                  )}
+                  ) : (
+                    // Usuario AUTENTICADO: Solo ve el botón de cotización formal como principal
+                    <div className="flex flex-col gap-3 w-full">
+                      <button
+                        onClick={() => setMostrarAddressForm(true)}
+                        disabled={enviando || enviado}
+                        className={`w-full py-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 shadow-lg ${
+                          enviado 
+                            ? 'bg-green-100 text-green-700 cursor-not-allowed' 
+                            : 'bg-green-600 hover:bg-green-700 text-white shadow-green-600/20'
+                        }`}
+                      >
+                        {enviando ? (
+                          <><Loader2 className="h-5 w-5 animate-spin" />Procesando...</>
+                        ) : enviado ? (
+                          <><CheckCircle className="h-5 w-5" />Solicitud Formal Enviada</>
+                        ) : (
+                          <><Send className="h-5 w-5" />Solicitar Cotización Formal</>
+                        )}
+                      </button>
 
-                  {/* BOTÓN 2: Solicitud Formal (Alta intención - solo si ya pasó el filtro 1) */}
-                  {isAuthenticated && lead && (
-                    <button
-                      onClick={() => setMostrarAddressForm(true)}
-                      disabled={enviando || enviado}
-                      className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
-                    >
-                      {enviando ? (
-                        <><Loader2 className="h-5 w-5 animate-spin" />Enviando...</>
-                      ) : enviado ? (
-                        <><CheckCircle className="h-5 w-5" />Solicitud Enviada</>
-                      ) : (
-                        <><Send className="h-5 w-5" />Solicitar Cotización Formal</>
+                      {/* Link secundario para volver a descargar el PDF rápido sin estorbar */}
+                      {!enviado && lead && (
+                        <PDFDownloadButton
+                          cliente={lead}
+                          items={items}
+                          subtotal={obtenerSubtotal()}
+                          moneda={monedaVenta}
+                          autoDownload={autoDownloadPDF}
+                          onDownloaded={() => setAutoDownloadPDF(false)}
+                          variant="text"
+                        />
                       )}
-                    </button>
+                    </div>
                   )}
-
                 </div>
                 {isAuthenticated && !enviado && (
                    <p className="text-xs text-gray-500 text-center mt-2">
-                     *Si requieres una cotización formal con costos de flete, haz clic en el botón verde.
+                     *Si requieres costos de envío y tiempos de entrega, haz clic en el botón verde.
                    </p>
                 )}
               </div>
