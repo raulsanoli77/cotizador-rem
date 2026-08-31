@@ -8,6 +8,7 @@ interface NotificacionCotizacionParams {
     empresa: string;
     email: string;
     telefono: string;
+    direccion?: string;
   };
   partidas: Array<{
     cantidad: number;
@@ -97,6 +98,7 @@ function generarHTMLNotificacion(params: NotificacionCotizacionParams): string {
         <p style="margin: 4px 0; font-size: 13px;"><strong>Empresa:</strong> ${params.lead.empresa}</p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Email:</strong> <a href="mailto:${params.lead.email}">${params.lead.email}</a></p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Teléfono:</strong> ${params.lead.telefono}</p>
+        ${params.lead.direccion ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Envío a:</strong> ${params.lead.direccion}</p>` : ''}
       </div>
 
       <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">

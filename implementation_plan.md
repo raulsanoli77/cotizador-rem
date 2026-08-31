@@ -1,24 +1,16 @@
-# Plan de Corrección: Formato en Correo y Vista Web
+# Plan de Implementación: Dirección en el Correo Electrónico
 
-He revisado a profundidad el código basándome en tus capturas de pantalla y ya encontré exactamente qué pasó y cómo lo vamos a corregir sin tocar ni romper la lógica de Vercel que ya reparamos.
+## Problema Identificado
+Revisé la estructura de los correos automáticos. Resulta que la "plantilla visual" que genera el correo (el código HTML) fue diseñada originalmente para mostrar solo 4 datos del cliente (Nombre, Empresa, Email y Teléfono). Aunque nuestra API ya le está mandando el Código Postal, la Ciudad y el Estado (juntos en la variable `direccion`), la plantilla del correo simplemente **no la está imprimiendo** en la pantalla.
 
-## 1. Problema del Correo ("Endmills")
-**¿Por qué pasó?** 
-Cuando la página web recolecta los artículos del carrito para enviárselos a la API y que esta dispare el correo, el sistema estaba empaquetando dos variables:
-- `descripcion_tecnica`: CORTADOR 1/8" 4FL CARBURO... (El nuevo formato).
-- `descripcion` (normal): Endmills (El nombre crudo).
+## La Solución Propuesta
+1. **Actualizar el Molde del Correo:** Abriré el archivo maestro de notificaciones (`src/lib/email/notifications.ts`).
+2. **Inyectar la Dirección:** Le agregaré un nuevo renglón a la caja de "Datos del Cliente" que diga **"Envío a:"** seguido de la información del domicilio.
+3. **Protección:** Le pondré un condicional inteligente. Si por alguna razón un cliente viejo pide una cotización que no tenga dirección (las cotizaciones rápidas donde solo bajó el PDF), el renglón simplemente se ocultará para no mostrar espacios en blanco ni errores.
 
-La plantilla del correo de Resend está programada estructuralmente para leer siempre la variable `descripcion` normal, por lo que ignoró nuestro nuevo texto industrial.
-**La Solución:** 
-Modificaré el "empaquetador" (`page.tsx`) para que sobrescriba el campo principal `descripcion` con nuestro formato industrial. Al hacer esto, el correo automáticamente imprimirá el texto correcto sin tener que modificar la estructura interna de las notificaciones (minimizando cualquier riesgo de romper el envío).
-
-## 2. Problema visual de "CP" duplicado (Extra detectado en tu captura)
-**¿Por qué pasó?**
-En tu primera captura, noté que arriba dice: `Envío a: CP: 31124, dsfsd, dsfsd, CP 31124`. 
-El código de la página web tenía una instrucción antigua que decía: *Imprime la dirección y luego agrégale ", CP [número]" al final*. Como nuestro nuevo mini-formulario de envío ya guarda el texto completo como `"CP: 31124, Ciudad, Estado"`, la página lo está imprimiendo dos veces.
-**La Solución:**
-Limpiaré esa línea en la vista web (`page.tsx`) para que solo imprima la dirección limpia una sola vez, quedando perfecta: `Envío a: CP: 31124, dsfsd, dsfsd`.
+Al hacer esto, el equipo de ventas finalmente verá el renglón:
+`Envío a: CP: 31124, Guadalajara, Jalisco` directamente en el correo.
 
 ---
 > [!IMPORTANT]
-> **Aprobación Requerida:** Todo el mecanismo de creación de PDFs y envío de correos sigue intacto y estable. Estos dos cambios son solo de "etiquetado" de datos y limpieza visual. ¿Me das luz verde para aplicar este plan y dejarlo listo?
+> **Aprobación:** Este cambio solo requiere inyectar una línea HTML en la plantilla del correo, sin afectar bases de datos ni el flujo que ya funciona. ¿Me confirmas que proceda a inyectar el campo de dirección en la plantilla del correo?
