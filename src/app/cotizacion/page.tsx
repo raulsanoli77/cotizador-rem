@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { formatearPrecio } from '@/lib/pricing/engine';
 
 import { useAuthStore } from '@/stores/auth-store';
+import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
 
 // Importar PDF dinámicamente (solo client-side)
 const PDFDownloadButton = dynamic(
@@ -43,10 +44,7 @@ export default function CotizacionPage() {
       numero_parte: item.producto.numero_parte,
       marca: item.producto.marca,
       descripcion: item.producto.categoria,
-      descripcion_tecnica: Object.entries(item.producto.especificaciones_tecnicas)
-        .slice(0, 3)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(', ') || item.producto.categoria,
+      descripcion_tecnica: formatearDescripcionProducto(item.producto),
       cantidad: item.cantidad,
       precio_unitario: item.producto.precio_venta,
       total: item.producto.precio_venta * item.cantidad,
@@ -155,6 +153,7 @@ export default function CotizacionPage() {
                           <td className="px-4 py-3">
                             <p className="text-xs text-brand-600 font-semibold">{item.producto.marca}</p>
                             <p className="text-sm font-medium text-gray-900">{item.producto.numero_parte}</p>
+                            <p className="text-xs text-gray-500 mt-0.5 leading-tight">{formatearDescripcionProducto(item.producto)}</p>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-center gap-2">

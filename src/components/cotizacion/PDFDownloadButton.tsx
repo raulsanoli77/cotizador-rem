@@ -5,6 +5,7 @@ import { pdf } from '@react-pdf/renderer';
 import { Download, Loader2 } from 'lucide-react';
 import { QuotePDFDocument, generarFolio } from '@/lib/pdf/quote-template';
 import { supabase } from '@/lib/supabase/client';
+import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
 import type { Lead } from '@/types/lead';
 import type { ItemCarrito } from '@/types/quote';
 
@@ -44,11 +45,7 @@ export default function PDFDownloadButton({
         cantidad: item.cantidad,
         marca: item.producto.marca,
         numero_parte: item.producto.numero_parte,
-        descripcion:
-          Object.entries(item.producto.especificaciones_tecnicas)
-            .slice(0, 3)
-            .map(([k, v]) => `${k}: ${v}`)
-            .join(', ') || item.producto.categoria,
+        descripcion: formatearDescripcionProducto(item.producto),
         precio_unitario: item.producto.precio_venta,
         total: item.producto.precio_venta * item.cantidad,
       }));
