@@ -1,33 +1,36 @@
-# Plan de Rediseño UI/UX (B2B Alineado a REM Industrial)
+# Plan de Rediseño: Homepage y Modal de Producto (Estilo GWS)
 
-Después de analizar el sitio web principal (`remindustrial.mx`), queda claro que la identidad visual de la empresa transmite solidez, profesionalismo e ingeniería. El cotizador debe sentirse como una extensión natural de alto nivel tecnológico de este sitio.
+Analicé a fondo las capturas de pantalla de GWS Tool Group y el sitio web de REM Industrial. GWS tiene un diseño "Premium B2B" caracterizado por fondos oscuros y dramáticos, tipografías enormes para los números de parte, e iconografía técnica. 
 
-## 🛠️ Plan de Ejecución (100% Estético, 0% Riesgo Lógico)
+Vamos a fusionar ese nivel de sofisticación de GWS con tu paleta de colores de REM Industrial (Teal/Pizarra).
 
-### 1. Paleta de Colores (Coherencia REM Industrial)
-- **Fondo General:** Cambiaremos el fondo a `bg-slate-50` (un gris-blanco técnico) para descansar la vista en sesiones largas.
-- **Color de Acento (Acción):** Seguiremos usando la clase dinámica `bg-brand-600`. Como vimos, esta clase hereda los colores corporativos directamente de tu base de datos, garantizando que el "verde/teal/azul" exacto de REM Industrial se mantenga vivo en los botones de "Agregar" y "Cotizar".
-- **Color Industrial (Estructura):** Usaremos un tono acero oscuro (`bg-slate-900`) para las cabeceras (Header) y el panel de filtros, dándole ese peso visual de plataforma B2B premium (estilo MSC Industrial).
+## Fase 1: Rediseño del Inicio (Homepage "Hero")
+**Inspiración GWS:** Impacto visual inmediato, fondos oscuros de ingeniería, llamados a la acción claros.
+- **Acción:** Reescribiremos `src/app/page.tsx`.
+- **Diseño:** 
+  - Eliminaremos el fondo azul básico. Crearemos una sección "Hero" de pantalla completa con un fondo degradado profundo (`slate-900` a `black`), simulando la sofisticación de GWS.
+  - Insertaremos el **Logo Grande de REM Industrial** centrado (jalándolo de tu configuración).
+  - Un título agresivo y corporativo en blanco puro.
+  - Dos botones principales de acción (estilo GWS: "Ver Catálogo Estándar" y "Cotización Rápida"), usando tu color `bg-brand-600`.
+  - Las 3 tarjetas informativas de abajo se rediseñarán con un estilo oscuro de alto contraste (Dark Mode style) con bordes sutiles.
 
-### 2. Tipografía y Escaneo Rápido
-- Los títulos y subtítulos usarán `text-slate-900`.
-- **Regla de SKUs:** Todos los Números de Parte aplicarán una tipografía especial (`font-mono font-bold text-brand-700`). Esto es vital en el sector industrial para que el ojo de los ingenieros detecte códigos al instante.
-
-### 3. Rediseño del Catálogo (Alta Densidad - List View)
-- Abandonaremos el formato de "Tarjetas de Tienda de Ropa" (`grid`).
-- Crearemos filas de **Alta Densidad** para los productos. Cada fila mostrará ordenadamente:
-  `[Miniatura] ➔ [Marca + SKU Destacado] ➔ [Descripción Técnica Industrial] ➔ [Precio] ➔ [Botón Agregar]`
-- **Filtros Sticky:** El panel lateral izquierdo de filtros tendrá bordes limpios, checkboxes cuadrados técnicos y se quedará "pegado" (`sticky`) al bajar por la lista de productos.
-
-### 4. Mini Carrito Lateral (Slide-over Drawer)
-- En lugar de destrozar y mover tu página actual de `/cotizacion` (que tiene muchísima lógica importante como la creación del PDF, los correos, y la captura de datos de envío), crearemos un panel lateral rápido.
-- Al dar clic al carrito, este se deslizará desde la derecha mostrando los productos y el subtotal.
-- Tendrá un botón dominante que dirá *"Proceder a Cotización Formal"*, el cual llevará al usuario seguro a la pantalla que ya tenemos configurada. Esto mejora el UX sin poner en riesgo la lógica de la aplicación.
-
-### 5. Portal de "Checkout" (Gatekeeper)
-- Los formularios para dejar el correo y pedir el flete (CP, Estado, Ciudad) dejarán de verse como simples páginas web y pasarán a verse como **Tarjetas de Seguridad Corporativa**: fondos limpios (`bg-white`), sombras marcadas (`shadow-md`), y bordes muy finos en las cajas de texto (`border-slate-300` con `focus:ring-brand-500`).
+## Fase 2: Modal de Detalles del Producto (Quick View)
+**Inspiración GWS:** Ficha técnica estructurada. Imagen a la izquierda, SKU gigante, tabla de atributos e íconos de características.
+- **Acción:** Crearemos un nuevo componente `ProductModal.tsx`.
+- **Diseño del Modal:**
+  - Al hacer clic en un artículo del catálogo, no saldremos de la página. Se abrirá una ventana flotante (Modal) amplia y elegante.
+  - **Lado Izquierdo:** La imagen de la herramienta sobre un fondo blanco puro (para resaltar el metal, justo como en GWS).
+  - **Lado Derecho:** 
+    - Breadcrumbs (Ej. Fresado > Cortador).
+    - SKU en tipografía **gigante y en negrita**.
+    - Precio y control de cantidad con el botón "Agregar a la cotización" (`bg-brand-600`).
+  - **Zona Inferior del Modal:** Una cuadrícula (Grid) técnica que iterará sobre todas las `especificaciones_tecnicas` ocultas (Diámetro, Material, Zanco, etc.) mostrándolas en formato de tabla o "cajas de atributos" estilo GWS.
+- **Integración:** Actualizaremos la fila del catálogo (`ProductCard.tsx`) para que, al dar clic en la foto o el nombre, se dispare este modal.
 
 ---
-
-> [!IMPORTANT]  
-> **Aprobación Final:** Garantizo que mi trabajo será única y exclusivamente sobre los atributos `className` de Tailwind CSS y la estructura visual HTML. **Ninguna función, base de datos, flujo de correos o creación de PDFs será alterada.** ¿Me das autorización para comenzar a escribir el nuevo diseño de REM Industrial?
+> [!IMPORTANT]
+> **Seguridad Lógica:** 
+> 1. El rediseño del inicio (`page.tsx`) es 100% estético, no toca bases de datos.
+> 2. El Modal solo "lee" los datos que ya tenemos cargados en la memoria del catálogo, por lo que no hace consultas extra a Supabase ni alenta el sistema. La función de agregar al carrito seguirá usando tu hook seguro de Zustand.
+> 
+> ¿Apruebas este plan para comenzar la transformación visual?
