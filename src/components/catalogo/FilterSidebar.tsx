@@ -18,19 +18,20 @@ export default function FilterSidebar({ campos, filtrosActivos, onFiltroChange, 
   const tieneFiltros = Object.keys(filtrosActivos).length > 0;
 
   return (
-    <aside className="w-full lg:w-64 shrink-0 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-      <div className="flex items-center justify-between mb-4">
+    <aside className="w-full lg:w-64 shrink-0 bg-white rounded-lg shadow-sm border border-slate-200 lg:sticky lg:top-20 self-start overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800">
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-600" />
-          <h2 className="font-semibold text-gray-900">Filtros</h2>
+          <Filter className="h-4 w-4 text-slate-300" />
+          <h2 className="font-semibold text-sm tracking-wide">FILTROS</h2>
         </div>
         {tieneFiltros && (
-          <button onClick={onLimpiarFiltros} className="text-xs text-brand-600 hover:text-brand-800">Limpiar</button>
+          <button onClick={onLimpiarFiltros} className="text-[10px] font-bold text-slate-300 hover:text-white uppercase tracking-wider bg-slate-800 px-2 py-1 rounded">Limpiar</button>
         )}
       </div>
 
-      {/* Marca */}
-      <div className="border-b border-gray-100 pb-3 mb-3">
+      <div className="p-4">
+        {/* Marca */}
+        <div className="border-b border-slate-100 pb-3 mb-3">
         <button onClick={() => toggleSeccion('marca')} className="flex items-center justify-between w-full text-sm font-medium text-gray-700 py-1">
           <span>Marca</span>
           {seccionesAbiertas['marca'] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -69,6 +70,7 @@ export default function FilterSidebar({ campos, filtrosActivos, onFiltroChange, 
           )}
         </div>
       ))}
+      </div>
     </aside>
   );
 }

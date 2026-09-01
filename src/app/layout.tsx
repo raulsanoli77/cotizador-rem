@@ -59,7 +59,7 @@ export default async function RootLayout({
 
   return (
     <html lang="es">
-      <body className="font-sans antialiased text-slate-900 bg-gray-50">
+      <body className="font-sans antialiased text-slate-900 bg-slate-50 selection:bg-brand-200 selection:text-brand-900">
         <style dangerouslySetInnerHTML={{__html: `
           :root {
             --brand-50: ${colors[50]};

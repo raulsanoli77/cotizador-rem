@@ -93,30 +93,30 @@ export default function CotizacionPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 pt-20 pb-12">
+      <main className="min-h-screen bg-slate-50 pt-24 pb-12">
         <div className="max-w-5xl mx-auto px-4">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Cotización Rápida</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-8 tracking-tight">Checkout Segura</h1>
 
           {items.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-              <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-700 mb-2">Tu carrito está vacío</h2>
-              <p className="text-gray-500 mb-6">Agrega productos del catálogo para generar una cotización.</p>
-              <Link href="/catalogo" className="inline-block bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
-                Ir al Catálogo
+            <div className="bg-white rounded-xl shadow-md border border-slate-200 p-16 text-center">
+              <ShoppingCart className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-slate-700 mb-2">Tu carrito está vacío</h2>
+              <p className="text-slate-500 mb-8">Agrega productos del catálogo para generar una cotización formal.</p>
+              <Link href="/catalogo" className="inline-block bg-brand-600 hover:bg-brand-700 text-white px-8 py-3.5 rounded-lg font-bold transition-all shadow-lg shadow-brand-600/20">
+                Regresar al Catálogo
               </Link>
             </div>
           ) : (
             <div className="space-y-6">
               {/* Datos del lead si está autenticado */}
               {isAuthenticated && lead && (
-                <div className="bg-brand-50 border border-brand-200 rounded-xl p-4">
-                  <p className="text-sm text-brand-800">
-                    <span className="font-semibold">Cliente:</span> {lead.nombre_completo} — {lead.empresa} {lead.email && !lead.email.includes('no-email.rem') ? `— ${lead.email}` : ''}
+                <div className="bg-white border-l-4 border-l-brand-600 shadow-sm border border-slate-200 rounded-r-xl p-5">
+                  <p className="text-sm text-slate-800">
+                    <span className="font-bold">Cliente B2B:</span> {lead.nombre_completo} — {lead.empresa} {lead.email && !lead.email.includes('no-email.rem') ? `— ${lead.email}` : ''}
                   </p>
                   {lead.direccion && (
-                    <p className="text-sm text-brand-700 mt-1">
-                      <span className="font-semibold">Envío a:</span> {lead.direccion}
+                    <p className="text-sm text-slate-600 mt-2 flex items-center gap-2">
+                      <span className="font-bold">Destino de Envío:</span> {lead.direccion}
                     </p>
                   )}
                 </div>
@@ -124,17 +124,17 @@ export default function CotizacionPage() {
 
               {/* Mensaje de éxito */}
               {enviado && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+                <div className="bg-emerald-50 border-l-4 border-l-emerald-600 shadow-sm border border-emerald-100 rounded-r-xl p-5 flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-green-800">¡Solicitud enviada exitosamente!</p>
-                    <p className="text-xs text-green-700">Nuestro equipo de ventas te contactará pronto con la cotización formal (incluyendo el envío a tu domicilio), tiempos de entrega y datos bancarios.</p>
+                    <p className="text-sm font-bold text-emerald-900">¡Solicitud Formal Enviada!</p>
+                    <p className="text-xs text-emerald-700 mt-1 leading-relaxed">Nuestro equipo de ingeniería de ventas ha recibido tu solicitud. Te contactaremos a la brevedad con la cotización formal, confirmación de stock, tiempos de entrega y datos bancarios.</p>
                   </div>
                 </div>
               )}
 
               {/* Tabla de partidas */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b">
