@@ -37,11 +37,11 @@ export default function Header() {
       <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-slate-900 text-white shadow-lg border-b border-slate-800">
         <div className="max-w-[1400px] mx-auto h-full px-4 flex items-center justify-between gap-6">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl flex-shrink-0">
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl flex-shrink-0 bg-white rounded-md px-2 py-1 shadow-sm hover:shadow-md transition-shadow">
             <img 
               src={logoUrl || '/logo-rem.png'} 
               alt={titulo} 
-              className="h-10 object-contain brightness-0 invert" 
+              className="h-10 object-contain" 
             />
           </Link>
 
