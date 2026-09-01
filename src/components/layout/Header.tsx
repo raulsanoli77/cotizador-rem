@@ -38,11 +38,11 @@ export default function Header() {
         <div className="max-w-[1400px] mx-auto h-full px-4 flex items-center justify-between gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-bold text-xl flex-shrink-0">
-            {logoUrl ? (
-              <img src={logoUrl} alt={titulo} className="h-10 object-contain brightness-0 invert" />
-            ) : (
-              <span>{titulo}</span>
-            )}
+            <img 
+              src={logoUrl || '/logo-rem.png'} 
+              alt={titulo} 
+              className="h-10 object-contain brightness-0 invert" 
+            />
           </Link>
 
           {/* Buscador Global (Visual) */}

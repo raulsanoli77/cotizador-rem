@@ -26,11 +26,11 @@ export default async function Home() {
             
             <div className="flex-1 text-center md:text-left z-10">
               {/* Logo Gigante */}
-              {logoUrl ? (
-                <img src={logoUrl} alt={titulo} className="h-20 md:h-28 object-contain mb-8 mx-auto md:mx-0 brightness-0 invert" />
-              ) : (
-                <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tighter uppercase">{titulo}</h1>
-              )}
+              <img 
+                src={logoUrl || '/logo-rem.png'} 
+                alt={titulo} 
+                className="h-20 md:h-32 object-contain mb-8 mx-auto md:mx-0 brightness-0 invert" 
+              />
               
               <h2 className="text-3xl md:text-5xl font-extrabold mb-6 text-white tracking-tight leading-tight">
                 INTEGRADOR TÉCNICO DE <span className="text-brand-500">HERRAMIENTAS INDUSTRIALES</span>
