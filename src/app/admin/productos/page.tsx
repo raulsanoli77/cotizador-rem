@@ -6,6 +6,7 @@ import type { Producto } from '@/types';
 import { Loader2, Plus, Edit, Trash2, ImageIcon, Eye, Search, ChevronLeft, ChevronRight, X, Save } from 'lucide-react';
 import Link from 'next/link';
 import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
+import { toggleProductoActivoServer, deleteProductoServer, updateProductoServer } from './actions';
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -47,18 +48,21 @@ export default function AdminProductos() {
   };
 
   const toggleActivo = async (id: string, actual: boolean) => {
-    const { error } = await supabase.from('productos').update({ activo: !actual }).eq('id', id);
-    if (!error) {
-      setProductos(productos.map(p => p.id === id ? { ...p, activo: !actual } : p));
+    try {
+      const nuevoEstado = !actual;
+      await toggleProductoActivoServer(id, nuevoEstado);
+      setProductos(productos.map(p => p.id === id ? { ...p, activo: nuevoEstado } : p));
+    } catch (error: any) {
+      alert('Error al cambiar el estado: ' + error.message);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.')) return;
-    const { error } = await supabase.from('productos').delete().eq('id', id);
-    if (!error) {
+    try {
+      await deleteProductoServer(id);
       setProductos(productos.filter(p => p.id !== id));
-    } else {
+    } catch (error: any) {
       alert('Error al eliminar: ' + error.message);
     }
   };
@@ -75,18 +79,15 @@ export default function AdminProductos() {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, created_at, ...updateData } = editForm as any;
 
-    const { error } = await supabase
-      .from('productos')
-      .update(updateData)
-      .eq('id', modalEditar.id);
-
-    if (!error) {
+    try {
+      await updateProductoServer(modalEditar.id, updateData);
       setProductos(productos.map(p => p.id === modalEditar.id ? { ...p, ...updateData } : p));
       setModalEditar(null);
-    } else {
+    } catch (error: any) {
       alert('Error al guardar: ' + error.message);
+    } finally {
+      setGuardando(false);
     }
-    setGuardando(false);
   };
 
   // Filtrado
@@ -158,13 +159,14 @@ export default function AdminProductos() {
           <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-brand-600" /></div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase tracking-wider">
                   <th className="px-4 py-3 font-medium w-12 text-center">Img</th>
                   <th className="px-4 py-3 font-medium">SKU</th>
                   <th className="px-4 py-3 font-medium">Marca</th>
                   <th className="px-4 py-3 font-medium">No. Parte</th>
+                  <th className="px-4 py-3 font-medium w-64">Descripción</th>
                   <th className="px-4 py-3 font-medium">Categoría</th>
                   <th className="px-4 py-3 font-medium text-right">Costo Base</th>
                   <th className="px-4 py-3 font-medium text-center">Estado</th>
@@ -173,7 +175,7 @@ export default function AdminProductos() {
               </thead>
               <tbody className="divide-y divide-gray-200 text-sm">
                 {paginados.length === 0 ? (
-                  <tr><td colSpan={8} className="px-6 py-12 text-center text-gray-500">No se encontraron productos con estos filtros.</td></tr>
+                  <tr><td colSpan={9} className="px-6 py-12 text-center text-gray-500">No se encontraron productos con estos filtros.</td></tr>
                 ) : (
                   paginados.map((prod) => (
                     <tr key={prod.id} className="hover:bg-gray-50 transition-colors">
@@ -190,13 +192,23 @@ export default function AdminProductos() {
                       <td className="px-4 py-2 font-medium">{prod.marca}</td>
                       <td className="px-4 py-2 text-brand-700 font-mono text-xs">{prod.numero_parte}</td>
                       <td className="px-4 py-2">
+                        <div className="text-xs text-gray-600 truncate max-w-[200px] xl:max-w-[300px]" title={formatearDescripcionProducto(prod as any)}>
+                          {formatearDescripcionProducto(prod as any)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2">
                         <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">{prod.categoria}</span>
                       </td>
                       <td className="px-4 py-2 text-right font-medium">${prod.costo_base.toFixed(2)} {prod.moneda_costo}</td>
                       <td className="px-4 py-2 text-center">
                         <button
                           onClick={() => toggleActivo(prod.id, prod.activo)}
-                          className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${prod.activo ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
+                          title="Clic para cambiar estado"
+                          className={`px-3 py-1 rounded-full text-xs font-bold transition-all border border-transparent cursor-pointer shadow-sm hover:shadow-md hover:scale-105 active:scale-95 ${
+                            prod.activo 
+                            ? 'bg-green-100 text-green-800 hover:border-green-300' 
+                            : 'bg-red-100 text-red-800 hover:border-red-300'
+                          }`}
                         >
                           {prod.activo ? 'Activo' : 'Inactivo'}
                         </button>
@@ -325,7 +337,7 @@ export default function AdminProductos() {
       )}
 
       {/* =========================================================================
-          MODAL: EDITAR PRODUCTO (BÁSICO)
+          MODAL: EDITAR PRODUCTO
           ========================================================================= */}
       {modalEditar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -367,18 +379,26 @@ export default function AdminProductos() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Costo Base</label>
                   <input type="number" step="0.01" className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none" 
                     value={editForm.costo_base || ''} onChange={e => setEditForm({...editForm, costo_base: parseFloat(e.target.value)})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Moneda de Costo</label>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Moneda</label>
                   <select className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none" 
                     value={editForm.moneda_costo || 'USD'} onChange={e => setEditForm({...editForm, moneda_costo: e.target.value as 'USD'|'MXN'})}>
                     <option value="USD">USD</option>
                     <option value="MXN">MXN</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Estado</label>
+                  <select className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none font-bold" 
+                    value={editForm.activo ? 'true' : 'false'} onChange={e => setEditForm({...editForm, activo: e.target.value === 'true'})}>
+                    <option value="true">Activo (Visible)</option>
+                    <option value="false">Inactivo (Oculto)</option>
                   </select>
                 </div>
               </div>
