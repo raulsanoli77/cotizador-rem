@@ -10,6 +10,7 @@ interface CampoFiltro {
   tipo: 'texto' | 'seleccion';
   unidad?: string;
   opciones?: string[];
+  opcionesText?: string; // Solo para estado local de la UI
 }
 
 interface Categoria {
@@ -55,7 +56,11 @@ export default function AdminCategorias() {
   const handleOpenEdit = (cat: Categoria) => {
     setEditId(cat.id);
     setEditNombre(cat.nombre);
-    setEditCampos(cat.campos_filtro || []);
+    // Transformamos las opciones a texto crudo para que el textarea funcione libremente
+    setEditCampos((cat.campos_filtro || []).map(c => ({
+      ...c,
+      opcionesText: (c.opciones || []).join(', ')
+    })));
     setModalOpen(true);
   };
 
@@ -72,19 +77,42 @@ export default function AdminCategorias() {
   const handleSave = async () => {
     if (!editNombre.trim()) return alert('El nombre de la categoría es obligatorio.');
     
-    // Validar campos
-    for (const campo of editCampos) {
-      if (!campo.nombre.trim()) return alert('Todos los campos deben tener un nombre.');
-      if (campo.tipo === 'seleccion' && (!campo.opciones || campo.opciones.length === 0)) {
-        return alert(`El campo "${campo.nombre}" es de tipo selección y debe tener al menos una opción.`);
+    // Validar y limpiar campos antes de guardar
+    const camposToSave = editCampos.map(campo => {
+      if (!campo.nombre.trim()) throw new Error('Todos los campos deben tener un nombre.');
+      
+      if (campo.tipo === 'seleccion') {
+        // Convertimos el texto libre de regreso a un arreglo limpio
+        const opcionesLimpio = (campo.opcionesText || '')
+          .split(',')
+          .map(s => s.trim())
+          .filter(s => s !== '');
+          
+        if (opcionesLimpio.length === 0) {
+          throw new Error(`El campo "${campo.nombre}" es de tipo selección y debe tener al menos una opción.`);
+        }
+        
+        return { 
+          nombre: campo.nombre, 
+          tipo: campo.tipo, 
+          unidad: campo.unidad, 
+          opciones: opcionesLimpio 
+        };
       }
-    }
+      
+      // Si es texto libre, no mandamos ni opciones ni opcionesText
+      return { 
+        nombre: campo.nombre, 
+        tipo: campo.tipo, 
+        unidad: campo.unidad 
+      };
+    });
 
     setSaving(true);
     try {
       await saveCategoriaServer(editId, {
         nombre: editNombre,
-        campos_filtro: editCampos
+        campos_filtro: camposToSave
       });
       await fetchCategorias();
       setModalOpen(false);
@@ -97,7 +125,7 @@ export default function AdminCategorias() {
 
   // Funciones para manejar campos dinámicos
   const addCampo = () => {
-    setEditCampos([...editCampos, { nombre: '', tipo: 'texto', unidad: '' }]);
+    setEditCampos([...editCampos, { nombre: '', tipo: 'texto', unidad: '', opcionesText: '' }]);
   };
 
   const removeCampo = (index: number) => {
@@ -110,17 +138,13 @@ export default function AdminCategorias() {
     // Limpiar opciones si cambia a texto
     if (key === 'tipo' && value === 'texto') {
       delete newCampos[index].opciones;
+      delete newCampos[index].opcionesText;
     }
-    // Inicializar opciones si cambia a selección
-    if (key === 'tipo' && value === 'seleccion' && !newCampos[index].opciones) {
-      newCampos[index].opciones = [];
+    // Inicializar string vacío si cambia a selección
+    if (key === 'tipo' && value === 'seleccion' && typeof newCampos[index].opcionesText === 'undefined') {
+      newCampos[index].opcionesText = (newCampos[index].opciones || []).join(', ');
     }
     setEditCampos(newCampos);
-  };
-
-  const updateOpciones = (index: number, comaSeparated: string) => {
-    const opciones = comaSeparated.split(',').map(s => s.trim()).filter(s => s !== '');
-    updateCampo(index, 'opciones', opciones);
   };
 
   return (
@@ -300,15 +324,15 @@ export default function AdminCategorias() {
                             <p className="text-xs text-gray-500 mb-2">Escribe las opciones separadas por una coma ( , ).</p>
                             <textarea 
                               rows={2}
-                              value={(campo.opciones || []).join(', ')} 
-                              onChange={e => updateOpciones(index, e.target.value)}
+                              value={campo.opcionesText ?? ''} 
+                              onChange={e => updateCampo(index, 'opcionesText', e.target.value)}
                               placeholder="TiAlN, AlTiN, Sin Recubrimiento, Diamante"
                               className="w-full border border-brand-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none bg-brand-50/30" 
                             />
                             
-                            {/* Preview de Etiquetas */}
+                            {/* Preview de Etiquetas (calculadas en tiempo real sin modificar el texto original) */}
                             <div className="flex flex-wrap gap-2 mt-3">
-                              {(campo.opciones || []).map((opt, optIdx) => (
+                              {(campo.opcionesText || '').split(',').map(s => s.trim()).filter(s => s !== '').map((opt, optIdx) => (
                                 <span key={optIdx} className="bg-brand-100 text-brand-800 border border-brand-200 px-2 py-1 rounded text-xs font-medium">
                                   {opt}
                                 </span>

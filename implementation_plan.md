@@ -1,23 +1,22 @@
-# Plan de Implementación: Gestor de Categorías y Atributos
+# Plan de Corrección: Problema con la tecla "Coma"
 
-## 1. Metodología Recomendada (Arquitectura NoSQL-híbrida)
-Actualmente, el sistema guarda las reglas de qué campos lleva cada categoría en un formato JSON dentro de la base de datos (por eso "Endmills" sabe que debe pedir "Flautas", pero "Medición" no). 
+## 1. Análisis del Bug
+Has encontrado un bug clásico de interfaces reactivas. Actualmente, cada vez que presionas una tecla en esa caja de texto, el sistema:
+1. Divide el texto por comas.
+2. Elimina los espacios vacíos.
+3. Vuelve a pegar las palabras.
 
-**Mantener esta estructura es la mejor metodología**, porque te permite infinita flexibilidad (una broca tiene especificaciones totalmente distintas a un inserto). Lo único que falta es una **interfaz gráfica** para que tú puedas editar ese JSON sin ser programador.
+El problema es que cuando escribes `TiAlN, ` (con una coma al final), el sistema lee la coma, ve que a la derecha de la coma "no hay nada escrito todavía", asume que es un espacio vacío y lo borra instantáneamente. Por eso no te deja poner comas.
 
-## 2. Nueva Pantalla: Gestor de Categorías (`/admin/categorias`)
-Crearé una pantalla completamente nueva en tu menú de administrador. En ella podrás:
-1. **Crear Categorías:** Agregar "Machuelos", "Sierras", etc.
-2. **Crear/Editar Campos:** Decidir qué campos pide cada categoría (ej. "Diámetro", "Longitud").
-3. **Gestor de Listas (Dropdowns):** Si un campo es de opción múltiple (ej. "Recubrimiento" o "Flautas"), tendrás una cajita donde podrás escribir todas las opciones separadas por coma (ej. `TiAlN, AlTiN, Diamante, Zirconio`). Así podrás agregar o quitar opciones de tus menús desplegables en segundos.
+## 2. Solución Propuesta (Desacoplamiento de Estado)
+Voy a separar el "texto crudo" (lo que tú estás escribiendo en tiempo real) de la "lista final" (el arreglo de opciones que guarda la base de datos). 
 
-## 3. Resolución del Problema de Excel (Plantillas Dinámicas)
-Es una excelente observación. Si agregas una nueva categoría (ej. Machuelos) con nuevos campos (ej. "Paso de Rosca"), el Excel genérico ya no sirve.
-**La solución:** 
-En la pantalla de "Carga Masiva", agregaré un botón llamado **"Descargar Plantilla por Categoría"**. 
-Al seleccionarla, el sistema leerá la configuración en tiempo real de tu base de datos y te generará un archivo Excel `.csv` con las columnas exactas que necesitas (incluyendo los nuevos campos que hayas inventado). Así, tu Excel siempre estará 100% sincronizado con tu plataforma.
+**Paso a paso:**
+1. Modificaré el código del modal para que la caja de texto guarde exactamente cada carácter que escribas (incluyendo comas y espacios muertos) sin intentar filtrarlo en cada teclazo.
+2. La transformación (cortar por comas y limpiar los textos) se hará **exclusivamente al momento de darle clic a "Guardar Configuración"**.
+3. Mantendré la previsualización de etiquetas azules debajo de la caja, la cual se irá actualizando en vivo a medida que agregues comas, pero sin borrarte lo que estás escribiendo arriba.
 
-> [!IMPORTANT]
-> **Impacto Cero:** Construir este módulo no afectará los productos que ya diste de alta ni la forma en que funciona el cotizador. Solo habilitará la pantalla de configuración para controlar los selectores.
+> [!TIP]
+> **Sin afectaciones:** Esto es un ajuste estrictamente de comportamiento de la interfaz de usuario. No requiere cambios en la base de datos ni afecta las consultas o los catálogos ya creados.
 
-¿Te parece bien este plan? Si lo apruebas, comienzo a construir la pantalla del "Gestor de Categorías" de inmediato.
+¿Me das luz verde para aplicar este parche rápido?
