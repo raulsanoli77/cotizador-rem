@@ -18,7 +18,7 @@ export interface ResultadoPrecio {
 // Factores de margen (parametrizados para fácil ajuste)
 const FACTORES = {
   RECARGO_IMPORTACION: 1.15, // 15% recargo importación
-  MARGEN_USA: 1.5,           // Factor de utilidad proveedor USA
+  MARGEN_USA: 1.4,           // Factor de utilidad proveedor USA (antes 1.5)
   MARGEN_BASE: 0.7,          // 30% margen (costo / 0.7)
   IVA: 0.16,                 // 16% IVA México
 };
@@ -44,16 +44,17 @@ export function redondearTCAbajoEntero(tc: number): number {
 /**
  * Determina qué fórmula de precio aplicar según la combinación
  * de moneda de costo del proveedor y moneda de venta al cliente.
+ * RESTRICCIÓN ACTUAL: El sistema fuerza las ventas a MXN (Reglas 1 y 2).
  */
 export function determinarFormula(
   monedaCosto: MonedaCosto,
   monedaVenta: MonedaVenta
 ): FormulaAplicada {
-  if (monedaVenta === 'MXN' && monedaCosto === 'USD') return 'F1_MX_USA';
-  if (monedaVenta === 'MXN' && monedaCosto === 'MXN') return 'F2_MX_MX';
-  if (monedaVenta === 'USD' && monedaCosto === 'USD') return 'F3_USA_USA';
-  if (monedaVenta === 'USD' && monedaCosto === 'MXN') return 'F4_USA_MX';
-  throw new Error(`Combinación de monedas no válida: costo=${monedaCosto}, venta=${monedaVenta}`);
+  // Ignoramos monedaVenta para forzar precios en MXN
+  if (monedaCosto === 'USD') return 'F1_MX_USA';
+  if (monedaCosto === 'MXN') return 'F2_MX_MX';
+  
+  throw new Error(`Combinación de monedas no válida: costo=${monedaCosto}`);
 }
 
 /**
