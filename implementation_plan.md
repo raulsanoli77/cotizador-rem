@@ -1,19 +1,23 @@
-# Plan de Corrección y Actualización: Admin Panel
+# Plan de Implementación: Gestor de Categorías y Atributos
 
-## 1. Corrección Crítica del Botón "Activo/Inactivo"
-Tienes razón, si al presionarlo no hace nada, significa que la base de datos (Supabase) está bloqueando la actualización por reglas de seguridad (RLS) invisibles en el navegador.
-**La Solución Definitiva:**
-Crearé un "Server Action" (una función especial que se ejecuta del lado del servidor con credenciales de administrador maestras). Esto garantizará que los botones de Activar, Editar y Borrar tengan permisos absolutos (Bypass RLS) y funcionen el 100% de las veces sin fallar silenciosamente.
+## 1. Metodología Recomendada (Arquitectura NoSQL-híbrida)
+Actualmente, el sistema guarda las reglas de qué campos lleva cada categoría en un formato JSON dentro de la base de datos (por eso "Endmills" sabe que debe pedir "Flautas", pero "Medición" no). 
 
-## 2. Nueva Columna de Descripción
-Agregaremos la columna **Descripción** junto al número de parte. 
-Para que la tabla siga viéndose elegante y no se deforme, el texto se cortará inteligentemente si es muy largo (terminando en `...`), pero podrás ver un buen resumen directamente en la fila.
+**Mantener esta estructura es la mejor metodología**, porque te permite infinita flexibilidad (una broca tiene especificaciones totalmente distintas a un inserto). Lo único que falta es una **interfaz gráfica** para que tú puedas editar ese JSON sin ser programador.
 
-## 3. Mejoras Visuales al Botón de Estado
-- Transformaré la apariencia de la etiqueta "Activo" para que parezca un botón real (sombras, cambio de color al pasar el mouse).
-- Agregaré el selector de "Estado (Activo/Inactivo)" dentro del Modal de Edición (Lápiz) para que tengas dos formas de hacerlo.
+## 2. Nueva Pantalla: Gestor de Categorías (`/admin/categorias`)
+Crearé una pantalla completamente nueva en tu menú de administrador. En ella podrás:
+1. **Crear Categorías:** Agregar "Machuelos", "Sierras", etc.
+2. **Crear/Editar Campos:** Decidir qué campos pide cada categoría (ej. "Diámetro", "Longitud").
+3. **Gestor de Listas (Dropdowns):** Si un campo es de opción múltiple (ej. "Recubrimiento" o "Flautas"), tendrás una cajita donde podrás escribir todas las opciones separadas por coma (ej. `TiAlN, AlTiN, Diamante, Zirconio`). Así podrás agregar o quitar opciones de tus menús desplegables en segundos.
+
+## 3. Resolución del Problema de Excel (Plantillas Dinámicas)
+Es una excelente observación. Si agregas una nueva categoría (ej. Machuelos) con nuevos campos (ej. "Paso de Rosca"), el Excel genérico ya no sirve.
+**La solución:** 
+En la pantalla de "Carga Masiva", agregaré un botón llamado **"Descargar Plantilla por Categoría"**. 
+Al seleccionarla, el sistema leerá la configuración en tiempo real de tu base de datos y te generará un archivo Excel `.csv` con las columnas exactas que necesitas (incluyendo los nuevos campos que hayas inventado). Así, tu Excel siempre estará 100% sincronizado con tu plataforma.
 
 > [!IMPORTANT]
-> **Seguridad de Datos:** Al pasar las operaciones de edición y borrado al servidor con credenciales de `service_role`, tu panel de administración será mucho más seguro y a prueba de errores de permisos.
+> **Impacto Cero:** Construir este módulo no afectará los productos que ya diste de alta ni la forma en que funciona el cotizador. Solo habilitará la pantalla de configuración para controlar los selectores.
 
-¿Me das luz verde para aplicar esta corrección del servidor y agregar la columna?
+¿Te parece bien este plan? Si lo apruebas, comienzo a construir la pantalla del "Gestor de Categorías" de inmediato.
