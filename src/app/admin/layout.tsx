@@ -87,6 +87,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
         </nav>
+
+        {/* Widget de Tipo de Cambio */}
+        <div className="px-4 mb-4">
+          <AdminExchangeRateWidget />
+        </div>
+
         <div className="p-4 border-t border-slate-800">
           <button
             onClick={handleLogout}
@@ -104,6 +110,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {children}
         </div>
       </main>
+    </div>
+  );
+}
+
+// Widget interno para cargar el TC en el cliente sin bloquear todo el layout
+function AdminExchangeRateWidget() {
+  const [tcReal, setTcReal] = useState<number | null>(null);
+  const [tcAplicado, setTcAplicado] = useState<number | null>(null);
+  
+  useEffect(() => {
+    import('@/lib/pricing/exchange-rate').then(({ obtenerTipoCambio }) => {
+      import('@/lib/pricing/engine').then(({ aplicarRedondeoREM }) => {
+        obtenerTipoCambio().then((res) => {
+          setTcReal(res.valor);
+          setTcAplicado(aplicarRedondeoREM(res.valor));
+        });
+      });
+    });
+  }, []);
+
+  if (!tcReal || !tcAplicado) return null;
+
+  return (
+    <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tipo de Cambio</span>
+      </div>
+      <div className="space-y-1">
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-slate-400">API Real:</span>
+          <span className="text-slate-300">${tcReal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between items-center text-sm font-bold">
+          <span className="text-brand-400">Cobro:</span>
+          <span className="text-white">${tcAplicado.toFixed(2)}</span>
+        </div>
+      </div>
     </div>
   );
 }

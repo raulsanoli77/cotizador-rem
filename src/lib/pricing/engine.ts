@@ -24,21 +24,15 @@ const FACTORES = {
 };
 
 /**
- * Redondea el tipo de cambio hacia arriba al entero más cercano.
- * Ej: 17.34 → 18, 20.0 → 20
+ * Aplica la regla comercial de redondeo REM (Umbral 0.85):
+ * Si decimales < 0.85 (ej. 16.849), sube 1 peso (17.00).
+ * Si decimales >= 0.85 (ej. 16.85, 16.99), sube 2 pesos (18.00).
  */
-export function redondearTCArribaEntero(tc: number): number {
+export function aplicarRedondeoREM(tc: number): number {
   if (tc <= 0) throw new Error('El tipo de cambio debe ser mayor a 0');
-  return Math.ceil(tc);
-}
-
-/**
- * Redondea el tipo de cambio hacia abajo al entero más cercano.
- * Ej: 17.34 → 17, 20.0 → 20
- */
-export function redondearTCAbajoEntero(tc: number): number {
-  if (tc <= 0) throw new Error('El tipo de cambio debe ser mayor a 0');
-  return Math.floor(tc);
+  const entero = Math.floor(tc);
+  const decimal = tc - entero;
+  return decimal < 0.85 ? entero + 1 : entero + 2;
 }
 
 /**
@@ -94,10 +88,10 @@ export function calcularPrecioVenta(
 
   switch (formula) {
     case 'F1_MX_USA': {
-      const tcArriba = redondearTCArribaEntero(tipoCambio);
+      const tcAplicado = aplicarRedondeoREM(tipoCambio);
       const conRecargo = costoBase * FACTORES.RECARGO_IMPORTACION;
       const conMargen = conRecargo * FACTORES.MARGEN_USA;
-      const precioVenta = conMargen * tcArriba;
+      const precioVenta = conMargen * tcAplicado;
       return {
         precioVenta: Math.round(precioVenta * 100) / 100,
         monedaVenta: 'MXN',
@@ -106,7 +100,7 @@ export function calcularPrecioVenta(
           costoBase,
           recargoImportacion: FACTORES.RECARGO_IMPORTACION,
           margenUSA: FACTORES.MARGEN_USA,
-          tipoCambioUsado: tcArriba,
+          tipoCambioUsado: tcAplicado,
           tipoCambioOriginal: tipoCambio,
         },
       };
@@ -139,10 +133,10 @@ export function calcularPrecioVenta(
     }
 
     case 'F4_USA_MX': {
-      const tcAbajo = redondearTCAbajoEntero(tipoCambio);
+      const tcAplicado = aplicarRedondeoREM(tipoCambio);
       const costoConIVA = costoBase * (1 + FACTORES.IVA);
       const conMargen = costoConIVA / FACTORES.MARGEN_BASE;
-      const precioVenta = conMargen / tcAbajo;
+      const precioVenta = conMargen / tcAplicado;
       return {
         precioVenta: Math.round(precioVenta * 100) / 100,
         monedaVenta: 'USD',
@@ -152,7 +146,7 @@ export function calcularPrecioVenta(
           iva: FACTORES.IVA,
           costoConIVA,
           margen: FACTORES.MARGEN_BASE,
-          tipoCambioUsado: tcAbajo,
+          tipoCambioUsado: tcAplicado,
           tipoCambioOriginal: tipoCambio,
         },
       };

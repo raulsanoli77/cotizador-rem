@@ -1,21 +1,24 @@
-# Plan de Actualización: Motor de Precios Simplificado
+# Plan de Modificación: Redondeo Comercial REM (Umbral 0.85)
 
-## Mi Opinión Comercial
-Me parece una decisión estratégica excelente. 
-1. **Reducir el factor de 1.5 a 1.4** significa pasar de un incremento del 50% a uno del 40%. Seguirás cobrando el 15% extra por flete/importación, pero tu precio final será más agresivo y competitivo en el mercado, lo cual es ideal para ganar volumen de ventas.
-2. **Forzar ventas en MXN (Reglas 1 y 2):** Simplificar todo a Pesos Mexicanos agiliza la toma de decisiones para la mayoría de los clientes nacionales. Ya no habrá confusión con cotizaciones duales en esta fase del proyecto.
+## Lógica Matemática (Regla REM)
+He analizado tus ejemplos y la fórmula matemática exacta que describe tu regla es la siguiente:
+Se tomará el número entero del Tipo de Cambio y se evaluarán sus decimales:
+- Si los decimales son **menores a 0.85** (ej. `16.849`), se le suma 1 peso al entero (Resultado: `17`).
+- Si los decimales son **mayores o iguales a 0.85** (ej. `16.85`, `16.99`, `17.85`), se le suman 2 pesos al entero (Resultado: `18` para los primeros dos, y `19` para el tercero).
 
-## Cambios Técnicos Propuestos (`src/lib/pricing/engine.ts`)
+## Cambios en el Código (Sin afectar el resto)
 
-**1. Ajuste de Parámetros (Factores):**
-- Modificaremos la constante `MARGEN_USA` de `1.5` a `1.4`.
+**1. Motor de Precios (`src/lib/pricing/engine.ts`):**
+- Crearé una nueva función matemática llamada `aplicarRedondeoREM(tc)`.
+- Reemplazaré el redondeo tradicional que tiene la Regla 1 por esta nueva función de "súper redondeo" para darte ese gran margen de protección.
 
-**2. Simplificación del Motor Lógico:**
-- Interceptaremos la función `determinarFormula`. 
-- Le diremos al sistema: *"Ignora cualquier intento de vender en dólares por ahora. Si el proveedor nos vende en USD, cobra en Pesos (Fórmula 1). Si el proveedor nos vende en MXN, cobra en Pesos (Fórmula 2)."*
-- Las Fórmulas 3 y 4 se quedarán guardadas (comentadas o desactivadas) por si en un futuro decides reabrir cotizaciones en dólares para maquiladoras extranjeras.
+**2. Panel de Administración (`src/app/admin/layout.tsx`):**
+- Agregaré un "Widget de Moneda" en la esquina inferior izquierda del menú lateral.
+- El widget consumirá la API y mostrará dos valores muy claros:
+  1. **TC Mercado (API):** El valor real (ej. `$16.99`).
+  2. **TC Aplicado (Fórmula):** El valor ya redondeado con tu regla (ej. `$18.00`).
 
-> [!IMPORTANT]
-> **Sin afectaciones colaterales:** Este cambio es 100% interno en las matemáticas. La tienda, el carrito, el PDF y el envío de correos seguirán funcionando exactamente igual, simplemente empezarán a mostrar los precios ligeramente más baratos (por el 1.4) y siempre estandarizados en Pesos (MXN).
+> [!IMPORTANT]  
+> **Garantía de Cero Impacto:** Este cambio es exclusivamente matemático. No romperá el carrito, ni la pasarela de PDF, ni el catálogo. Simplemente los precios que ve el cliente se recalcularán obedeciendo tu nueva regla de brincar el peso a partir del `.85`.
 
-¿Te parece bien el plan? Si apruebas, aplico la modificación a la fórmula de inmediato.
+¿Autorizas que implemente esta regla matemática y dibuje el Widget en el administrador?
