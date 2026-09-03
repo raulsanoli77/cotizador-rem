@@ -316,19 +316,25 @@ export default function AdminProductos() {
 
               <div className="bg-white p-5 rounded-lg border border-gray-200">
                 <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4">
-                  Especificaciones Técnicas Ocultas
+                  Especificaciones Técnicas
                 </h4>
                 {modalDetalles.especificaciones_tecnicas && Object.keys(modalDetalles.especificaciones_tecnicas).length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {Object.entries(modalDetalles.especificaciones_tecnicas).map(([key, value]) => (
-                      <div key={key} className="bg-gray-50 border border-gray-100 p-3 rounded">
-                        <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate">{key}</span>
-                        <span className="text-sm font-medium text-gray-900">{String(value)}</span>
-                      </div>
-                    ))}
+                    {Object.entries(modalDetalles.especificaciones_tecnicas)
+                      .filter(([key]) => !key.startsWith('Unidad_'))
+                      .map(([key, value]) => {
+                        const unidad = (modalDetalles.especificaciones_tecnicas as any)[`Unidad_${key}`];
+                        const displayValue = unidad ? `${value} ${unidad}` : String(value);
+                        return (
+                          <div key={key} className="bg-gray-50 border border-gray-100 p-3 rounded">
+                            <span className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate">{key}</span>
+                            <span className="text-sm font-medium text-gray-900">{displayValue}</span>
+                          </div>
+                        );
+                      })}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500 italic">No hay especificaciones en formato JSON para este producto.</p>
+                  <p className="text-sm text-gray-500 italic">No hay especificaciones guardadas para este producto.</p>
                 )}
               </div>
             </div>

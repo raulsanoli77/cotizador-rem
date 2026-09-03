@@ -27,10 +27,24 @@ export default function ExcelTemplateDownloader() {
     if (!categoria) return;
 
     // Columnas base requeridas
-    const baseColumns = ['numero_parte', 'sku_interno', 'marca', 'proveedor_origen', 'costo_base', 'moneda_costo'];
+    const baseColumns = [
+      'SKU_Interno', 
+      'Numero_Parte', 
+      'Marca', 
+      'Categoria',
+      'Proveedor_Origen', 
+      'Costo_Base', 
+      'Moneda_Costo'
+    ];
     
     // Columnas dinámicas de la categoría
-    const dynamicColumns = (categoria.campos_filtro || []).map((campo: any) => campo.nombre);
+    const dynamicColumns: string[] = [];
+    (categoria.campos_filtro || []).forEach((campo: any) => {
+      dynamicColumns.push(campo.nombre);
+      if (campo.unidadTipo === 'seleccion') {
+        dynamicColumns.push(`Unidad_${campo.nombre}`);
+      }
+    });
     
     // Cabeceras finales
     const headers = [...baseColumns, ...dynamicColumns];

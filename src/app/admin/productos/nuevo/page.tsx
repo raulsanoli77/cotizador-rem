@@ -170,32 +170,52 @@ export default function NuevoProducto() {
                 {selectedCat.campos_filtro.map((campo: any) => (
                   <div key={campo.nombre}>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {campo.nombre.replace(/_/g, ' ')} <span className="text-gray-500">{renderUnidad(campo.unidad)}</span>
+                      {campo.nombre.replace(/_/g, ' ')} 
+                      {campo.unidadTipo !== 'seleccion' && <span className="text-gray-500 ml-1">{renderUnidad(campo.unidad)}</span>}
                     </label>
                   
-                  {campo.tipo === 'seleccion' && campo.opciones ? (
-                    <select 
-                      value={especificaciones[campo.nombre] || ''}
-                      onChange={(e) => handleSpecChange(campo.nombre, e.target.value)}
-                      className="w-full border-gray-300 rounded-md focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
-                    >
-                      <option value="">-- Seleccionar --</option>
-                      {campo.opciones.map((opt: string) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input 
-                      type="text" 
-                      value={especificaciones[campo.nombre] || ''}
-                      onChange={(e) => handleSpecChange(campo.nombre, e.target.value)}
-                      className="w-full border-gray-300 rounded-md focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        {campo.tipo === 'seleccion' && campo.opciones ? (
+                          <select 
+                            value={especificaciones[campo.nombre] || ''}
+                            onChange={(e) => handleSpecChange(campo.nombre, e.target.value)}
+                            className="w-full border-gray-300 rounded-md focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                          >
+                            <option value="">-- Seleccionar --</option>
+                            {campo.opciones.map((opt: string) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input 
+                            type="text" 
+                            value={especificaciones[campo.nombre] || ''}
+                            onChange={(e) => handleSpecChange(campo.nombre, e.target.value)}
+                            className="w-full border-gray-300 rounded-md focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                          />
+                        )}
+                      </div>
+
+                      {campo.unidadTipo === 'seleccion' && campo.unidadOpciones && (
+                        <div className="w-1/3">
+                          <select 
+                            value={especificaciones[`Unidad_${campo.nombre}`] || ''}
+                            onChange={(e) => handleSpecChange(`Unidad_${campo.nombre}`, e.target.value)}
+                            className="w-full border-gray-300 rounded-md focus:ring-brand-500 focus:border-brand-500 sm:text-sm bg-purple-50"
+                          >
+                            <option value="">(Unidad)</option>
+                            {campo.unidadOpciones.map((opt: string) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
         </div>
 
         <div className="pt-4 border-t flex justify-end">
