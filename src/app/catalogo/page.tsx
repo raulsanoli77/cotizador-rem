@@ -51,23 +51,18 @@ export default function CatalogoPage() {
         .select('*')
         .eq('activo', true)
         .order('marca')
-        .limit(100);
+        .limit(500); // Aumentado para mejor filtrado en cliente
 
-      // Filtro por categoría
+      // Filtro por categoría (único filtro estricto en servidor)
       if (categoriaActiva) {
         query = query.eq('categoria', categoriaActiva);
       }
 
-      // Búsqueda por texto
+      // Búsqueda por texto (servidor)
       if (busqueda) {
         query = query.or(
           `numero_parte.ilike.%${busqueda}%,marca.ilike.%${busqueda}%,categoria.ilike.%${busqueda}%`
         );
-      }
-
-      // Filtro por marca
-      if (filtrosActivos['marca']) {
-        query = query.eq('marca', filtrosActivos['marca']);
       }
 
       const { data, error } = await query;
@@ -95,33 +90,47 @@ export default function CatalogoPage() {
           };
         });
 
-        // Filtros JSONB del lado del cliente (Supabase free no soporta queries JSONB complejos)
-        const productosFiltrados = productosConPrecio.filter((prod) => {
+        // Helper para evaluar si un producto cumple con los filtros activos (saltándose uno en específico para lógica cruzada)
+        const cumpleFiltrosCruzados = (prod: ProductoConPrecio, llaveAIgnorar: string | null = null) => {
           return Object.entries(filtrosActivos).every(([key, value]) => {
-            if (key === 'marca' || !value) return true;
-            const specValue = prod.especificaciones_tecnicas[key];
+            if (key === llaveAIgnorar || !value) return true;
+            
+            if (key === 'marca') {
+              return prod.marca.toLowerCase() === String(value).toLowerCase();
+            }
+
+            const specValue = prod.especificaciones_tecnicas?.[key];
             if (!specValue) return false;
-            // Modificamos a búsqueda exacta o match flexible
             return String(specValue).toLowerCase() === String(value).toLowerCase();
           });
-        });
+        };
 
+        // 1. Filtrar productos finales (se muestran en el grid)
+        const productosFiltrados = productosConPrecio.filter(prod => cumpleFiltrosCruzados(prod));
         setProductos(productosFiltrados);
 
-        // Extraer marcas únicas para filtro
-        const marcas = [...new Set((data as Producto[]).map((p) => p.marca))].sort();
-        setMarcasDisponibles(marcas);
+        // 2. Extraer marcas únicas (Filtro cruzado: ignoramos el filtro de marca actual)
+        const marcasUnicas = new Set<string>();
+        productosConPrecio.forEach(prod => {
+          if (cumpleFiltrosCruzados(prod, 'marca')) {
+            marcasUnicas.add(prod.marca);
+          }
+        });
+        setMarcasDisponibles(Array.from(marcasUnicas).sort());
         
-        // Extraer opciones dinámicas para cada campo del catálogo actual (sin aplicar los filtros jsonb)
+        // 3. Extraer opciones dinámicas en cascada (Filtros cruzados)
         const opcionesExtraidas: Record<string, string[]> = {};
         if (categoriaActiva) {
           const cat = categorias.find((c) => c.nombre === categoriaActiva);
           if (cat && cat.campos_filtro) {
             cat.campos_filtro.forEach(campo => {
               const valoresUnicos = new Set<string>();
-              (data as Producto[]).forEach(p => {
-                if (p.especificaciones_tecnicas && p.especificaciones_tecnicas[campo.nombre]) {
-                  valoresUnicos.add(String(p.especificaciones_tecnicas[campo.nombre]));
+              productosConPrecio.forEach(prod => {
+                // Evaluamos si el producto cumple con TODOS los demás filtros
+                if (cumpleFiltrosCruzados(prod, campo.nombre)) {
+                  if (prod.especificaciones_tecnicas && prod.especificaciones_tecnicas[campo.nombre]) {
+                    valoresUnicos.add(String(prod.especificaciones_tecnicas[campo.nombre]));
+                  }
                 }
               });
               opcionesExtraidas[campo.nombre] = Array.from(valoresUnicos).sort();

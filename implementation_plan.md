@@ -1,33 +1,30 @@
-# Plan de Mejora: Barra de Filtros del Catálogo
+# Plan de Mejora: Filtros en Cascada (Faceted Search)
 
-## 1. Problemas Actuales Identificados
-- **Sin barra de desplazamiento (Scroll):** Cuando hay muchos filtros, la barra lateral no se puede "scrollear", dejando opciones fuera de la pantalla.
-- **Campos de Texto Libre (Ej. Diámetro):** Actualmente son una simple caja de texto donde el usuario tiene que adivinar y escribir.
-- **Falta de visibilidad:** El usuario no sabe qué opciones de Diámetro o Zanco existen realmente en los productos cargados.
+## 1. Problema Actual
+Actualmente, las opciones dinámicas se están extrayendo de **todos los productos de la categoría**, ignorando los filtros que el usuario ya seleccionó. 
+*Nota: Si viste que el Zanco se redujo, probablemente fue una coincidencia porque en los 100 productos que trajo la base de datos para esa categoría, solo existía ese zanco.*
 
-## 2. Solución Propuesta
-Transformaremos la barra de filtros para que se comporte como las de Amazon o MercadoLibre:
+## 2. El Reto de los Filtros Dinámicos
+Si simplemente extraemos las opciones de los productos ya filtrados (`productosFiltrados`), tendríamos un error de diseño grave: 
+Si seleccionas "Diámetro: 1/8", la lista de productos se reduce solo a los de 1/8. Si extraemos las opciones del diámetro de ahí, **desaparecerían las demás opciones (1/4, 3/8)** y ya no podrías cambiar de opinión.
 
-### A. Barra Lateral con Scroll
-- Le daremos a la barra completa una altura máxima calculada (`max-h-[calc(100vh-80px)]`) y una propiedad `overflow-y-auto`. Esto permitirá hacer scroll dentro de la barra de filtros sin mover toda la página.
+## 3. La Solución Ideal (Estilo Amazon / MercadoLibre)
+Implementaremos **Filtros en Cascada cruzados**:
+Para calcular qué opciones mostrar en un filtro específico (ej. Flautas), el sistema revisará todos los productos que cumplan con **todos los demás filtros activos** (ej. Diámetro y Marca), pero ignorará el filtro de Flautas. 
 
-### B. Listas Dinámicas Automáticas (Extracción de Opciones)
-- En lugar de mostrar un cuadro de texto vacío para escribir el "Diámetro", el sistema leerá todos los productos disponibles en esa categoría y **extraerá los valores únicos** (ej. `1/8`, `1/4`, `3/8`).
-- Mostraremos esos valores como una lista seleccionable para que el cliente solo tenga que hacer clic.
+De esta manera:
+1. Si eliges `Diámetro = 1/8`, el filtro de **Flautas** solo mostrará las flautas que existen para los cortadores de 1/8.
+2. El filtro de **Diámetro** seguirá mostrando todas sus opciones (1/8, 1/4, 3/8) para que puedas cambiar de medida libremente.
+3. Lo mismo aplicará para la **Marca**: solo mostrará marcas que fabriquen las especificaciones seleccionadas.
 
-### C. Mini-Buscador por Filtro
-- Si una categoría tiene 50 diámetros distintos, la lista será muy larga.
-- Para solucionar esto, cada filtro tendrá una **pequeña caja de búsqueda interna** en la parte superior de su lista. Si escribes "1/8" ahí, filtrará rápidamente la lista de opciones de diámetro para que lo encuentres al instante.
-
-## 3. Cambios Técnicos (Sin afectar otras funciones)
-1. **`src/app/catalogo/page.tsx`**: 
-   - Modificaré la función que carga los productos para que no solo extraiga las marcas únicas, sino que también genere un "Diccionario de Opciones Únicas" (`opcionesDinamicas`) a partir de las `especificaciones_tecnicas` de todos los productos descargados de la base de datos.
-2. **`src/components/catalogo/FilterSidebar.tsx`**:
-   - Ajustaré las clases CSS de Tailwind para habilitar el scroll de la barra principal.
-   - Eliminaré el viejo `input` de texto y lo reemplazaré por una lista dinámica que se alimenta del Diccionario creado en el paso 1.
-   - Agregaré estados locales de búsqueda (ej. `searchDiámetro`, `searchMarca`) para filtrar la vista interna de las listas.
+## 4. Cambios Técnicos en `src/app/catalogo/page.tsx`
+1. Reemplazaremos el bloque que genera `opcionesExtraidas`.
+2. Para cada campo dinámico, crearemos un mini-filtro cruzado:
+   - Evaluará cada producto contra `filtrosActivos`, **saltándose** la llave actual.
+   - Extraerá los valores únicos solo de los productos que pasen esa prueba.
+3. Haremos lo mismo para la extracción de `marcasDisponibles`.
 
 > [!TIP]
-> **Compatibilidad Garantizada:** Esto no tocará el cómo agregas productos desde el panel de administración. El tipo "Texto Libre" del administrador seguirá funcionando igual; simplemente en el catálogo al cliente se le mostrarán pre-agrupados.
+> **Rendimiento:** Esto se hará del lado del cliente (en memoria) sobre los productos ya descargados, por lo que será instantáneo y no saturará la base de datos.
 
-¿Te parece bien este flujo? Si estás de acuerdo, lo implemento enseguida.
+¿Estás de acuerdo con esta lógica para implementar los filtros en cascada?
