@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Filter } from 'lucide-react';
+import { ChevronDown, ChevronUp, Filter, Search } from 'lucide-react';
 import type { CampoFiltro } from '@/types/product';
 
 interface FilterSidebarProps {
@@ -10,66 +10,116 @@ interface FilterSidebarProps {
   onFiltroChange: (nombre: string, valor: string | number | null) => void;
   onLimpiarFiltros: () => void;
   marcas: string[];
+  opcionesDinamicas: Record<string, string[]>;
 }
 
-export default function FilterSidebar({ campos, filtrosActivos, onFiltroChange, onLimpiarFiltros, marcas }: FilterSidebarProps) {
+export default function FilterSidebar({ 
+  campos, 
+  filtrosActivos, 
+  onFiltroChange, 
+  onLimpiarFiltros, 
+  marcas,
+  opcionesDinamicas 
+}: FilterSidebarProps) {
   const [seccionesAbiertas, setSeccionesAbiertas] = useState<Record<string, boolean>>({});
-  const toggleSeccion = (nombre: string) => setSeccionesAbiertas((p) => ({ ...p, [nombre]: !p[nombre] }));
+  const [busquedas, setBusquedas] = useState<Record<string, string>>({});
+
+  // Abrir todas las secciones por defecto o mantener su estado
+  const toggleSeccion = (nombre: string) => {
+    setSeccionesAbiertas((p) => {
+      const isOculto = p[nombre] === false;
+      return { ...p, [nombre]: !isOculto ? false : true };
+    });
+  };
+
+  const handleSearchChange = (nombre: string, valor: string) => {
+    setBusquedas(prev => ({ ...prev, [nombre]: valor }));
+  };
+
   const tieneFiltros = Object.keys(filtrosActivos).length > 0;
 
+  const isAbierta = (nombre: string) => seccionesAbiertas[nombre] !== false; // Abiertas por defecto
+
+  const renderOpciones = (nombre: string, opciones: string[]) => {
+    const q = (busquedas[nombre] || '').toLowerCase();
+    const filtradas = opciones.filter(op => op.toLowerCase().includes(q));
+
+    return (
+      <div className="mt-2 flex flex-col gap-2">
+        {opciones.length > 5 && (
+          <div className="relative mb-1">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Buscar..."
+              value={busquedas[nombre] || ''}
+              onChange={(e) => handleSearchChange(nombre, e.target.value)}
+              className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+          </div>
+        )}
+        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+          {filtradas.length === 0 ? (
+            <p className="text-xs text-gray-400 italic py-1">Sin resultados</p>
+          ) : (
+            filtradas.map((op) => (
+              <label key={op} className="flex items-start gap-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900 leading-tight">
+                <input 
+                  type="radio" 
+                  name={nombre} 
+                  checked={String(filtrosActivos[nombre]) === op} 
+                  onChange={() => onFiltroChange(nombre, String(filtrosActivos[nombre]) === op ? null : op)} 
+                  className="text-brand-600 mt-0.5" 
+                />
+                <span className="flex-1 break-words">{op}</span>
+              </label>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <aside className="w-full lg:w-64 shrink-0 bg-white rounded-lg shadow-sm border border-slate-200 lg:sticky lg:top-20 self-start overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800">
+    <aside className="w-full lg:w-64 shrink-0 bg-white rounded-lg shadow-sm border border-slate-200 lg:sticky lg:top-20 self-start max-h-[calc(100vh-6rem)] flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 shrink-0">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-slate-300" />
           <h2 className="font-semibold text-sm tracking-wide">FILTROS</h2>
         </div>
         {tieneFiltros && (
-          <button onClick={onLimpiarFiltros} className="text-[10px] font-bold text-slate-300 hover:text-white uppercase tracking-wider bg-slate-800 px-2 py-1 rounded">Limpiar</button>
+          <button onClick={onLimpiarFiltros} className="text-[10px] font-bold text-slate-300 hover:text-white uppercase tracking-wider bg-slate-800 px-2 py-1 rounded transition-colors">Limpiar</button>
         )}
       </div>
 
-      <div className="p-4">
+      <div className="p-4 overflow-y-auto flex-1">
         {/* Marca */}
-        <div className="border-b border-slate-100 pb-3 mb-3">
-        <button onClick={() => toggleSeccion('marca')} className="flex items-center justify-between w-full text-sm font-medium text-gray-700 py-1">
-          <span>Marca</span>
-          {seccionesAbiertas['marca'] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
-        {seccionesAbiertas['marca'] && (
-          <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
-            {marcas.map((m) => (
-              <label key={m} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900">
-                <input type="radio" name="marca" checked={filtrosActivos['marca'] === m} onChange={() => onFiltroChange('marca', filtrosActivos['marca'] === m ? null : m)} className="text-brand-600" />
-                {m}
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Dinámicos */}
-      {campos.map((campo) => (
-        <div key={campo.nombre} className="border-b border-gray-100 pb-3 mb-3 last:border-0">
-          <button onClick={() => toggleSeccion(campo.nombre)} className="flex items-center justify-between w-full text-sm font-medium text-gray-700 py-1">
-            <span>{campo.nombre}{campo.unidad ? ` (${campo.unidad})` : ''}</span>
-            {seccionesAbiertas[campo.nombre] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        <div className="border-b border-slate-100 pb-4 mb-4">
+          <button onClick={() => toggleSeccion('marca')} className="flex items-center justify-between w-full text-sm font-bold text-gray-800 py-1">
+            <span>Marca</span>
+            {isAbierta('marca') ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
           </button>
-          {seccionesAbiertas[campo.nombre] && campo.tipo === 'seleccion' && campo.opciones && (
-            <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
-              {campo.opciones.map((op) => (
-                <label key={op} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input type="radio" name={campo.nombre} checked={filtrosActivos[campo.nombre] === op} onChange={() => onFiltroChange(campo.nombre, filtrosActivos[campo.nombre] === op ? null : op)} className="text-brand-600" />
-                  {op}
-                </label>
-              ))}
-            </div>
-          )}
-          {seccionesAbiertas[campo.nombre] && campo.tipo === 'texto' && (
-            <input type="text" placeholder={`Buscar ${campo.nombre.toLowerCase()}...`} value={(filtrosActivos[campo.nombre] as string) || ''} onChange={(e) => onFiltroChange(campo.nombre, e.target.value || null)} className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-500" />
-          )}
+          {isAbierta('marca') && renderOpciones('marca', marcas)}
         </div>
-      ))}
+
+        {/* Dinámicos */}
+        {campos.map((campo) => {
+          // Extraemos las opciones desde las opciones extraídas de los productos
+          const opcionesBase = campo.tipo === 'seleccion' && campo.opciones ? campo.opciones : (opcionesDinamicas[campo.nombre] || []);
+          
+          if (opcionesBase.length === 0) return null; // No mostrar si no hay opciones en los productos actuales
+
+          return (
+            <div key={campo.nombre} className="border-b border-gray-100 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
+              <button onClick={() => toggleSeccion(campo.nombre)} className="flex items-center justify-between w-full text-sm font-bold text-gray-800 py-1">
+                <span className="text-left">{campo.nombre.replace(/_/g, ' ')}{campo.unidad ? ` (${campo.unidad})` : ''}</span>
+                {isAbierta(campo.nombre) ? <ChevronUp className="h-4 w-4 text-gray-400 shrink-0" /> : <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />}
+              </button>
+              
+              {isAbierta(campo.nombre) && renderOpciones(campo.nombre, opcionesBase)}
+            </div>
+          );
+        })}
       </div>
     </aside>
   );

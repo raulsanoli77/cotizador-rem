@@ -21,6 +21,7 @@ export default function CatalogoPage() {
   const [tipoCambio, setTipoCambio] = useState(20.0);
   const [camposFiltro, setCamposFiltro] = useState<CampoFiltro[]>([]);
   const [marcasDisponibles, setMarcasDisponibles] = useState<string[]>([]);
+  const [opcionesDinamicas, setOpcionesDinamicas] = useState<Record<string, string[]>>({});
 
   // Moneda de venta por defecto MXN
   const monedaVenta = 'MXN' as const;
@@ -100,7 +101,8 @@ export default function CatalogoPage() {
             if (key === 'marca' || !value) return true;
             const specValue = prod.especificaciones_tecnicas[key];
             if (!specValue) return false;
-            return String(specValue).toLowerCase().includes(String(value).toLowerCase());
+            // Modificamos a búsqueda exacta o match flexible
+            return String(specValue).toLowerCase() === String(value).toLowerCase();
           });
         });
 
@@ -109,13 +111,31 @@ export default function CatalogoPage() {
         // Extraer marcas únicas para filtro
         const marcas = [...new Set((data as Producto[]).map((p) => p.marca))].sort();
         setMarcasDisponibles(marcas);
+        
+        // Extraer opciones dinámicas para cada campo del catálogo actual (sin aplicar los filtros jsonb)
+        const opcionesExtraidas: Record<string, string[]> = {};
+        if (categoriaActiva) {
+          const cat = categorias.find((c) => c.nombre === categoriaActiva);
+          if (cat && cat.campos_filtro) {
+            cat.campos_filtro.forEach(campo => {
+              const valoresUnicos = new Set<string>();
+              (data as Producto[]).forEach(p => {
+                if (p.especificaciones_tecnicas && p.especificaciones_tecnicas[campo.nombre]) {
+                  valoresUnicos.add(String(p.especificaciones_tecnicas[campo.nombre]));
+                }
+              });
+              opcionesExtraidas[campo.nombre] = Array.from(valoresUnicos).sort();
+            });
+          }
+        }
+        setOpcionesDinamicas(opcionesExtraidas);
       }
 
       setLoading(false);
     }
 
     cargarProductos();
-  }, [categoriaActiva, busqueda, filtrosActivos, tipoCambio, monedaVenta]);
+  }, [categoriaActiva, busqueda, filtrosActivos, tipoCambio, monedaVenta, categorias]);
 
   // Actualizar campos de filtro cuando cambia la categoría
   useEffect(() => {
@@ -186,6 +206,7 @@ export default function CatalogoPage() {
                 onFiltroChange={handleFiltroChange}
                 onLimpiarFiltros={() => setFiltrosActivos({})}
                 marcas={marcasDisponibles}
+                opcionesDinamicas={opcionesDinamicas}
               />
             )}
 
