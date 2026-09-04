@@ -1,73 +1,18 @@
-# Plan: Multi-selección y Toggle en Filtros del Catálogo
+# Plan: Ajuste Visual del Descargador de Plantillas
 
 ## 1. Problema Actual
-Los filtros actualmente usan **radio buttons** que:
-- Solo permiten elegir **una** opción por campo.
-- No se pueden desmarcar con clic (el radio button no tiene toggle).
+En la pantalla de "Carga Masiva", la caja de la derecha ("Instrucciones y Plantillas") tiene un ancho limitado. 
+El componente `ExcelTemplateDownloader` está programado con `flex-row` (en fila) y la lista desplegable tiene un ancho fijo (`w-48`). Al sumar el ancho del botón "Descargar", se desborda y se sale de la caja verde hacia la derecha.
 
-## 2. Cambios Requeridos
+## 2. Solución Propuesta
+Dado que este componente solo se usa en esta pantalla lateral, la mejor forma de integrarlo es **apilando los elementos verticalmente** para que se adapten al 100% del ancho disponible de su contenedor verde.
 
-### Lógica (OR dentro de un campo, AND entre campos)
-Cuando el usuario seleccione múltiples valores en un campo, la lógica debe ser:
-- **Dentro de un campo (ej. Flautas):** Un producto pasa si su valor coincide con **cualquiera** de las opciones seleccionadas (`2` **O** `4`). Lógica OR.
-- **Entre campos (ej. Diámetro y Flautas):** Un producto pasa si cumple con **todos** los campos activos. Lógica AND.
+### Cambios en `src/components/admin/ExcelTemplateDownloader.tsx`:
+1. Cambiar el contenedor principal de `flex-row` a `flex-col` (columna).
+2. Quitar el ancho fijo `w-48` del menú desplegable y cambiarlo por `w-full`.
+3. Hacer que el botón "Descargar Plantilla" también ocupe todo el ancho (`w-full`) y centrar su contenido.
 
-Ejemplo: Seleccionas Diámetro `1/8` y Flautas `2` y `4`:
-→ Muestra los cortadores de 1/8 que tengan 2 flautas, MÁS los cortadores de 1/8 que tengan 4 flautas.
-
-### Tipo del estado de filtros
-Actualmente el estado es:
-```ts
-filtrosActivos: Record<string, string | number | null>
-// ej: { Diametro: '1/8', Flautas: '2' }
-```
-Necesitamos cambiarlo a un array de valores:
-```ts
-filtrosActivos: Record<string, string[]>
-// ej: { Diametro: ['1/8'], Flautas: ['2', '4'] }
-```
-
----
-
-## 3. Archivos a Modificar
-
-### `src/app/catalogo/page.tsx`
-
-#### [MODIFY] Estado `filtrosActivos`
-Cambiar el tipo de `string | number | null` a `string[]`.
-
-#### [MODIFY] `handleFiltroChange`
-Nueva lógica de toggle:
-- Si el valor **ya está en el array** → quitar (toggle off).
-- Si el valor **no está** → agregarlo al array.
-- Si el array queda vacío → borrar la llave.
-
-#### [MODIFY] `cumpleFiltrosCruzados`
-Cambiar la comparación de igual exacto (`===`) a "está en el array" (`array.includes()`). Esto habilita la lógica OR por campo.
-
-#### [MODIFY] Prop `filtrosActivos` pasada a `FilterSidebar`
-Actualizar el tipo de la prop.
-
----
-
-### `src/components/catalogo/FilterSidebar.tsx`
-
-#### [MODIFY] Interface `FilterSidebarProps`
-Cambiar el tipo de `filtrosActivos` de `Record<string, string | number | null>` a `Record<string, string[]>`.
-
-#### [MODIFY] `onFiltroChange` signature
-Simplificar a `(nombre: string, valor: string) => void` (ya no necesita `null`, el toggle lo maneja el padre).
-
-#### [MODIFY] Cambiar `radio` a `checkbox`
-- Reemplazar `<input type="radio">` con `<input type="checkbox">`.
-- Actualizar `checked` para revisar si el valor está en el array: `(filtrosActivos[nombre] || []).includes(op)`.
-
----
-
-## 4. Lo que NO cambia
-- Lógica de carga de productos de Supabase.
-- Lógica de extracción de opciones dinámicas en cascada.
-- Cualquier otra página: admin, checkout, etc.
-
-> [!TIP]
-> **Sin impacto:** Solo se modifican `catalogo/page.tsx` y `FilterSidebar.tsx`. Todo el resto del sistema (precios, admin, Excel) queda intacto.
+## 3. Resultado Esperado
+- El menú de selección de categoría aparecerá arriba, ocupando el ancho de la cajita verde.
+- El botón de descargar aparecerá justo debajo, también del mismo ancho.
+- Visualmente se verá como un "Widget" muy limpio y será 100% responsive en cualquier tamaño de pantalla. No afectará a ninguna otra función.
