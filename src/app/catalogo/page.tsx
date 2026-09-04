@@ -15,7 +15,7 @@ export default function CatalogoPage() {
   const [productos, setProductos] = useState<ProductoConPrecio[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
-  const [filtrosActivos, setFiltrosActivos] = useState<Record<string, string | number | null>>({});
+  const [filtrosActivos, setFiltrosActivos] = useState<Record<string, string[]>>({});
   const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [tipoCambio, setTipoCambio] = useState(20.0);
@@ -91,17 +91,18 @@ export default function CatalogoPage() {
         });
 
         // Helper para evaluar si un producto cumple con los filtros activos (saltándose uno en específico para lógica cruzada)
+        // Lógica: OR dentro de un campo (ej. Flautas 2 ó 4), AND entre campos (ej. Diámetro Y Flautas)
         const cumpleFiltrosCruzados = (prod: ProductoConPrecio, llaveAIgnorar: string | null = null) => {
-          return Object.entries(filtrosActivos).every(([key, value]) => {
-            if (key === llaveAIgnorar || !value) return true;
+          return Object.entries(filtrosActivos).every(([key, valores]) => {
+            if (key === llaveAIgnorar || !valores || valores.length === 0) return true;
             
             if (key === 'marca') {
-              return prod.marca.toLowerCase() === String(value).toLowerCase();
+              return valores.some(v => prod.marca.toLowerCase() === v.toLowerCase());
             }
 
             const specValue = prod.especificaciones_tecnicas?.[key];
             if (!specValue) return false;
-            return String(specValue).toLowerCase() === String(value).toLowerCase();
+            return valores.some(v => String(specValue).toLowerCase() === v.toLowerCase());
           });
         };
 
@@ -156,14 +157,24 @@ export default function CatalogoPage() {
     }
   }, [categoriaActiva, categorias]);
 
-  const handleFiltroChange = (nombre: string, valor: string | number | null) => {
+  const handleFiltroChange = (nombre: string, valor: string) => {
     setFiltrosActivos((prev) => {
-      if (valor === null) {
-        const next = { ...prev };
-        delete next[nombre];
-        return next;
+      const actuales = prev[nombre] || [];
+      const yaExiste = actuales.includes(valor);
+      
+      if (yaExiste) {
+        // Toggle off: quitar del array
+        const nuevos = actuales.filter(v => v !== valor);
+        if (nuevos.length === 0) {
+          const next = { ...prev };
+          delete next[nombre];
+          return next;
+        }
+        return { ...prev, [nombre]: nuevos };
+      } else {
+        // Toggle on: agregar al array
+        return { ...prev, [nombre]: [...actuales, valor] };
       }
-      return { ...prev, [nombre]: valor };
     });
   };
 

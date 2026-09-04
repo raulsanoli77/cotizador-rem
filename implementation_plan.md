@@ -1,30 +1,73 @@
-# Plan de Mejora: Filtros en Cascada (Faceted Search)
+# Plan: Multi-selección y Toggle en Filtros del Catálogo
 
 ## 1. Problema Actual
-Actualmente, las opciones dinámicas se están extrayendo de **todos los productos de la categoría**, ignorando los filtros que el usuario ya seleccionó. 
-*Nota: Si viste que el Zanco se redujo, probablemente fue una coincidencia porque en los 100 productos que trajo la base de datos para esa categoría, solo existía ese zanco.*
+Los filtros actualmente usan **radio buttons** que:
+- Solo permiten elegir **una** opción por campo.
+- No se pueden desmarcar con clic (el radio button no tiene toggle).
 
-## 2. El Reto de los Filtros Dinámicos
-Si simplemente extraemos las opciones de los productos ya filtrados (`productosFiltrados`), tendríamos un error de diseño grave: 
-Si seleccionas "Diámetro: 1/8", la lista de productos se reduce solo a los de 1/8. Si extraemos las opciones del diámetro de ahí, **desaparecerían las demás opciones (1/4, 3/8)** y ya no podrías cambiar de opinión.
+## 2. Cambios Requeridos
 
-## 3. La Solución Ideal (Estilo Amazon / MercadoLibre)
-Implementaremos **Filtros en Cascada cruzados**:
-Para calcular qué opciones mostrar en un filtro específico (ej. Flautas), el sistema revisará todos los productos que cumplan con **todos los demás filtros activos** (ej. Diámetro y Marca), pero ignorará el filtro de Flautas. 
+### Lógica (OR dentro de un campo, AND entre campos)
+Cuando el usuario seleccione múltiples valores en un campo, la lógica debe ser:
+- **Dentro de un campo (ej. Flautas):** Un producto pasa si su valor coincide con **cualquiera** de las opciones seleccionadas (`2` **O** `4`). Lógica OR.
+- **Entre campos (ej. Diámetro y Flautas):** Un producto pasa si cumple con **todos** los campos activos. Lógica AND.
 
-De esta manera:
-1. Si eliges `Diámetro = 1/8`, el filtro de **Flautas** solo mostrará las flautas que existen para los cortadores de 1/8.
-2. El filtro de **Diámetro** seguirá mostrando todas sus opciones (1/8, 1/4, 3/8) para que puedas cambiar de medida libremente.
-3. Lo mismo aplicará para la **Marca**: solo mostrará marcas que fabriquen las especificaciones seleccionadas.
+Ejemplo: Seleccionas Diámetro `1/8` y Flautas `2` y `4`:
+→ Muestra los cortadores de 1/8 que tengan 2 flautas, MÁS los cortadores de 1/8 que tengan 4 flautas.
 
-## 4. Cambios Técnicos en `src/app/catalogo/page.tsx`
-1. Reemplazaremos el bloque que genera `opcionesExtraidas`.
-2. Para cada campo dinámico, crearemos un mini-filtro cruzado:
-   - Evaluará cada producto contra `filtrosActivos`, **saltándose** la llave actual.
-   - Extraerá los valores únicos solo de los productos que pasen esa prueba.
-3. Haremos lo mismo para la extracción de `marcasDisponibles`.
+### Tipo del estado de filtros
+Actualmente el estado es:
+```ts
+filtrosActivos: Record<string, string | number | null>
+// ej: { Diametro: '1/8', Flautas: '2' }
+```
+Necesitamos cambiarlo a un array de valores:
+```ts
+filtrosActivos: Record<string, string[]>
+// ej: { Diametro: ['1/8'], Flautas: ['2', '4'] }
+```
+
+---
+
+## 3. Archivos a Modificar
+
+### `src/app/catalogo/page.tsx`
+
+#### [MODIFY] Estado `filtrosActivos`
+Cambiar el tipo de `string | number | null` a `string[]`.
+
+#### [MODIFY] `handleFiltroChange`
+Nueva lógica de toggle:
+- Si el valor **ya está en el array** → quitar (toggle off).
+- Si el valor **no está** → agregarlo al array.
+- Si el array queda vacío → borrar la llave.
+
+#### [MODIFY] `cumpleFiltrosCruzados`
+Cambiar la comparación de igual exacto (`===`) a "está en el array" (`array.includes()`). Esto habilita la lógica OR por campo.
+
+#### [MODIFY] Prop `filtrosActivos` pasada a `FilterSidebar`
+Actualizar el tipo de la prop.
+
+---
+
+### `src/components/catalogo/FilterSidebar.tsx`
+
+#### [MODIFY] Interface `FilterSidebarProps`
+Cambiar el tipo de `filtrosActivos` de `Record<string, string | number | null>` a `Record<string, string[]>`.
+
+#### [MODIFY] `onFiltroChange` signature
+Simplificar a `(nombre: string, valor: string) => void` (ya no necesita `null`, el toggle lo maneja el padre).
+
+#### [MODIFY] Cambiar `radio` a `checkbox`
+- Reemplazar `<input type="radio">` con `<input type="checkbox">`.
+- Actualizar `checked` para revisar si el valor está en el array: `(filtrosActivos[nombre] || []).includes(op)`.
+
+---
+
+## 4. Lo que NO cambia
+- Lógica de carga de productos de Supabase.
+- Lógica de extracción de opciones dinámicas en cascada.
+- Cualquier otra página: admin, checkout, etc.
 
 > [!TIP]
-> **Rendimiento:** Esto se hará del lado del cliente (en memoria) sobre los productos ya descargados, por lo que será instantáneo y no saturará la base de datos.
-
-¿Estás de acuerdo con esta lógica para implementar los filtros en cascada?
+> **Sin impacto:** Solo se modifican `catalogo/page.tsx` y `FilterSidebar.tsx`. Todo el resto del sistema (precios, admin, Excel) queda intacto.

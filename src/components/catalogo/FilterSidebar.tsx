@@ -6,8 +6,8 @@ import type { CampoFiltro } from '@/types/product';
 
 interface FilterSidebarProps {
   campos: CampoFiltro[];
-  filtrosActivos: Record<string, string | number | null>;
-  onFiltroChange: (nombre: string, valor: string | number | null) => void;
+  filtrosActivos: Record<string, string[]>;
+  onFiltroChange: (nombre: string, valor: string) => void;
   onLimpiarFiltros: () => void;
   marcas: string[];
   opcionesDinamicas: Record<string, string[]>;
@@ -24,7 +24,6 @@ export default function FilterSidebar({
   const [seccionesAbiertas, setSeccionesAbiertas] = useState<Record<string, boolean>>({});
   const [busquedas, setBusquedas] = useState<Record<string, string>>({});
 
-  // Abrir todas las secciones por defecto o mantener su estado
   const toggleSeccion = (nombre: string) => {
     setSeccionesAbiertas((p) => {
       const isOculto = p[nombre] === false;
@@ -40,9 +39,14 @@ export default function FilterSidebar({
 
   const isAbierta = (nombre: string) => seccionesAbiertas[nombre] !== false; // Abiertas por defecto
 
+  const isChecked = (nombre: string, op: string) => {
+    return (filtrosActivos[nombre] || []).includes(op);
+  };
+
   const renderOpciones = (nombre: string, opciones: string[]) => {
     const q = (busquedas[nombre] || '').toLowerCase();
     const filtradas = opciones.filter(op => op.toLowerCase().includes(q));
+    const seleccionadas = filtrosActivos[nombre] || [];
 
     return (
       <div className="mt-2 flex flex-col gap-2">
@@ -63,19 +67,21 @@ export default function FilterSidebar({
             <p className="text-xs text-gray-400 italic py-1">Sin resultados</p>
           ) : (
             filtradas.map((op) => (
-              <label key={op} className="flex items-start gap-2 text-sm text-gray-600 cursor-pointer hover:text-gray-900 leading-tight">
+              <label key={op} className={`flex items-start gap-2 text-sm cursor-pointer leading-tight rounded px-1 py-0.5 transition-colors ${isChecked(nombre, op) ? 'text-brand-700 font-medium bg-brand-50' : 'text-gray-600 hover:text-gray-900'}`}>
                 <input 
-                  type="radio" 
-                  name={nombre} 
-                  checked={String(filtrosActivos[nombre]) === op} 
-                  onChange={() => onFiltroChange(nombre, String(filtrosActivos[nombre]) === op ? null : op)} 
-                  className="text-brand-600 mt-0.5" 
+                  type="checkbox" 
+                  checked={isChecked(nombre, op)} 
+                  onChange={() => onFiltroChange(nombre, op)} 
+                  className="accent-brand-600 mt-0.5 rounded" 
                 />
                 <span className="flex-1 break-words">{op}</span>
               </label>
             ))
           )}
         </div>
+        {seleccionadas.length > 1 && (
+          <p className="text-[10px] text-brand-600 font-medium">{seleccionadas.length} seleccionados</p>
+        )}
       </div>
     );
   };
@@ -110,7 +116,7 @@ export default function FilterSidebar({
             ? opcionesDinamicas[campo.nombre]
             : (campo.opciones || []);
           
-          if (opcionesBase.length === 0) return null; // No mostrar si no hay opciones en los productos actuales
+          if (opcionesBase.length === 0) return null;
 
           return (
             <div key={campo.nombre} className="border-b border-gray-100 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
