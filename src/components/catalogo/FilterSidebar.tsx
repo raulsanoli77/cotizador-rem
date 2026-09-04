@@ -104,8 +104,11 @@ export default function FilterSidebar({
 
         {/* Dinámicos */}
         {campos.map((campo) => {
-          // Extraemos las opciones desde las opciones extraídas de los productos
-          const opcionesBase = campo.tipo === 'seleccion' && campo.opciones ? campo.opciones : (opcionesDinamicas[campo.nombre] || []);
+          // Siempre preferimos las opciones dinámicas (ya vienen filtradas en cascada)
+          // Solo usamos las opciones estáticas de la categoría como fallback
+          const opcionesBase = (opcionesDinamicas[campo.nombre] && opcionesDinamicas[campo.nombre].length > 0)
+            ? opcionesDinamicas[campo.nombre]
+            : (campo.opciones || []);
           
           if (opcionesBase.length === 0) return null; // No mostrar si no hay opciones en los productos actuales
 
