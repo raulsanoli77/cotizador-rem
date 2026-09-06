@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, Plus, Edit, Trash2, Save, X, GripVertical, Settings2, Tags } from 'lucide-react';
 import Link from 'next/link';
 import { getCategoriasServer, saveCategoriaServer, deleteCategoriaServer } from './actions';
+import { supabase } from '@/lib/supabase/client';
 
 interface CampoFiltro {
   nombre: string;
@@ -20,6 +21,7 @@ interface Categoria {
   id: string;
   nombre: string;
   campos_filtro: CampoFiltro[];
+  imagen_url?: string;
 }
 
 export default function AdminCategorias() {
@@ -28,11 +30,13 @@ export default function AdminCategorias() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   
   // Estado del formulario
   const [editId, setEditId] = useState<string | null>(null);
   const [editNombre, setEditNombre] = useState('');
   const [editCampos, setEditCampos] = useState<CampoFiltro[]>([]);
+  const [editImagenUrl, setEditImagenUrl] = useState<string>('');
 
   useEffect(() => {
     fetchCategorias();
@@ -49,9 +53,31 @@ export default function AdminCategorias() {
     setLoading(false);
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      if (!e.target.files || e.target.files.length === 0) return;
+      setUploadingImage(true);
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `cat_${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const filePath = `categorias/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('media').upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('media').getPublicUrl(filePath);
+      setEditImagenUrl(data.publicUrl);
+    } catch (error: any) {
+      alert('Error al subir imagen: ' + error.message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleOpenNew = () => {
     setEditId(null);
     setEditNombre('');
+    setEditImagenUrl('');
     setEditCampos([]);
     setModalOpen(true);
   };
@@ -59,6 +85,7 @@ export default function AdminCategorias() {
   const handleOpenEdit = (cat: Categoria) => {
     setEditId(cat.id);
     setEditNombre(cat.nombre);
+    setEditImagenUrl(cat.imagen_url || '');
     // Transformamos las opciones a texto crudo para que el textarea funcione libremente
     setEditCampos((cat.campos_filtro || []).map(c => ({
       ...c,
@@ -112,7 +139,8 @@ export default function AdminCategorias() {
     try {
       await saveCategoriaServer(editId, {
         nombre: editNombre,
-        campos_filtro: camposToSave
+        campos_filtro: camposToSave,
+        imagen_url: editImagenUrl || null
       });
       await fetchCategorias();
       setModalOpen(false);
@@ -254,6 +282,33 @@ export default function AdminCategorias() {
                   onChange={e => setEditNombre(e.target.value)} 
                   placeholder="Ej. Machuelos, Insertos, Endmills..."
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-1">Imagen de la Categoría</label>
+                <div className="flex flex-col gap-3">
+                  {editImagenUrl && (
+                    <div className="h-32 w-32 relative rounded-lg border border-gray-300 overflow-hidden bg-gray-50">
+                      <img src={editImagenUrl} alt="Vista previa" className="h-full w-full object-cover" />
+                      <button
+                        onClick={() => setEditImagenUrl('')}
+                        className="absolute top-1 right-1 bg-white/80 p-1 rounded hover:bg-white text-red-500"
+                        title="Eliminar imagen"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
+                    className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 disabled:opacity-50"
+                  />
+                  {uploadingImage && <span className="text-sm text-brand-600 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Subiendo imagen...</span>}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Opcional. Si no subes una imagen, el sistema mostrará un icono por defecto.</p>
               </div>
 
               <div className="border-t border-gray-200 pt-6">

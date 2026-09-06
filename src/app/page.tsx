@@ -2,14 +2,19 @@ import Link from 'next/link';
 import { Search, FileText, Settings, ArrowRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import CategoryShowcase from '@/components/home/CategoryShowcase';
 import { createServerClient } from '@/lib/supabase/server';
 
 // Server Component
 export default async function Home() {
   const supabase = createServerClient();
   const { data } = await supabase.from('configuracion').select('valor').eq('clave', 'apariencia').single();
-  const logoUrl = data?.valor?.logo_url;
-  const titulo = data?.valor?.titulo || 'REM Industrial';
+  const apariencia = data?.valor || {};
+  const logoUrl = apariencia.logo_url;
+  const titulo = apariencia.titulo || 'REM Industrial';
+
+  // Fetch categories for the showcase
+  const { data: categorias } = await supabase.from('categorias').select('id, nombre, imagen_url').order('nombre');
 
   return (
     <div className="min-h-screen flex flex-col pt-16 bg-slate-900">
@@ -74,6 +79,8 @@ export default async function Home() {
           </div>
         </section>
         
+        <CategoryShowcase categories={categorias || []} />
+
         {/* Features Section (Dark Technical Look) */}
         <section className="py-24 px-4 bg-slate-900">
           <div className="container mx-auto max-w-6xl">

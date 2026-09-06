@@ -1,24 +1,24 @@
-# Plan: Actualización del Eslogan / Descripción de la Empresa
+# Plan: Catálogo de Categorías con Subida desde Admin
 
-## 1. Problema Actual
-El cotizador y los documentos generados utilizan el eslogan:
-*"INTEGRADOR TÉCNICO DE HERRAMIENTAS INDUSTRIALES"*
+## 1. Ajustes Solicitados
+- **Diseño en Inicio:** Mostrar exactamente **2 filas de 4 columnas** (8 categorías visibles en total) en pantallas grandes, con botón "Ver más" para el resto.
+- **Gestión de Imágenes:** Además del respaldo automático por nombre, se requiere **poder subir y cambiar la imagen desde el panel de Administración** (Sección Categorías).
 
-Esta frase ya no refleja la totalidad del catálogo de la empresa (Metrología, MRO, Abrasivos, etc.) y se busca algo más general y representativo de la industria metalmecánica.
+## 2. Estrategia Segura (Sin afectar funciones externas)
 
-## 2. Archivos Detectados
-Al buscar en el código, encontré que esta frase exacta se utiliza en 3 lugares clave del sistema de cotizaciones:
+### Fase A: Base de Datos (Supabase)
+Como actualmente la tabla `categorias` no soporta imágenes, necesitamos agregarle esa columna.
+- **Acción:** Ejecutar un comando SQL sencillo para agregar la columna `imagen_url` a la tabla `categorias`. *(Te daré el comando para que lo pegues en tu panel de Supabase).*
 
-1. **`src/app/page.tsx`**: Es el texto principal (Hero) que sale al abrir el cotizador.
-2. **`src/components/layout/Footer.tsx`**: Es la descripción que sale en la parte de abajo de todas las pantallas del cotizador.
-3. **`src/lib/pdf/quote-template.tsx`**: Es el texto que aparece impreso en los PDFs de las cotizaciones que se le mandan a los clientes.
+### Fase B: Panel de Administración (`/admin/categorias`)
+Se modificará el modal de "Nueva Categoría" y "Editar Categoría" para integrar la subida de imagen.
+- **Flujo:** Al seleccionar una imagen, el sistema la subirá al *bucket* `media` (que ya tienes configurado en Supabase) y guardará la URL pública en el campo `imagen_url` de la categoría.
+- **Precaución:** Se respetará por completo la lógica actual de "Campos Técnicos/Dinámicos" para no afectar la carga masiva ni los filtros.
 
-## 3. Cambios Propuestos
-- Sustituir la frase anterior por la nueva frase elegida por el usuario.
-- En el caso del PDF, asegurarse de que el texto nuevo quepa correctamente en el diseño de la hoja (si es muy largo, se puede ajustar el tamaño de fuente o dividir en dos líneas).
-- En el Landing Page (`page.tsx`), asegurar que el diseño responsivo se mantenga alineado con el texto más largo.
-
-## Pasos a Seguir
-1. Esperar a que el usuario confirme cuál de las opciones de redacción prefiere.
-2. Aplicar el cambio de texto en los 3 archivos mencionados.
-3. Validar el diseño visual.
+### Fase C: Página de Inicio y Componente (`CategoryShowcase`)
+- **Grid:** Usaremos `grid-cols-2 md:grid-cols-4` para garantizar que se vean 4 elementos por fila (2 filas = 8).
+- **Lógica de Imágenes (El mejor de los mundos):**
+  1. Si subiste una imagen desde el Admin (`imagen_url`), mostrará esa.
+  2. Si no has subido nada, buscará en automático (`/categorias/[nombre].png`).
+  3. Si tampoco existe, mostrará un ícono elegante temporal.
+- **Botón "Ver más":** Controlará si se muestran solo las primeras 8 o todas las categorías de la base de datos.
