@@ -24,7 +24,7 @@ export default async function Home() {
             loop
             muted
             playsInline
-            className="absolute inset-0 w-full h-full object-cover z-0 opacity-40 mix-blend-screen"
+            className="absolute inset-0 w-full h-full object-cover z-0 opacity-40 mix-blend-screen scale-[1.15]"
           >
             <source src="/hero-video.mp4" type="video/mp4" />
           </video>
