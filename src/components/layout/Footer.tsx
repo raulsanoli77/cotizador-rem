@@ -46,8 +46,7 @@ export default function Footer() {
               )}
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Integrador técnico de herramientas industriales para talleres de
-              maquinado y maquiladoras.
+              Proveedor industrial especializado en herramientas de corte, equipo de medición, herramental y suministros MRO para la industria metalmecánica y maquiladora.
             </p>
           </div>
 

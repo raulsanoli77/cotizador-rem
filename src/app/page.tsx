@@ -35,10 +35,10 @@ export default async function Home() {
               </div>
               
               <h2 className="text-3xl md:text-5xl font-extrabold mb-6 text-white tracking-tight leading-tight">
-                INTEGRADOR TÉCNICO DE <span className="text-brand-500">HERRAMIENTAS INDUSTRIALES</span>
+                PROVEEDOR INDUSTRIAL <span className="text-brand-500">ESPECIALIZADO</span>
               </h2>
               <p className="text-lg md:text-xl mb-10 text-slate-400 font-medium max-w-2xl mx-auto md:mx-0 leading-relaxed">
-                Catálogo avanzado con especificaciones técnicas precisas, disponibilidad inmediata y cotización instantánea para la industria de alto rendimiento.
+                Herramientas de corte, equipo de medición, herramental y suministros MRO para la <strong className="text-slate-300">industria metalmecánica y maquiladora</strong>. Catálogo avanzado con cotización instantánea.
               </p>
               
               <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">

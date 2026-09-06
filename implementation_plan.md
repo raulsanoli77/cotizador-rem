@@ -1,18 +1,24 @@
-# Plan: Ajuste Visual del Descargador de Plantillas
+# Plan: Actualización del Eslogan / Descripción de la Empresa
 
 ## 1. Problema Actual
-En la pantalla de "Carga Masiva", la caja de la derecha ("Instrucciones y Plantillas") tiene un ancho limitado. 
-El componente `ExcelTemplateDownloader` está programado con `flex-row` (en fila) y la lista desplegable tiene un ancho fijo (`w-48`). Al sumar el ancho del botón "Descargar", se desborda y se sale de la caja verde hacia la derecha.
+El cotizador y los documentos generados utilizan el eslogan:
+*"INTEGRADOR TÉCNICO DE HERRAMIENTAS INDUSTRIALES"*
 
-## 2. Solución Propuesta
-Dado que este componente solo se usa en esta pantalla lateral, la mejor forma de integrarlo es **apilando los elementos verticalmente** para que se adapten al 100% del ancho disponible de su contenedor verde.
+Esta frase ya no refleja la totalidad del catálogo de la empresa (Metrología, MRO, Abrasivos, etc.) y se busca algo más general y representativo de la industria metalmecánica.
 
-### Cambios en `src/components/admin/ExcelTemplateDownloader.tsx`:
-1. Cambiar el contenedor principal de `flex-row` a `flex-col` (columna).
-2. Quitar el ancho fijo `w-48` del menú desplegable y cambiarlo por `w-full`.
-3. Hacer que el botón "Descargar Plantilla" también ocupe todo el ancho (`w-full`) y centrar su contenido.
+## 2. Archivos Detectados
+Al buscar en el código, encontré que esta frase exacta se utiliza en 3 lugares clave del sistema de cotizaciones:
 
-## 3. Resultado Esperado
-- El menú de selección de categoría aparecerá arriba, ocupando el ancho de la cajita verde.
-- El botón de descargar aparecerá justo debajo, también del mismo ancho.
-- Visualmente se verá como un "Widget" muy limpio y será 100% responsive en cualquier tamaño de pantalla. No afectará a ninguna otra función.
+1. **`src/app/page.tsx`**: Es el texto principal (Hero) que sale al abrir el cotizador.
+2. **`src/components/layout/Footer.tsx`**: Es la descripción que sale en la parte de abajo de todas las pantallas del cotizador.
+3. **`src/lib/pdf/quote-template.tsx`**: Es el texto que aparece impreso en los PDFs de las cotizaciones que se le mandan a los clientes.
+
+## 3. Cambios Propuestos
+- Sustituir la frase anterior por la nueva frase elegida por el usuario.
+- En el caso del PDF, asegurarse de que el texto nuevo quepa correctamente en el diseño de la hoja (si es muy largo, se puede ajustar el tamaño de fuente o dividir en dos líneas).
+- En el Landing Page (`page.tsx`), asegurar que el diseño responsivo se mantenga alineado con el texto más largo.
+
+## Pasos a Seguir
+1. Esperar a que el usuario confirme cuál de las opciones de redacción prefiere.
+2. Aplicar el cambio de texto en los 3 archivos mencionados.
+3. Validar el diseño visual.

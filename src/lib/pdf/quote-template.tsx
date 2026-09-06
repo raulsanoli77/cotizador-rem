@@ -219,7 +219,7 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
           ) : (
             <Text style={styles.companyName}>{config.empresa.nombre}</Text>
           )}
-          <Text style={styles.tagline}>Integrador Técnico de Herramientas Industriales</Text>
+          <Text style={styles.tagline}>Especialistas en herramientas de corte, metrología y MRO para la industria metalmecánica y maquiladora.</Text>
           {config.empresa.rfc && <Text style={styles.companyDetails}>RFC: {config.empresa.rfc}</Text>}
           {config.empresa.direccion && <Text style={styles.companyDetails}>Dirección: {config.empresa.direccion}</Text>}
         </View>
