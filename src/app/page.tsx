@@ -18,48 +18,58 @@ export default async function Home() {
       <main className="flex-grow">
         {/* Hero Section (GWS Style - Dark & Technical) */}
         <section className="relative bg-slate-900 text-white overflow-hidden border-b border-slate-800">
-          {/* Fondo técnico / Patrón industrial sutil */}
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-slate-900/50"></div>
+          {/* Video Background */}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover z-0 opacity-40 mix-blend-screen"
+          >
+            <source src="/hero-video.mp4" type="video/mp4" />
+          </video>
           
-          <div className="relative container mx-auto max-w-6xl px-4 py-24 md:py-32 flex flex-col md:flex-row items-center justify-between gap-12">
+          {/* Capas oscuras para asegurar que el texto sea legible y se funda con el azul oscuro */}
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/80 to-transparent z-0"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent z-0"></div>
+          
+          <div className="relative container mx-auto max-w-6xl px-4 py-24 md:py-32 flex flex-col md:flex-row items-center justify-between gap-12 z-10">
             
             <div className="flex-1 text-center md:text-left z-10">
               {/* Logo Gigante */}
-              <div className="inline-block bg-white p-6 rounded-2xl shadow-2xl mb-8 mx-auto md:mx-0">
+              <div className="inline-block bg-white p-6 rounded-2xl shadow-2xl mb-8 mx-auto md:mx-0 relative">
                 <img 
                   src={logoUrl || '/logo-rem.png'} 
                   alt={titulo} 
-                  className="h-24 md:h-32 object-contain" 
+                  className="h-24 md:h-32 object-contain relative z-10" 
                 />
               </div>
               
-              <h2 className="text-3xl md:text-5xl font-extrabold mb-6 text-white tracking-tight leading-tight">
+              <h2 className="text-3xl md:text-5xl font-extrabold mb-6 text-white tracking-tight leading-tight relative drop-shadow-lg">
                 PROVEEDOR INDUSTRIAL <span className="text-brand-500">ESPECIALIZADO</span>
               </h2>
-              <p className="text-lg md:text-xl mb-10 text-slate-400 font-medium max-w-2xl mx-auto md:mx-0 leading-relaxed">
-                Herramientas de corte, equipo de medición, herramental y suministros MRO para la <strong className="text-slate-300">industria metalmecánica y maquiladora</strong>. Catálogo avanzado con cotización instantánea.
+              <p className="text-lg md:text-xl mb-10 text-slate-300 font-medium max-w-2xl mx-auto md:mx-0 leading-relaxed drop-shadow-md">
+                Herramientas de corte, equipo de medición, herramental y suministros MRO para la <strong className="text-white">industria metalmecánica y maquiladora</strong>. Catálogo avanzado con cotización instantánea.
               </p>
               
               <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
                 <Link 
                   href="/catalogo" 
-                  className="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 px-8 rounded-none transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
+                  className="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 px-8 rounded-none transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20 backdrop-blur-sm"
                 >
                   Ir al Catálogo <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link 
                   href="/cotizacion" 
-                  className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold py-4 px-8 rounded-none transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto bg-slate-800/80 hover:bg-slate-700/80 backdrop-blur-md text-white border border-slate-600 font-bold py-4 px-8 rounded-none transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2"
                 >
                   Cotización Rápida
                 </Link>
               </div>
             </div>
 
-            {/* Elemento Visual Decorativo a la derecha */}
-            <div className="hidden lg:flex flex-1 justify-end z-10 opacity-20">
-              <Settings className="w-96 h-96 text-brand-500 animate-[spin_120s_linear_infinite]" />
+            {/* Espacio vacío a la derecha para no tapar el modelo 3D del video */}
+            <div className="hidden lg:flex flex-1 justify-end z-10">
             </div>
           </div>
         </section>
