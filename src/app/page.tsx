@@ -18,19 +18,16 @@ export default async function Home() {
       <main className="flex-grow">
         {/* Hero Section (GWS Style - Dark & Technical) */}
         <section className="relative bg-slate-900 text-white overflow-hidden border-b border-slate-800">
-          {/* Video Background with Noise-Reduction Filters */}
+          {/* Video Background (Clean & Crisp) */}
           <video
             autoPlay
             loop
             muted
             playsInline
-            className="absolute inset-0 w-full h-full object-cover z-0 opacity-30 grayscale blur-[2px] scale-[1.35] origin-center"
+            className="absolute inset-0 w-full h-full object-cover z-0 opacity-40 mix-blend-screen scale-[1.35] origin-center"
           >
             <source src="/hero-video.mp4" type="video/mp4" />
           </video>
-          
-          {/* Patrón de puntos para enmascarar la compresión del video (dithering) */}
-          <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
           
           {/* Capas oscuras para asegurar que el texto sea legible y se funda con el azul oscuro */}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/80 to-transparent z-0"></div>
