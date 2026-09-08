@@ -185,11 +185,83 @@ export default function CatalogoPage() {
       } else {
         // Toggle on: agregar al array
         return { ...prev, [nombre]: [...actuales, valor] };
-      }
-    });
-  };
+        }
+      });
+    };
 
-  return (
+    const renderPagination = (isTop: boolean = false) => {
+      if (productos.length <= 50) return null;
+      
+      return (
+        <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${isTop ? 'border-b border-gray-200 pb-6 mb-2' : 'border-t border-gray-200 pt-6 mt-4'}`}>
+          <div className="text-sm text-gray-500">
+            Mostrando <span className="font-bold text-gray-900">{((paginaActual - 1) * 50) + 1}</span> a <span className="font-bold text-gray-900">{Math.min(paginaActual * 50, productos.length)}</span> de <span className="font-bold text-gray-900">{productos.length}</span> resultados
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                setPaginaActual(prev => Math.max(prev - 1, 1));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={paginaActual === 1}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Anterior
+            </button>
+            
+            <div className="hidden md:flex items-center gap-1">
+              {Array.from({ length: Math.ceil(productos.length / 50) }).map((_, i) => {
+                const p = i + 1;
+                const totalPages = Math.ceil(productos.length / 50);
+                
+                if (totalPages > 7) {
+                  if (
+                    p !== 1 && 
+                    p !== totalPages &&
+                    Math.abs(p - paginaActual) > 1
+                  ) {
+                    if (p === paginaActual - 2 || p === paginaActual + 2) {
+                      return <span key={p} className="px-2 text-gray-400">...</span>;
+                    }
+                    return null;
+                  }
+                }
+                
+                return (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      setPaginaActual(p);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                      paginaActual === p 
+                        ? 'bg-brand-600 text-white' 
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button 
+              onClick={() => {
+                setPaginaActual(prev => Math.min(prev + 1, Math.ceil(productos.length / 50)));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={paginaActual === Math.ceil(productos.length / 50)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    return (
     <>
       <Header />
       <main className="min-h-screen bg-gray-50 pt-20 pb-12">
@@ -257,78 +329,11 @@ export default function CatalogoPage() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-6">
+                  {renderPagination(true)}
+                  
                   <ProductGrid productos={productos.slice((paginaActual - 1) * 50, paginaActual * 50)} />
                   
-                  {/* Controles de Paginación */}
-                  {productos.length > 50 && (
-                    <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-200 pt-6 mt-4 gap-4">
-                      <div className="text-sm text-gray-500">
-                        Mostrando <span className="font-bold text-gray-900">{((paginaActual - 1) * 50) + 1}</span> a <span className="font-bold text-gray-900">{Math.min(paginaActual * 50, productos.length)}</span> de <span className="font-bold text-gray-900">{productos.length}</span> resultados
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => {
-                            setPaginaActual(prev => Math.max(prev - 1, 1));
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          disabled={paginaActual === 1}
-                          className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          Anterior
-                        </button>
-                        
-                        <div className="hidden md:flex items-center gap-1">
-                          {Array.from({ length: Math.ceil(productos.length / 50) }).map((_, i) => {
-                            const p = i + 1;
-                            const totalPages = Math.ceil(productos.length / 50);
-                            
-                            // Lógica para no mostrar 50 botones, resumir con "..."
-                            if (totalPages > 7) {
-                              if (
-                                p !== 1 && 
-                                p !== totalPages &&
-                                Math.abs(p - paginaActual) > 1
-                              ) {
-                                // Solo mostramos los elipsis una vez por lado
-                                if (p === paginaActual - 2 || p === paginaActual + 2) {
-                                  return <span key={p} className="px-2 text-gray-400">...</span>;
-                                }
-                                return null;
-                              }
-                            }
-                            
-                            return (
-                              <button
-                                key={p}
-                                onClick={() => {
-                                  setPaginaActual(p);
-                                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
-                                className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
-                                  paginaActual === p 
-                                    ? 'bg-brand-600 text-white' 
-                                    : 'text-gray-700 hover:bg-gray-100'
-                                }`}
-                              >
-                                {p}
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        <button 
-                          onClick={() => {
-                            setPaginaActual(prev => Math.min(prev + 1, Math.ceil(productos.length / 50)));
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          disabled={paginaActual === Math.ceil(productos.length / 50)}
-                          className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          Siguiente
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  {renderPagination(false)}
                 </div>
               )}
             </div>
