@@ -1,24 +1,25 @@
-# Plan: Catálogo de Categorías con Subida desde Admin
+# Plan: Paginación de Productos (50 por página)
 
-## 1. Ajustes Solicitados
-- **Diseño en Inicio:** Mostrar exactamente **2 filas de 4 columnas** (8 categorías visibles en total) en pantallas grandes, con botón "Ver más" para el resto.
-- **Gestión de Imágenes:** Además del respaldo automático por nombre, se requiere **poder subir y cambiar la imagen desde el panel de Administración** (Sección Categorías).
+## 1. El Problema Actual
+Actualmente, el sistema descarga y renderiza todos los productos de una categoría (hasta 500) en una sola lista continua. Aunque es funcional, renderizar tantos componentes visuales al mismo tiempo puede alentar el navegador (DOM overload) y hace que la página sea infinitamente larga.
 
-## 2. Estrategia Segura (Sin afectar funciones externas)
+## 2. El Reto de los Filtros Dinámicos (Muy Importante)
+No podemos simplemente decirle a la base de datos "dame solo 50" (Paginación de Servidor). Si hacemos eso, la barra lateral de filtros **se rompería**. 
+*Ejemplo:* Si filtramos "Endmills" y solo pedimos 50 a la base de datos, el menú de filtros solo mostrará los diámetros que existan en esos primeros 50. Si hay un diámetro de 3/4" en la página 2, el usuario no podría filtrarlo porque el sistema no sabría que existe.
 
-### Fase A: Base de Datos (Supabase)
-Como actualmente la tabla `categorias` no soporta imágenes, necesitamos agregarle esa columna.
-- **Acción:** Ejecutar un comando SQL sencillo para agregar la columna `imagen_url` a la tabla `categorias`. *(Te daré el comando para que lo pegues en tu panel de Supabase).*
+## 3. La Solución Óptima: Paginación en Cliente (Client-side Pagination)
+Para conservar la velocidad instantánea de los filtros y asegurar que no falten opciones, implementaremos este flujo:
 
-### Fase B: Panel de Administración (`/admin/categorias`)
-Se modificará el modal de "Nueva Categoría" y "Editar Categoría" para integrar la subida de imagen.
-- **Flujo:** Al seleccionar una imagen, el sistema la subirá al *bucket* `media` (que ya tienes configurado en Supabase) y guardará la URL pública en el campo `imagen_url` de la categoría.
-- **Precaución:** Se respetará por completo la lógica actual de "Campos Técnicos/Dinámicos" para no afectar la carga masiva ni los filtros.
+1. **Mantener la consulta general:** Seguiremos trayendo el bloque de productos (ej. 500) de la base de datos.
+2. **Filtrado cruzado intacto:** El sistema aplicará los filtros que el usuario elija sobre todos esos productos, calculando un total (ej. 150 productos coinciden).
+3. **Paginación en memoria:** Crearemos un nuevo estado `paginaActual`. Solo le pasaremos al motor visual (`ProductGrid`) un "corte" de 50 productos a la vez.
+4. **Controles de Paginación:** Agregaremos una botonera debajo de los productos con botones de "Anterior", números de página, y "Siguiente".
+5. **Reset Automático:** Cada vez que el usuario cambie de categoría, escriba en el buscador, o seleccione un filtro nuevo, la página regresará automáticamente a la "Página 1".
 
-### Fase C: Página de Inicio y Componente (`CategoryShowcase`)
-- **Grid:** Usaremos `grid-cols-2 md:grid-cols-4` para garantizar que se vean 4 elementos por fila (2 filas = 8).
-- **Lógica de Imágenes (El mejor de los mundos):**
-  1. Si subiste una imagen desde el Admin (`imagen_url`), mostrará esa.
-  2. Si no has subido nada, buscará en automático (`/categorias/[nombre].png`).
-  3. Si tampoco existe, mostrará un ícono elegante temporal.
-- **Botón "Ver más":** Controlará si se muestran solo las primeras 8 o todas las categorías de la base de datos.
+## 4. Cambios en Código
+- **`src/app/catalogo/page.tsx`:** 
+  - Agregar `const [paginaActual, setPaginaActual] = useState(1);`
+  - Cortar el arreglo: `const productosPaginados = productos.slice((paginaActual - 1) * 50, paginaActual * 50);`
+  - Mandar `productosPaginados` al `<ProductGrid>`.
+  - Crear e inyectar el componente visual de los botones de paginación al final de la lista.
+- **Sin afectar a externos:** El componente `ProductGrid` no sabrá que está paginado, solo recibirá 50 items. La lógica del carrito, PDFs y filtros queda 100% intacta.
