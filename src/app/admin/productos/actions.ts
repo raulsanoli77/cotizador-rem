@@ -34,3 +34,14 @@ export async function updateProductoServer(id: string, data: any) {
   
   return true;
 }
+
+export async function bulkDeleteProductosServer(ids: string[]) {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from('productos').delete().in('id', ids);
+  
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return true;
+}

@@ -1,25 +1,19 @@
-# Plan: Paginación de Productos (50 por página)
+# Plan: Borrado Masivo en Catálogo (Admin)
 
-## 1. El Problema Actual
-Actualmente, el sistema descarga y renderiza todos los productos de una categoría (hasta 500) en una sola lista continua. Aunque es funcional, renderizar tantos componentes visuales al mismo tiempo puede alentar el navegador (DOM overload) y hace que la página sea infinitamente larga.
+## 1. Objetivo
+Permitir la eliminación masiva de productos en el catálogo de administrador (`/admin/productos`), permitiendo que el usuario filtre (por ejemplo, busque "GWS" o seleccione los "Inactivos") y elimine rápidamente solo esa selección.
 
-## 2. El Reto de los Filtros Dinámicos (Muy Importante)
-No podemos simplemente decirle a la base de datos "dame solo 50" (Paginación de Servidor). Si hacemos eso, la barra lateral de filtros **se rompería**. 
-*Ejemplo:* Si filtramos "Endmills" y solo pedimos 50 a la base de datos, el menú de filtros solo mostrará los diámetros que existan en esos primeros 50. Si hay un diámetro de 3/4" en la página 2, el usuario no podría filtrarlo porque el sistema no sabría que existe.
+## 2. Modificaciones Técnicas (Sin afectar funciones actuales)
 
-## 3. La Solución Óptima: Paginación en Cliente (Client-side Pagination)
-Para conservar la velocidad instantánea de los filtros y asegurar que no falten opciones, implementaremos este flujo:
+### A. Archivo de Servidor (`src/app/admin/productos/actions.ts`)
+- Agregaremos una nueva función de servidor `bulkDeleteProductosServer(ids: string[])` que use `supabase` con permisos de administrador para ejecutar un borrado rápido por bloque: `.delete().in('id', ids)`.
+- Esto no rompe la lógica de creación, edición o la eliminación individual.
 
-1. **Mantener la consulta general:** Seguiremos trayendo el bloque de productos (ej. 500) de la base de datos.
-2. **Filtrado cruzado intacto:** El sistema aplicará los filtros que el usuario elija sobre todos esos productos, calculando un total (ej. 150 productos coinciden).
-3. **Paginación en memoria:** Crearemos un nuevo estado `paginaActual`. Solo le pasaremos al motor visual (`ProductGrid`) un "corte" de 50 productos a la vez.
-4. **Controles de Paginación:** Agregaremos una botonera debajo de los productos con botones de "Anterior", números de página, y "Siguiente".
-5. **Reset Automático:** Cada vez que el usuario cambie de categoría, escriba en el buscador, o seleccione un filtro nuevo, la página regresará automáticamente a la "Página 1".
-
-## 4. Cambios en Código
-- **`src/app/catalogo/page.tsx`:** 
-  - Agregar `const [paginaActual, setPaginaActual] = useState(1);`
-  - Cortar el arreglo: `const productosPaginados = productos.slice((paginaActual - 1) * 50, paginaActual * 50);`
-  - Mandar `productosPaginados` al `<ProductGrid>`.
-  - Crear e inyectar el componente visual de los botones de paginación al final de la lista.
-- **Sin afectar a externos:** El componente `ProductGrid` no sabrá que está paginado, solo recibirá 50 items. La lógica del carrito, PDFs y filtros queda 100% intacta.
+### B. Interfaz del Catálogo (`src/app/admin/productos/page.tsx`)
+1. **Estado de Selección:** Añadiremos `const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())` para llevar la cuenta de qué productos tienen la casilla de verificación (checkbox) activada.
+2. **Reinicio por Seguridad:** Si cambias lo que estás buscando en la barra de texto o cambias el filtro de estado ("Activos" a "Inactivos"), limpiaremos las selecciones para evitar que borres por accidente algo que ya no estás viendo en pantalla.
+3. **Casillas en la Tabla:** 
+   - Una casilla "Maestra" en el encabezado (titulos) que seleccionará todos los productos *actualmente filtrados* (`filtrados`).
+   - Una casilla individual por cada fila.
+4. **Botón de Acción:** Aparecerá un botón dinámico rojo (ej. "🗑 Eliminar X Seleccionados") al lado del botón de "Importar Excel" únicamente cuando tengas 1 o más productos seleccionados.
+5. **Confirmación:** Al presionar el botón de eliminar, saldrá un aviso nativo "¿Estás seguro de eliminar X productos de forma permanente?". Tras confirmar, se borrarán y la tabla se recargará automáticamente.

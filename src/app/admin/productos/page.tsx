@@ -6,11 +6,12 @@ import type { Producto } from '@/types';
 import { Loader2, Plus, Edit, Trash2, ImageIcon, Eye, Search, ChevronLeft, ChevronRight, X, Save } from 'lucide-react';
 import Link from 'next/link';
 import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
-import { toggleProductoActivoServer, deleteProductoServer, updateProductoServer } from './actions';
+import { toggleProductoActivoServer, deleteProductoServer, updateProductoServer, bulkDeleteProductosServer } from './actions';
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Filtros y Buscador
   const [busqueda, setBusqueda] = useState('');
@@ -33,6 +34,7 @@ export default function AdminProductos() {
   // Resetear página si cambian los filtros
   useEffect(() => {
     setPaginaActual(1);
+    setSelectedIds(new Set());
   }, [busqueda, filtroEstado]);
 
   const fetchProductos = async () => {
@@ -62,6 +64,19 @@ export default function AdminProductos() {
     try {
       await deleteProductoServer(id);
       setProductos(productos.filter(p => p.id !== id));
+    } catch (error: any) {
+      alert('Error al eliminar: ' + error.message);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`¿Estás seguro de eliminar permanentemente ${selectedIds.size} productos? Esta acción no se puede deshacer.`)) return;
+    
+    try {
+      await bulkDeleteProductosServer(Array.from(selectedIds));
+      setProductos(productos.filter(p => !selectedIds.has(p.id)));
+      setSelectedIds(new Set());
     } catch (error: any) {
       alert('Error al eliminar: ' + error.message);
     }
@@ -113,6 +128,14 @@ export default function AdminProductos() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
         <div className="flex gap-3">
+          {selectedIds.size > 0 && (
+            <button 
+              onClick={handleBulkDelete}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 animate-in fade-in"
+            >
+              <Trash2 className="h-4 w-4" /> Eliminar {selectedIds.size}
+            </button>
+          )}
           <Link href="/admin/productos/imagenes" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-gray-50">
             <ImageIcon className="h-4 w-4" /> Gestor Imágenes
           </Link>
@@ -162,6 +185,20 @@ export default function AdminProductos() {
             <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 w-10 text-center">
+                    <input 
+                      type="checkbox" 
+                      checked={filtrados.length > 0 && selectedIds.size === filtrados.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds(new Set(filtrados.map(p => p.id)));
+                        } else {
+                          setSelectedIds(new Set());
+                        }
+                      }}
+                      className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer w-4 h-4"
+                    />
+                  </th>
                   <th className="px-4 py-3 font-medium w-12 text-center">Img</th>
                   <th className="px-4 py-3 font-medium">SKU</th>
                   <th className="px-4 py-3 font-medium">Marca</th>
@@ -175,10 +212,23 @@ export default function AdminProductos() {
               </thead>
               <tbody className="divide-y divide-gray-200 text-sm">
                 {paginados.length === 0 ? (
-                  <tr><td colSpan={9} className="px-6 py-12 text-center text-gray-500">No se encontraron productos con estos filtros.</td></tr>
+                  <tr><td colSpan={10} className="px-6 py-12 text-center text-gray-500">No se encontraron productos con estos filtros.</td></tr>
                 ) : (
                   paginados.map((prod) => (
-                    <tr key={prod.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={prod.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(prod.id) ? 'bg-brand-50/50' : ''}`}>
+                      <td className="px-4 py-2 text-center">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedIds.has(prod.id)}
+                          onChange={(e) => {
+                            const newSet = new Set(selectedIds);
+                            if (e.target.checked) newSet.add(prod.id);
+                            else newSet.delete(prod.id);
+                            setSelectedIds(newSet);
+                          }}
+                          className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer w-4 h-4"
+                        />
+                      </td>
                       <td className="px-4 py-2 text-center">
                         {prod.imagen_url ? (
                           <img src={prod.imagen_url} alt="Thumb" className="w-8 h-8 object-contain mx-auto rounded bg-white border border-gray-200" />
