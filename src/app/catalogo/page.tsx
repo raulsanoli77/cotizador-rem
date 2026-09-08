@@ -37,6 +37,15 @@ export default function CatalogoPage() {
     }
     cargarCategorias();
 
+    // Leer la categoría inicial de la URL
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlCategoria = params.get('categoria');
+      if (urlCategoria) {
+        setCategoriaActiva(urlCategoria);
+      }
+    }
+
     // Obtener tipo de cambio
     obtenerTipoCambio().then((tc) => setTipoCambio(tc.valor));
   }, []);
@@ -189,13 +198,17 @@ export default function CatalogoPage() {
             <SearchBar onSearch={setBusqueda} />
           </div>
 
-          {/* Categorías */}
-          <div className="flex flex-wrap gap-2 mb-6">
+          {/* Categorías (Píldoras) */}
+          <div className="flex flex-wrap gap-2 mb-8">
             <button
-              onClick={() => { setCategoriaActiva(null); setFiltrosActivos({}); }}
+              onClick={() => {
+                setCategoriaActiva(null);
+                setFiltrosActivos({});
+                window.history.pushState(null, '', '/catalogo');
+              }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                !categoriaActiva
-                  ? 'bg-brand-600 text-white'
+                categoriaActiva === null
+                  ? 'bg-brand-700 text-white shadow-sm'
                   : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
               }`}
             >
@@ -204,7 +217,11 @@ export default function CatalogoPage() {
             {categorias.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => { setCategoriaActiva(cat.nombre); setFiltrosActivos({}); }}
+                onClick={() => { 
+                  setCategoriaActiva(cat.nombre); 
+                  setFiltrosActivos({}); 
+                  window.history.pushState(null, '', `/catalogo?categoria=${encodeURIComponent(cat.nombre)}`);
+                }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   categoriaActiva === cat.nombre
                     ? 'bg-brand-600 text-white'
