@@ -45,3 +45,14 @@ export async function bulkDeleteProductosServer(ids: string[]) {
   
   return true;
 }
+
+export async function bulkUpdateActivoServer(ids: string[], activo: boolean) {
+  const supabase = createAdminClient();
+  const { error } = await supabase.from('productos').update({ activo }).in('id', ids);
+  
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  return true;
+}

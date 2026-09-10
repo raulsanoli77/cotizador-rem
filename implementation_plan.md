@@ -1,19 +1,26 @@
-# Plan: Borrado Masivo en Catálogo (Admin)
+# Plan: Cambio de Estado Masivo (Activar/Desactivar)
 
 ## 1. Objetivo
-Permitir la eliminación masiva de productos en el catálogo de administrador (`/admin/productos`), permitiendo que el usuario filtre (por ejemplo, busque "GWS" o seleccione los "Inactivos") y elimine rápidamente solo esa selección.
+Aprovechar el sistema de selección múltiple (casillas) que ya existe para permitir al usuario cambiar el estado de los productos (ponerlos Inactivos o Activos) en bloque, sin tener que ir uno por uno.
 
 ## 2. Modificaciones Técnicas (Sin afectar funciones actuales)
 
 ### A. Archivo de Servidor (`src/app/admin/productos/actions.ts`)
-- Agregaremos una nueva función de servidor `bulkDeleteProductosServer(ids: string[])` que use `supabase` con permisos de administrador para ejecutar un borrado rápido por bloque: `.delete().in('id', ids)`.
-- Esto no rompe la lógica de creación, edición o la eliminación individual.
+- Crearemos una nueva acción llamada `bulkUpdateActivoServer(ids: string[], activo: boolean)`.
+- Esta función usará el comando `.update({ activo }).in('id', ids)` en la base de datos para cambiar el estado de cientos de productos en una sola petición súper rápida.
+- Esto no rompe la lógica actual de actualización individual.
 
 ### B. Interfaz del Catálogo (`src/app/admin/productos/page.tsx`)
-1. **Estado de Selección:** Añadiremos `const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())` para llevar la cuenta de qué productos tienen la casilla de verificación (checkbox) activada.
-2. **Reinicio por Seguridad:** Si cambias lo que estás buscando en la barra de texto o cambias el filtro de estado ("Activos" a "Inactivos"), limpiaremos las selecciones para evitar que borres por accidente algo que ya no estás viendo en pantalla.
-3. **Casillas en la Tabla:** 
-   - Una casilla "Maestra" en el encabezado (titulos) que seleccionará todos los productos *actualmente filtrados* (`filtrados`).
-   - Una casilla individual por cada fila.
-4. **Botón de Acción:** Aparecerá un botón dinámico rojo (ej. "🗑 Eliminar X Seleccionados") al lado del botón de "Importar Excel" únicamente cuando tengas 1 o más productos seleccionados.
-5. **Confirmación:** Al presionar el botón de eliminar, saldrá un aviso nativo "¿Estás seguro de eliminar X productos de forma permanente?". Tras confirmar, se borrarán y la tabla se recargará automáticamente.
+1. **Lógica de Front-end:**
+   - Crearemos la función `handleBulkStatusChange(nuevoEstado: boolean)`.
+   - Cuando se ejecute con éxito, actualizaremos el estado visual de la tabla (cambiarán las etiquetas verdes a grises y viceversa) sin necesidad de recargar la página, haciendo que se sienta instantáneo.
+   - Después del cambio, se limpiarán las casillas seleccionadas.
+
+2. **Nuevos Botones en la Interfaz:**
+   - Aprovechando el espacio donde aparece el botón rojo de "Eliminar", agregaremos **dos botones adicionales** (visibles solo cuando seleccionas 1 o más productos):
+     - Botón gris/amarillo: *"Desactivar X"* (Pone `activo: false`)
+     - Botón verde: *"Activar X"* (Pone `activo: true`)
+   - Se agruparán ordenadamente junto al botón de eliminar para tener un "Panel de Acciones Masivas" limpio.
+
+## 3. Seguridad
+- Mantenemos la regla de que al cambiar de pestaña (ej. de 'Todos' a 'Inactivos') o al buscar algo nuevo, las selecciones se limpian solas para evitar cambios en productos ocultos.

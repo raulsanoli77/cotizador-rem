@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import type { Producto } from '@/types';
-import { Loader2, Plus, Edit, Trash2, ImageIcon, Eye, Search, ChevronLeft, ChevronRight, X, Save } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, ImageIcon, Eye, EyeOff, Search, ChevronLeft, ChevronRight, X, Save } from 'lucide-react';
 import Link from 'next/link';
 import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
-import { toggleProductoActivoServer, deleteProductoServer, updateProductoServer, bulkDeleteProductosServer } from './actions';
+import { toggleProductoActivoServer, deleteProductoServer, updateProductoServer, bulkDeleteProductosServer, bulkUpdateActivoServer } from './actions';
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -82,6 +82,23 @@ export default function AdminProductos() {
     }
   };
 
+  const handleBulkStatusChange = async (nuevoEstado: boolean) => {
+    if (selectedIds.size === 0) return;
+    const accion = nuevoEstado ? 'activar' : 'desactivar';
+    if (!window.confirm(`¿Estás seguro de ${accion} ${selectedIds.size} productos?`)) return;
+    
+    try {
+      await bulkUpdateActivoServer(Array.from(selectedIds), nuevoEstado);
+      // Actualizar estado visual
+      setProductos(productos.map(p => 
+        selectedIds.has(p.id) ? { ...p, activo: nuevoEstado } : p
+      ));
+      setSelectedIds(new Set());
+    } catch (error: any) {
+      alert(`Error al ${accion}: ` + error.message);
+    }
+  };
+
   const handleOpenEdit = (prod: Producto) => {
     setEditForm(prod);
     setModalEditar(prod);
@@ -129,12 +146,30 @@ export default function AdminProductos() {
         <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
         <div className="flex gap-3">
           {selectedIds.size > 0 && (
-            <button 
-              onClick={handleBulkDelete}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 animate-in fade-in"
-            >
-              <Trash2 className="h-4 w-4" /> Eliminar {selectedIds.size}
-            </button>
+            <div className="flex items-center gap-2 animate-in fade-in mr-2 border-r border-gray-200 pr-4">
+              <span className="text-sm font-medium text-gray-500 mr-1 hidden sm:inline">{selectedIds.size} seleccionados:</span>
+              <button 
+                onClick={() => handleBulkStatusChange(true)}
+                className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-gray-50"
+                title="Activar seleccionados"
+              >
+                <Eye className="h-4 w-4 text-green-600" /> Activar
+              </button>
+              <button 
+                onClick={() => handleBulkStatusChange(false)}
+                className="bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-gray-50"
+                title="Desactivar seleccionados"
+              >
+                <EyeOff className="h-4 w-4 text-gray-400" /> Pausar
+              </button>
+              <button 
+                onClick={handleBulkDelete}
+                className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-red-100 ml-1"
+                title="Eliminar permanentemente"
+              >
+                <Trash2 className="h-4 w-4" /> Eliminar
+              </button>
+            </div>
           )}
           <Link href="/admin/productos/imagenes" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-gray-50">
             <ImageIcon className="h-4 w-4" /> Gestor Imágenes
