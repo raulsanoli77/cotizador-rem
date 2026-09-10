@@ -1,25 +1,30 @@
-# Plan: Expandir el Buscador a la Descripción y Medidas
+# Plan: Rediseño del Catálogo a Cuadrícula de Tarjetas Verticales
 
-## 1. Contexto Actual
-Actualmente, el buscador en `/admin/productos` solo revisa 3 campos:
-- SKU Interno
-- Número de Parte
-- Marca
+## 1. Objetivo
+Migrar la vista actual del catálogo (filas horizontales tipo lista) a una cuadrícula moderna de tarjetas verticales (Grid), tomando los elementos más limpios de Weston Tools y la estructura jerárquica de Berkshire eSupply, pero adaptándolo al estilo moderno de REM Industrial.
 
-La "Descripción" que ves en la tabla ("CORTADOR 1/64 4FL CARBURO...") no es un texto simple en la base de datos, sino que **se construye dinámicamente** uniendo las medidas, el material, el recubrimiento y el tipo (usando la función `formatearDescripcionProducto`).
+## 2. Modificaciones al Código
 
-## 2. Cambios a Realizar
+### A. Contenedor del Catálogo (`src/components/catalogo/ProductGrid.tsx`)
+- Cambiaremos el contenedor principal de una lista vertical (`flex-col`) a un **Grid responsivo**.
+- Se mostrará: 1 columna en móviles, 2 en tablets, 3 en pantallas medianas y **4 columnas en laptops/monitores grandes** (para aprovechar bien el espacio y ver muchos productos a la vez).
 
-### A. Lógica de Filtrado (`src/app/admin/productos/page.tsx`)
-- Modificaremos la constante `matchBusqueda` (que decide si un producto aparece o no al buscar).
-- Por cada producto, le pediremos al sistema que genere su descripción dinámica en texto y revise si tu búsqueda coincide con cualquier palabra dentro de ella (ej. "1/64", "TIN", "CARBURO").
-- Se sumará a la búsqueda actual, por lo que podrás seguir buscando por SKU o Marca sin problema.
+### B. Tarjeta del Producto (`src/components/catalogo/ProductCard.tsx`)
+Se reestructurará completamente el HTML interno de la tarjeta para ser vertical (`flex-col h-full`):
 
-### B. Mejora Visual (Buscador)
-- Actualizaremos el texto de fondo (placeholder) de la barra de búsqueda.
-- Pasará de: `"Buscar por SKU, Marca o No. Parte..."`
-- A: `"Buscar por SKU, Medida, Recubrimiento, Marca..."` para que cualquier administrador sepa que el buscador ahora es "inteligente".
+1. **Área de Imagen (Inspirado en Weston):**
+   - Una caja cuadrada grande y prominente en la parte superior (`aspect-square`).
+   - Fondo sutil gris claro que cambia a blanco puro al pasar el mouse.
+   - La etiqueta de la "MARCA" se colocará como una placa elegante en una de las esquinas superiores.
+
+2. **Área de Información (Inspirado en Berkshire + Estilo REM):**
+   - **No. Parte:** Será el protagonista. Letra grande, negrita y técnica (`font-mono text-lg text-brand-900`).
+   - **Descripción:** Texto en gris oscuro, siempre truncado a 2 renglones (para que todas las tarjetas midan exactamente lo mismo y no se vea una cuadrícula desordenada).
+
+3. **Área de Compra (Fija al fondo de la tarjeta):**
+   - Una línea divisoria sutil.
+   - **Precio:** Muy destacado en tamaño grande.
+   - **Controles:** El selector de cantidad `[ - | 1 | + ]` y un botón azul de "Agregar" que ahora **ocuparán todo el ancho de la tarjeta**. Esto facilita muchísimo darle clic desde el celular o con el mouse.
 
 ## 3. Seguridad
-- **Cero Riesgos en BD:** Este cambio ocurre 100% en la memoria de la página al filtrar la tabla visible. No toca funciones de borrado, no edita registros en Supabase ni rompe la paginación.
-- **Rendimiento:** La función de formateo es muy ligera, por lo que buscar entre miles de productos seguirá siendo instantáneo.
+- **Sin afectaciones lógicas:** El carrito, el modal de detalles (al hacer clic), el formateo de moneda y los filtros de la barra lateral seguirán funcionando exactamente igual, ya que solo estamos cambiando clases de CSS (Tailwind) y estructura HTML (DOM), no la lógica de la base de datos ni los estados de React.

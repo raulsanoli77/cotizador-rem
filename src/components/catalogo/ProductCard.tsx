@@ -24,64 +24,62 @@ export default function ProductCard({ producto }: ProductCardProps) {
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-slate-200 overflow-hidden group flex flex-col sm:flex-row items-center p-3 gap-4">
-        {/* Imagen (Clicable) */}
+      <div className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-200 overflow-hidden group flex flex-col h-full">
+        {/* Imagen (Clicable) - Área grande superior */}
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="h-20 w-20 sm:h-16 sm:w-16 flex-shrink-0 bg-slate-50 border border-slate-100 rounded-md flex items-center justify-center p-1 hover:border-brand-500 transition-colors cursor-pointer"
+          className="relative w-full aspect-square bg-slate-50 flex items-center justify-center p-6 border-b border-slate-100 group-hover:bg-white transition-colors cursor-pointer overflow-hidden"
         >
+          {/* Etiqueta de Marca Flotante */}
+          <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm shadow-sm border border-slate-200 px-2.5 py-1 rounded text-[10px] font-black text-brand-700 uppercase tracking-widest z-10">
+            {producto.marca}
+          </div>
+          
           {producto.imagen_url ? (
-            <img src={producto.imagen_url} alt={producto.numero_parte} className="max-h-full max-w-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform" />
+            <img src={producto.imagen_url} alt={producto.numero_parte} className="max-h-full max-w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500" />
           ) : (
-            <ShoppingCart className="h-6 w-6 text-slate-300" />
+            <ShoppingCart className="h-16 w-16 text-slate-200" />
           )}
         </button>
 
         {/* Info Principal */}
-        <div className="flex-1 min-w-0 flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded uppercase tracking-wider">{producto.marca}</span>
-              <span className="text-[10px] text-slate-400 uppercase">{producto.categoria}</span>
-            </div>
-            <button onClick={() => setIsModalOpen(true)} className="text-left group-hover:text-brand-600 transition-colors">
-              <h3 className="font-mono font-bold text-slate-900 text-base mb-1 truncate">{producto.numero_parte}</h3>
-            </button>
-            <p className="text-xs text-slate-500 leading-tight line-clamp-2">
-              {formatearDescripcionProducto(producto)}
-            </p>
-          </div>
+        <div className="p-4 flex flex-col flex-1">
+          <span className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">{producto.categoria}</span>
+          <button onClick={() => setIsModalOpen(true)} className="text-left group-hover:text-brand-600 transition-colors mb-1">
+            <h3 className="font-mono font-bold text-slate-900 text-lg sm:text-xl leading-tight truncate">{producto.numero_parte}</h3>
+          </button>
+          <p className="text-xs text-slate-500 leading-snug line-clamp-2 mb-4 flex-1" title={formatearDescripcionProducto(producto)}>
+            {formatearDescripcionProducto(producto)}
+          </p>
 
-          {/* Precio y Acción */}
-          <div className="flex sm:flex-col flex-row items-center sm:items-end justify-between w-full sm:w-auto gap-3 sm:gap-1 shrink-0">
-            <div className="text-right">
-              <span className="text-lg font-bold text-slate-900">
-                {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
-              </span>
+          {/* Pie de Tarjeta: Precio y Acciones Fijas al fondo */}
+          <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-4">
+            <div className="text-2xl font-black text-slate-900 leading-none">
+              {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
             </div>
             
-            <div className="flex items-center gap-2">
-              <div className="flex items-center border border-slate-200 rounded-md bg-white">
+            <div className="flex gap-2 w-full">
+              <div className="flex items-center justify-between border border-slate-200 rounded-lg bg-slate-50 w-24 shrink-0">
                 <button 
                   onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-                  className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-50 transition-colors"
+                  className="p-2.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
                 >
                   <Minus className="h-3 w-3" />
                 </button>
-                <span className="w-8 text-center text-sm font-semibold text-slate-700">{cantidad}</span>
+                <span className="text-sm font-semibold text-slate-700">{cantidad}</span>
                 <button 
                   onClick={() => setCantidad(cantidad + 1)}
-                  className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-50 transition-colors"
+                  className="p-2.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
                 >
                   <Plus className="h-3 w-3" />
                 </button>
               </div>
               <button
                 onClick={handleAdd}
-                className="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-md text-sm font-bold transition-colors shadow-sm"
+                className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg flex justify-center items-center font-bold text-sm transition-colors py-2 shadow-sm gap-2"
                 title="Agregar al carrito"
               >
-                Agregar
+                <ShoppingCart className="h-4 w-4" /> Agregar
               </button>
             </div>
           </div>
