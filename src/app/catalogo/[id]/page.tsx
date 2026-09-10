@@ -86,60 +86,66 @@ export default function ProductDetailPage() {
   const specsEntries = Object.entries(specs);
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        
-        {/* Botón de Regresar */}
-        <Link 
-          href="/catalogo" 
-          className="inline-flex items-center gap-2 text-slate-500 hover:text-brand-600 font-medium mb-6 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" /> Volver al catálogo
-        </Link>
+    <div className="min-h-screen bg-white">
+      {/* Barra de Navegación / Migas de Pan */}
+      <div className="bg-slate-50 border-b border-slate-200 py-4 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
+            <Link href="/catalogo" className="hover:text-brand-600 transition-colors flex items-center gap-1">
+              <ArrowLeft className="h-4 w-4" /> Catálogo
+            </Link>
+            <ChevronRight className="h-3 w-3" />
+            <span>{producto.categoria}</span>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-brand-600">{producto.marca}</span>
+          </div>
+        </div>
+      </div>
 
-        {/* Contenedor Principal (Dark/Light híbrido) */}
-        <div className="w-full bg-slate-900 shadow-2xl rounded-xl overflow-hidden flex flex-col md:flex-row">
+      <div className="max-w-7xl mx-auto py-8 lg:py-12 px-4 sm:px-6 lg:px-8">
+        
+        {/* Sección Superior: 2 Columnas */}
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 mb-16">
           
-          {/* Lado Izquierdo: Imagen Blanca */}
-          <div className="w-full md:w-5/12 bg-white p-8 md:p-12 flex items-center justify-center border-r border-slate-800 shrink-0">
+          {/* Columna Izquierda: Imagen */}
+          <div className="w-full lg:w-1/2 flex items-center justify-center bg-white border border-slate-200 rounded-3xl p-8 lg:p-16">
             {producto.imagen_url ? (
               <img 
                 src={producto.imagen_url} 
                 alt={producto.numero_parte} 
-                className="max-h-96 max-w-full object-contain drop-shadow-xl" 
+                className="max-h-[500px] max-w-full object-contain mix-blend-multiply" 
               />
             ) : (
               <div className="text-slate-300 text-center flex flex-col items-center">
-                <ShoppingCart className="h-32 w-32 mb-4 opacity-50" />
+                <ShoppingCart className="h-32 w-32 mb-4 opacity-20" />
                 <span className="text-sm font-semibold uppercase tracking-widest">Fotografía Pendiente</span>
               </div>
             )}
           </div>
 
-          {/* Lado Derecho: Info Técnica */}
-          <div className="flex-1 flex flex-col">
-            <div className="p-8 md:p-12 flex-1">
-              {/* Breadcrumbs */}
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest mb-6">
-                <span>Catálogo</span>
-                <ChevronRight className="h-3 w-3" />
-                <span>{producto.categoria}</span>
-                <ChevronRight className="h-3 w-3" />
-                <span className="text-brand-500">{producto.marca}</span>
-              </div>
+          {/* Columna Derecha: Información y Compra */}
+          <div className="w-full lg:w-1/2 flex flex-col justify-center">
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tighter leading-tight">
+              {producto.numero_parte}
+            </h1>
 
-              {/* Título Gigante */}
-              <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tighter">
-                {producto.numero_parte}
-              </h1>
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+               <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider border border-slate-200">
+                  Marca: {producto.marca}
+               </span>
+               <span className="text-sm font-mono text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-md">
+                  SKU: {producto.sku_interno || producto.id.split('-')[0]}
+               </span>
+            </div>
 
-              {/* Resumen */}
-              <p className="text-slate-400 text-base mb-10 leading-relaxed max-w-xl">
-                {formatearDescripcionProducto(producto)}
-              </p>
+            <p className="text-slate-600 text-lg mb-10 leading-relaxed max-w-2xl">
+              {formatearDescripcionProducto(producto)}
+            </p>
 
-              {/* Área de Compra */}
-              <div className="bg-slate-800/50 border border-slate-700/50 p-6 md:p-8 rounded-lg mb-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            {/* Módulo de Compra (Caja Oscura para mantener la estética REM) */}
+            <div className="bg-slate-900 rounded-2xl p-6 md:p-8 shadow-xl mt-auto">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                 <div>
                   <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Precio Unitario</p>
                   <div className="text-4xl font-black text-white flex items-baseline gap-2">
@@ -148,55 +154,57 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <div className="flex items-center bg-slate-900 border border-slate-700 rounded-md">
+                <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
+                  <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg overflow-hidden w-full sm:w-auto">
                     <button 
                       onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-                      className="p-4 text-slate-400 hover:text-white transition-colors"
+                      className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                     >
                       <Minus className="h-5 w-5" />
                     </button>
-                    <span className="w-12 text-center text-xl font-bold text-white">{cantidad}</span>
+                    <span className="w-16 text-center text-xl font-bold text-white">{cantidad}</span>
                     <button 
                       onClick={() => setCantidad(cantidad + 1)}
-                      className="p-4 text-slate-400 hover:text-white transition-colors"
+                      className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                     >
                       <Plus className="h-5 w-5" />
                     </button>
                   </div>
                   <button
                     onClick={handleAdd}
-                    className="flex-1 sm:flex-none bg-brand-600 hover:bg-brand-500 text-white px-8 py-4 rounded-md font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] flex items-center justify-center gap-2"
+                    className="w-full bg-brand-600 hover:bg-brand-500 text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] flex items-center justify-center gap-2"
                   >
-                    <ShoppingCart className="h-5 w-5" /> Agregar
+                    <ShoppingCart className="h-5 w-5" /> Agregar al carrito
                   </button>
                 </div>
               </div>
-
-              {/* Atributos Técnicos */}
-              <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-widest border-b border-slate-800 pb-4 mb-6">
-                  Especificaciones Técnicas
-                </h3>
-                
-                {specsEntries.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                    {specsEntries.map(([key, value]) => (
-                      <div key={key} className="bg-slate-800/30 border border-slate-800 p-4 rounded-lg flex flex-col">
-                        <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">{key}</span>
-                        <span className="text-sm md:text-base font-medium text-slate-200">{String(value)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-slate-500 text-sm">No hay especificaciones adicionales registradas para este producto.</p>
-                )}
-              </div>
-              
             </div>
           </div>
-
         </div>
+
+        {/* Sección Inferior: Especificaciones Técnicas (Ancho Completo) */}
+        <div className="border-t border-slate-200 pt-12 mt-12 mb-24">
+          <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-8 flex items-center gap-3">
+            Especificaciones Técnicas
+            <div className="h-1 flex-1 bg-slate-100 rounded-full"></div>
+          </h3>
+          
+          {specsEntries.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {specsEntries.map(([key, value]) => (
+                <div key={key} className="bg-slate-50 border border-slate-200 p-5 rounded-xl flex flex-col hover:border-brand-300 transition-colors">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{key}</span>
+                  <span className="text-lg font-medium text-slate-900">{String(value)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-slate-50 border border-slate-200 p-8 rounded-xl text-center">
+               <p className="text-slate-500 text-lg">No hay especificaciones adicionales registradas para este producto.</p>
+            </div>
+          )}
+        </div>
+        
       </div>
     </div>
   );
