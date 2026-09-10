@@ -1,18 +1,25 @@
-# Plan: Optimización de Espacio en Tabla (Evitar Scroll)
+# Plan: Expandir el Buscador a la Descripción y Medidas
 
-## 1. Problema Actual
-La tabla en `/admin/productos` tiene forzado un ancho mínimo de 1000 píxeles (`min-w-[1000px]`). En pantallas de laptop, sumando el menú lateral azul, la pantalla se queda sin espacio y obliga a hacer scroll horizontal. 
-Adicionalmente, el texto de la "Descripción" puede ser muy largo y empujar las demás columnas hacia afuera.
+## 1. Contexto Actual
+Actualmente, el buscador en `/admin/productos` solo revisa 3 campos:
+- SKU Interno
+- Número de Parte
+- Marca
 
-## 2. Solución (Ajustes de Diseño)
+La "Descripción" que ves en la tabla ("CORTADOR 1/64 4FL CARBURO...") no es un texto simple en la base de datos, sino que **se construye dinámicamente** uniendo las medidas, el material, el recubrimiento y el tipo (usando la función `formatearDescripcionProducto`).
 
-### A. Modificaciones en la Tabla
-- **Eliminar el ancho forzado:** Cambiaré `min-w-[1000px]` a `w-full` para que la tabla se vuelva elástica y se adapte al espacio que tienes en pantalla.
-- **Reducción de Rellenos (Padding):** Bajaré ligeramente el espacio "en blanco" entre columnas (de `px-4` a `px-2` o `px-3`) para recuperar área útil.
-- **Truncado Inteligente de Descripción:** A la columna de Descripción le agregaré la clase `truncate` con un ancho máximo. Si la descripción es larguísima, se cortará con tres puntos suspensivos ("CORTADOR 1/64 4FL..."). Si necesitas leerla completa, igual puedes usar el botón del 'Ojito' (Ver detalles).
+## 2. Cambios a Realizar
 
-### B. Modificación en Acciones
-- **Apretar botones:** Los 3 botones de la derecha (Ver, Editar, Eliminar) tendrán un espacio interno ligeramente menor para que la columna de "Acciones" ocupe menos porcentaje de la pantalla.
+### A. Lógica de Filtrado (`src/app/admin/productos/page.tsx`)
+- Modificaremos la constante `matchBusqueda` (que decide si un producto aparece o no al buscar).
+- Por cada producto, le pediremos al sistema que genere su descripción dinámica en texto y revise si tu búsqueda coincide con cualquier palabra dentro de ella (ej. "1/64", "TIN", "CARBURO").
+- Se sumará a la búsqueda actual, por lo que podrás seguir buscando por SKU o Marca sin problema.
+
+### B. Mejora Visual (Buscador)
+- Actualizaremos el texto de fondo (placeholder) de la barra de búsqueda.
+- Pasará de: `"Buscar por SKU, Marca o No. Parte..."`
+- A: `"Buscar por SKU, Medida, Recubrimiento, Marca..."` para que cualquier administrador sepa que el buscador ahora es "inteligente".
 
 ## 3. Seguridad
-Estos cambios son 100% estéticos (clases de Tailwind CSS). No afectan ni un solo proceso de bases de datos, borrado, ni filtrado.
+- **Cero Riesgos en BD:** Este cambio ocurre 100% en la memoria de la página al filtrar la tabla visible. No toca funciones de borrado, no edita registros en Supabase ni rompe la paginación.
+- **Rendimiento:** La función de formateo es muy ligera, por lo que buscar entre miles de productos seguirá siendo instantáneo.

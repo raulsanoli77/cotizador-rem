@@ -124,10 +124,14 @@ export default function AdminProductos() {
 
   // Filtrado
   const filtrados = productos.filter(p => {
+    const termino = busqueda.toLowerCase();
+    const descFormateada = formatearDescripcionProducto(p as any).toLowerCase();
+    
     const matchBusqueda = 
-      (p.sku_interno?.toLowerCase().includes(busqueda.toLowerCase()) || false) ||
-      (p.numero_parte?.toLowerCase().includes(busqueda.toLowerCase()) || false) ||
-      (p.marca?.toLowerCase().includes(busqueda.toLowerCase()) || false);
+      (p.sku_interno?.toLowerCase().includes(termino) || false) ||
+      (p.numero_parte?.toLowerCase().includes(termino) || false) ||
+      (p.marca?.toLowerCase().includes(termino) || false) ||
+      (descFormateada.includes(termino));
     
     const matchEstado = 
       filtroEstado === 'Todos' ? true : 
@@ -189,7 +193,7 @@ export default function AdminProductos() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input 
             type="text" 
-            placeholder="Buscar por SKU, Marca o No. Parte..." 
+            placeholder="Buscar por SKU, Medida, Descripción o Marca..." 
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
