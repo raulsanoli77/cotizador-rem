@@ -217,10 +217,10 @@ export default function AdminProductos() {
           <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-brand-600" /></div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[1000px]">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase tracking-wider">
-                  <th className="px-4 py-3 w-10 text-center">
+                <tr className="bg-gray-50 border-b border-gray-200 text-[11px] text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 py-3 w-10 text-center">
                     <input 
                       type="checkbox" 
                       checked={filtrados.length > 0 && selectedIds.size === filtrados.length}
@@ -234,15 +234,15 @@ export default function AdminProductos() {
                       className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer w-4 h-4"
                     />
                   </th>
-                  <th className="px-4 py-3 font-medium w-12 text-center">Img</th>
-                  <th className="px-4 py-3 font-medium">SKU</th>
-                  <th className="px-4 py-3 font-medium">Marca</th>
-                  <th className="px-4 py-3 font-medium">No. Parte</th>
-                  <th className="px-4 py-3 font-medium w-64">Descripción</th>
-                  <th className="px-4 py-3 font-medium">Categoría</th>
-                  <th className="px-4 py-3 font-medium text-right">Costo Base</th>
-                  <th className="px-4 py-3 font-medium text-center">Estado</th>
-                  <th className="px-4 py-3 font-medium text-center">Acciones</th>
+                  <th className="px-2 py-3 font-medium w-12 text-center">Img</th>
+                  <th className="px-2 py-3 font-medium">SKU</th>
+                  <th className="px-2 py-3 font-medium">Marca</th>
+                  <th className="px-2 py-3 font-medium">No. Parte</th>
+                  <th className="px-2 py-3 font-medium">Descripción</th>
+                  <th className="px-2 py-3 font-medium">Categoría</th>
+                  <th className="px-2 py-3 font-medium text-right">Costo Base</th>
+                  <th className="px-2 py-3 font-medium text-center">Estado</th>
+                  <th className="px-2 py-3 font-medium text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 text-sm">
@@ -251,7 +251,7 @@ export default function AdminProductos() {
                 ) : (
                   paginados.map((prod) => (
                     <tr key={prod.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(prod.id) ? 'bg-brand-50/50' : ''}`}>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-2 py-2 text-center">
                         <input 
                           type="checkbox" 
                           checked={selectedIds.has(prod.id)}
@@ -264,7 +264,7 @@ export default function AdminProductos() {
                           className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer w-4 h-4"
                         />
                       </td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-2 py-2 text-center">
                         {prod.imagen_url ? (
                           <img src={prod.imagen_url} alt="Thumb" className="w-8 h-8 object-contain mx-auto rounded bg-white border border-gray-200" />
                         ) : (
@@ -273,40 +273,40 @@ export default function AdminProductos() {
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-2 font-bold text-gray-900">{prod.sku_interno}</td>
-                      <td className="px-4 py-2 font-medium">{prod.marca}</td>
-                      <td className="px-4 py-2 text-brand-700 font-mono text-xs">{prod.numero_parte}</td>
-                      <td className="px-4 py-2">
-                        <div className="text-xs text-gray-600 truncate max-w-[200px] xl:max-w-[300px]" title={formatearDescripcionProducto(prod as any)}>
+                      <td className="px-2 py-2 font-bold text-gray-900">{prod.sku_interno}</td>
+                      <td className="px-2 py-2 font-medium">{prod.marca}</td>
+                      <td className="px-2 py-2 text-brand-700 font-mono text-[11px]">{prod.numero_parte}</td>
+                      <td className="px-2 py-2">
+                        <div className="text-[11px] text-gray-600 truncate max-w-[150px] lg:max-w-[200px]" title={formatearDescripcionProducto(prod as any)}>
                           {formatearDescripcionProducto(prod as any)}
                         </div>
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-2 py-2">
                         <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">{prod.categoria}</span>
                       </td>
-                      <td className="px-4 py-2 text-right font-medium">${prod.costo_base.toFixed(2)} {prod.moneda_costo}</td>
-                      <td className="px-4 py-2 text-center">
+                      <td className="px-2 py-2 text-right font-medium text-xs">${prod.costo_base.toFixed(2)} {prod.moneda_costo}</td>
+                      <td className="px-2 py-2 text-center">
                         <button
                           onClick={() => toggleActivo(prod.id, prod.activo)}
                           title="Clic para cambiar estado"
-                          className={`px-3 py-1 rounded-full text-xs font-bold transition-all border border-transparent cursor-pointer shadow-sm hover:shadow-md hover:scale-105 active:scale-95 ${
+                          className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border border-transparent cursor-pointer shadow-sm hover:shadow-md hover:scale-105 active:scale-95 ${
                             prod.activo 
-                            ? 'bg-green-100 text-green-800 hover:border-green-300' 
-                            : 'bg-red-100 text-red-800 hover:border-red-300'
+                              ? 'bg-green-100 text-green-700 hover:border-green-300' 
+                              : 'bg-gray-100 text-gray-500 hover:border-gray-300'
                           }`}
                         >
                           {prod.activo ? 'Activo' : 'Inactivo'}
                         </button>
                       </td>
-                      <td className="px-4 py-2">
-                        <div className="flex justify-center gap-2">
-                          <button onClick={() => setModalDetalles(prod)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Ver Detalles">
+                      <td className="px-2 py-2 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button onClick={() => setModalDetalles(prod)} className="p-1 text-gray-400 hover:text-brand-600 transition-colors" title="Ver Detalles">
                             <Eye className="h-4 w-4" />
                           </button>
-                          <button onClick={() => handleOpenEdit(prod)} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Editar">
+                          <button onClick={() => handleOpenEdit(prod)} className="p-1 text-gray-400 hover:text-blue-600 transition-colors" title="Editar Producto">
                             <Edit className="h-4 w-4" />
                           </button>
-                          <button onClick={() => handleDelete(prod.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar">
+                          <button onClick={() => handleDelete(prod.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors" title="Eliminar Producto">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
