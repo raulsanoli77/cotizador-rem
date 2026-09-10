@@ -142,9 +142,9 @@ export default function AdminProductos() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Catálogo de Productos</h1>
-        <div className="flex gap-3">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">Catálogo de Productos</h1>
+        <div className="flex flex-wrap items-center gap-3">
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-2 animate-in fade-in mr-2 border-r border-gray-200 pr-4">
               <span className="text-sm font-medium text-gray-500 mr-1 hidden sm:inline">{selectedIds.size} seleccionados:</span>
