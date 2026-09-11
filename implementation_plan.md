@@ -1,34 +1,23 @@
-# Plan: Refinamiento de Tarjetas y Cuadrícula
+# Plan: Corrección de Color y Rediseño Anti-Recortes
 
-## 1. Problema Actual (Análisis de Capturas)
-- **Columnas:** Al permitir 6 columnas, las tarjetas se vuelven demasiado angostas.
-- **Imagen:** La proporción `4:3` recortó demasiado el alto, haciendo que las herramientas largas (endmills) se vean minúsculas.
-- **Elementos cortados:** El botón "Agregar" y el selector de cantidad están peleando por espacio horizontal, causando que el texto se corte ("Agre...").
-- **Tipografía:** El precio y el título son demasiado grandes para el ancho actual de la tarjeta.
+## 1. Problema Actual
+- **Color Incoherente:** El botón se cambió accidentalmente a gris oscuro/negro (`bg-slate-900`), rompiendo con el esquema de colores de la marca (verde/brand).
+- **Espacio Horizontal Insuficiente:** En pantallas 16:9 con 5 columnas, el ancho interno de la tarjeta compite entre el contador de cantidad y el texto "Agregar", provocando que se vea muy apretado o se corte.
 
-## 2. Solución Propuesta (Pasos de Implementación)
+## 2. Solución Definitiva (Pasos de Implementación)
 
-### Paso 1: Fijar a 5 Columnas Máximo
-- **Archivo:** `src/components/catalogo/ProductGrid.tsx`
-- **Cambio:** Eliminar `2xl:grid-cols-6`. La cuadrícula será: `grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5`.
-- **Beneficio:** Las tarjetas serán más anchas, dándole espacio a los botones para respirar.
-
-### Paso 2: Aumentar la Imagen (Punto Medio)
+### Paso 1: Restaurar el Color de Marca
 - **Archivo:** `src/components/catalogo/ProductCard.tsx`
-- **Cambio:** Cambiar `aspect-[4/3]` a `aspect-[5/4]`.
-- **Beneficio:** Es un punto medio perfecto. Es más alto que el 4:3 (las fotos se verán más grandes y claras), pero sigue siendo más compacto que el cuadro 1:1 original. Además, reduciremos el padding interno de `p-6` a `p-4` para que la imagen aproveche todo el borde.
+- **Cambio:** Reemplazar `bg-slate-900` por `bg-brand-600 hover:bg-brand-700`.
+- **Beneficio:** El botón volverá a respetar el color temático global configurable desde el panel de administración.
 
-### Paso 3: Rediseño Responsivo de Botones y Textos
-- **Archivo:** `src/components/catalogo/ProductCard.tsx`
-- **Cambio en Tipografía:**
-  - Reducir título de `text-lg sm:text-xl` a `text-base font-bold`.
-  - Reducir precio de `text-2xl` a `text-xl`.
-- **Cambio en Botones (Crucial):**
-  - Reducir el ancho del contador de cantidad de `w-24` a `w-20` (más compacto).
-  - Hacer que el botón "Agregar" use `flex-1` (toma el resto del espacio disponible automáticamente), reduciendo su padding horizontal y tamaño de fuente (`text-sm`) para garantizar que la palabra "Agregar" **nunca** se corte.
-  - Para pantallas *extremadamente* angostas, usaremos `flex-wrap` para que, si no caben, el botón baje ordenadamente sin romperse.
-
-## 3. Sugerencia Adicional de Diseño
-
-> [!TIP]
-> **Ocultar el texto en móviles pequeños:** En pantallas muy chiquitas (celulares en vertical), la palabra "Agregar" suele estorbar. Sugiero que en móviles solo se vea el **ícono del carrito** en el botón, y en tablets/escritorio sí diga "Agregar". ¿Te parece bien implementarlo así para hacerlo 100% a prueba de recortes? Por ahora, aplicaré el auto-ajuste de texto para escritorio como pediste.
+### Paso 2: Nuevo Acomodo "Cero Recortes" (Full-Width Button)
+- **Problema de raíz:** Poner el precio, el contador de cantidad y el botón de agregar en líneas horizontales paralelas causa conflictos de espacio.
+- **Cambio de Layout:** 
+  Vamos a reestructurar el pie de la tarjeta para usar **dos líneas verticales** en lugar de amontonarlo todo horizontalmente:
+  - **Línea Superior:** El Precio alineado a la izquierda, y el Contador de Cantidad alineado a la derecha. (Aprovechamos el espacio muerto junto al precio).
+  - **Línea Inferior:** El botón de "Agregar" abarcará el **100% del ancho** de la tarjeta.
+- **Beneficio:** 
+  1. El botón de Agregar jamás se volverá a cortar, sin importar qué tan delgada sea la columna, porque tiene toda la tarjeta para sí mismo.
+  2. Es una práctica estándar en e-commerce (como Amazon o MercadoLibre) tener el botón de acción principal a todo lo ancho.
+  3. No aumentaremos casi nada la altura de la tarjeta porque estamos subiendo el contador al lado del precio.

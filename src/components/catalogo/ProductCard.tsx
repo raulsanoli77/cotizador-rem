@@ -59,35 +59,35 @@ export default function ProductCard({ producto, marcaLogoUrl }: ProductCardProps
 
         {/* Pie de Tarjeta: Precio y Acciones Fijas al fondo */}
         <div className="mt-auto pt-3 border-t border-slate-100 flex flex-col gap-3">
-          <div className="text-xl font-black text-slate-900 leading-none">
-            {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
-          </div>
-          
-          <div className="flex gap-1.5 w-full">
-            <div className="flex items-center justify-between border border-slate-200 rounded-lg bg-slate-50 w-20 shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-xl font-black text-slate-900 leading-none truncate">
+              {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
+            </div>
+            
+            <div className="flex items-center justify-between border border-slate-200 rounded-lg bg-slate-50 w-[76px] shrink-0">
               <button 
                 onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-                className="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
               >
                 <Minus className="h-3 w-3" />
               </button>
               <span className="text-sm font-semibold text-slate-700">{cantidad}</span>
               <button 
                 onClick={() => setCantidad(cantidad + 1)}
-                className="p-2 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
               >
                 <Plus className="h-3 w-3" />
               </button>
             </div>
-            
-            <button 
-              onClick={handleAdd}
-              className="flex-1 bg-slate-900 hover:bg-brand-600 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 transition-colors active:scale-95 shadow-sm py-2 px-2"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              <span className="text-xs sm:text-sm font-bold hidden sm:inline">Agregar</span>
-            </button>
           </div>
+          
+          <button 
+            onClick={handleAdd}
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-sm py-2 px-4"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            <span className="text-sm font-bold">Agregar</span>
+          </button>
         </div>
       </div>
     </div>
