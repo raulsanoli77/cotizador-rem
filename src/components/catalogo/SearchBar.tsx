@@ -13,9 +13,7 @@ export default function SearchBar({ onSearch, placeholder = 'Buscar por número 
   const [query, setQuery] = useState(initialValue);
 
   useEffect(() => {
-    if (initialValue) {
-      setQuery(initialValue);
-    }
+    setQuery(initialValue);
   }, [initialValue]);
 
   const handleSubmit = (e: React.FormEvent) => {

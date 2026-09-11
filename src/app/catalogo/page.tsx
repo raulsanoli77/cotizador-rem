@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductGrid from '@/components/catalogo/ProductGrid';
@@ -29,6 +29,7 @@ export default function CatalogoPage() {
 
   // Moneda de venta por defecto MXN
   const monedaVenta = 'MXN' as const;
+  const autoCheckDone = useRef(false);
 
   // Cargar categorías al montar
   useEffect(() => {
@@ -169,24 +170,80 @@ export default function CatalogoPage() {
         
         // 3. Extraer opciones dinámicas en cascada (Filtros cruzados)
         const opcionesExtraidas: Record<string, string[]> = {};
+        
+        // Determinar qué campos de filtro usar
+        let camposParaFiltrar: CampoFiltro[] = [];
         if (categoriaActiva) {
           const cat = categorias.find((c) => c.nombre === categoriaActiva);
-          if (cat && cat.campos_filtro) {
-            cat.campos_filtro.forEach(campo => {
-              const valoresUnicos = new Set<string>();
-              productosConPrecio.forEach(prod => {
-                // Evaluamos si el producto cumple con TODOS los demás filtros
-                if (cumpleFiltrosCruzados(prod, campo.nombre)) {
-                  if (prod.especificaciones_tecnicas && prod.especificaciones_tecnicas[campo.nombre]) {
-                    valoresUnicos.add(String(prod.especificaciones_tecnicas[campo.nombre]));
-                  }
+          camposParaFiltrar = cat?.campos_filtro || [];
+        } else {
+          // "Todas": extraer campos dinámicamente de TODOS los productos
+          const clavesUnicas = new Set<string>();
+          productosConPrecio.forEach(prod => {
+            if (prod.especificaciones_tecnicas) {
+              Object.keys(prod.especificaciones_tecnicas).forEach(k => clavesUnicas.add(k));
+            }
+          });
+          camposParaFiltrar = Array.from(clavesUnicas).sort().map(k => ({
+            nombre: k,
+            tipo: 'seleccion' as const,
+            opciones: [],
+          }));
+        }
+
+        // Actualizar camposFiltro
+        setCamposFiltro(camposParaFiltrar);
+
+        // Extraer opciones para cada campo
+        camposParaFiltrar.forEach(campo => {
+          const valoresUnicos = new Set<string>();
+          productosConPrecio.forEach(prod => {
+            if (cumpleFiltrosCruzados(prod, campo.nombre)) {
+              if (prod.especificaciones_tecnicas && prod.especificaciones_tecnicas[campo.nombre]) {
+                valoresUnicos.add(String(prod.especificaciones_tecnicas[campo.nombre]));
+              }
+            }
+          });
+          opcionesExtraidas[campo.nombre] = Array.from(valoresUnicos).sort();
+        });
+
+        setOpcionesDinamicas(opcionesExtraidas);
+
+        // 4. Auto-seleccionar filtros coincidentes desde la búsqueda
+        if (terminoBusqueda && !autoCheckDone.current) {
+          const nuevosChecks: Record<string, string[]> = { ...filtrosActivos };
+          let huboCoincidencia = false;
+
+          camposParaFiltrar.forEach(campo => {
+            const opciones = opcionesExtraidas[campo.nombre] || [];
+            opciones.forEach(op => {
+              if (op.toLowerCase() === terminoBusqueda) {
+                const actuales = nuevosChecks[campo.nombre] || [];
+                if (!actuales.includes(op)) {
+                  nuevosChecks[campo.nombre] = [...actuales, op];
+                  huboCoincidencia = true;
                 }
-              });
-              opcionesExtraidas[campo.nombre] = Array.from(valoresUnicos).sort();
+              }
             });
+          });
+
+          // También verificar marcas
+          Array.from(marcasUnicas).forEach(marca => {
+            if (marca.toLowerCase() === terminoBusqueda) {
+              const actuales = nuevosChecks['marca'] || [];
+              if (!actuales.includes(marca)) {
+                nuevosChecks['marca'] = [...actuales, marca];
+                huboCoincidencia = true;
+              }
+            }
+          });
+
+          if (huboCoincidencia) {
+            autoCheckDone.current = true;
+            setFiltrosActivos(nuevosChecks);
+            setBusqueda('');
           }
         }
-        setOpcionesDinamicas(opcionesExtraidas);
       }
 
       setLoading(false);
@@ -194,16 +251,6 @@ export default function CatalogoPage() {
 
     cargarProductos();
   }, [categoriaActiva, busqueda, filtrosActivos, tipoCambio, monedaVenta, categorias, orden]);
-
-  // Actualizar campos de filtro cuando cambia la categoría
-  useEffect(() => {
-    if (categoriaActiva) {
-      const cat = categorias.find((c) => c.nombre === categoriaActiva);
-      setCamposFiltro(cat?.campos_filtro || []);
-    } else {
-      setCamposFiltro([]);
-    }
-  }, [categoriaActiva, categorias]);
 
   const handleFiltroChange = (nombre: string, valor: string) => {
     setFiltrosActivos((prev) => {
@@ -329,7 +376,7 @@ export default function CatalogoPage() {
           {/* Título y búsqueda */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Catálogo de Herramientas</h1>
-            <SearchBar onSearch={setBusqueda} />
+            <SearchBar onSearch={(q) => { setBusqueda(q); autoCheckDone.current = false; }} initialValue={busqueda} />
           </div>
 
           {/* Categorías (Píldoras) */}
@@ -338,6 +385,8 @@ export default function CatalogoPage() {
               onClick={() => {
                 setCategoriaActiva(null);
                 setFiltrosActivos({});
+                setBusqueda('');
+                autoCheckDone.current = false;
                 window.history.pushState(null, '', '/catalogo');
               }}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
@@ -354,6 +403,8 @@ export default function CatalogoPage() {
                 onClick={() => { 
                   setCategoriaActiva(cat.nombre); 
                   setFiltrosActivos({}); 
+                  setBusqueda('');
+                  autoCheckDone.current = false;
                   window.history.pushState(null, '', `/catalogo?categoria=${encodeURIComponent(cat.nombre)}`);
                 }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
@@ -367,15 +418,42 @@ export default function CatalogoPage() {
             ))}
           </div>
 
+          {/* Chips de Filtros Activos */}
+          {(Object.keys(filtrosActivos).length > 0 || busqueda) && (
+            <div className="flex flex-wrap items-center gap-2 mb-6">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mr-1">Filtros:</span>
+              {busqueda && (
+                <span className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 border border-brand-200 px-3 py-1 rounded-full text-xs font-medium">
+                  Búsqueda: &quot;{busqueda}&quot;
+                  <button onClick={() => { setBusqueda(''); autoCheckDone.current = false; }} className="ml-1 text-brand-400 hover:text-brand-700 font-bold text-sm">×</button>
+                </span>
+              )}
+              {Object.entries(filtrosActivos).map(([key, valores]) =>
+                valores.map(v => (
+                  <span key={`${key}-${v}`} className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full text-xs font-medium">
+                    {key.replace(/_/g, ' ')}: {v}
+                    <button onClick={() => handleFiltroChange(key, v)} className="ml-1 text-slate-400 hover:text-slate-700 font-bold text-sm">×</button>
+                  </span>
+                ))
+              )}
+              <button 
+                onClick={() => { setFiltrosActivos({}); setBusqueda(''); autoCheckDone.current = false; }}
+                className="text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-wider ml-2 hover:underline"
+              >
+                Limpiar Todo
+              </button>
+            </div>
+          )}
+
           {/* Contenido: Filtros + Grid */}
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Sidebar de filtros (solo si hay categoría seleccionada) */}
-            {categoriaActiva && camposFiltro.length > 0 && (
+            {/* Sidebar de filtros (siempre visible cuando hay campos) */}
+            {camposFiltro.length > 0 && (
               <FilterSidebar
                 campos={camposFiltro}
                 filtrosActivos={filtrosActivos}
                 onFiltroChange={handleFiltroChange}
-                onLimpiarFiltros={() => setFiltrosActivos({})}
+                onLimpiarFiltros={() => { setFiltrosActivos({}); setBusqueda(''); autoCheckDone.current = false; }}
                 marcas={marcasDisponibles}
                 opcionesDinamicas={opcionesDinamicas}
               />

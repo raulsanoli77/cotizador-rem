@@ -64,7 +64,7 @@ export default function Header() {
                 type="text" 
                 value={headerBusqueda}
                 onChange={(e) => setHeaderBusqueda(e.target.value)}
-                placeholder="Buscar por nmero de parte, marca o descripcin..." 
+                placeholder="Buscar por número de parte, marca o descripción..." 
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
               />
               <button type="submit" className="hidden">Buscar</button>
