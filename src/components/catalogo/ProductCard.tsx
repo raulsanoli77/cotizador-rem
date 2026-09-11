@@ -48,23 +48,25 @@ export default function ProductCard({ producto, marcaLogoUrl }: ProductCardProps
       </Link>
 
       {/* Info Principal */}
-      <div className="p-4 flex flex-col flex-1">
-        <span className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">{producto.categoria}</span>
+      <div className="p-3 sm:p-4 flex flex-col flex-1">
+        <span className="text-[10px] text-brand-600 font-bold uppercase tracking-wider mb-1">{producto.categoria}</span>
         <Link href={`/catalogo/${producto.id}`} className="text-left group-hover:text-brand-600 transition-colors mb-1 block">
           <h3 className="font-mono font-bold text-slate-900 text-base leading-tight truncate">{producto.numero_parte}</h3>
         </Link>
-        <p className="text-xs text-slate-500 leading-snug line-clamp-2 mb-4 flex-1" title={formatearDescripcionProducto(producto)}>
+        <p className="text-xs text-slate-500 leading-snug line-clamp-2 mb-3 flex-1" title={formatearDescripcionProducto(producto)}>
           {formatearDescripcionProducto(producto)}
         </p>
 
-        {/* Pie de Tarjeta: Precio y Acciones Fijas al fondo */}
-        <div className="mt-auto pt-3 border-t border-slate-100 flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-xl font-black text-slate-900 leading-none truncate">
-              {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
-            </div>
-            
-            <div className="flex items-center justify-between border border-slate-200 rounded-lg bg-slate-50 w-[76px] shrink-0">
+        {/* Pie de Tarjeta: Precio Arriba, Controles Abajo */}
+        <div className="mt-auto pt-3 border-t border-slate-100 flex flex-col gap-2.5">
+          
+          <div className="text-lg sm:text-xl font-black text-slate-900 leading-none truncate">
+            ${producto.precio_venta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <span className="text-xs sm:text-sm text-slate-500 font-bold ml-1">{producto.moneda_venta}</span>
+          </div>
+          
+          <div className="flex gap-1.5 w-full">
+            <div className="flex items-center justify-between border border-slate-200 rounded-lg bg-slate-50 w-[72px] shrink-0">
               <button 
                 onClick={() => setCantidad(Math.max(1, cantidad - 1))}
                 className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
@@ -79,15 +81,15 @@ export default function ProductCard({ producto, marcaLogoUrl }: ProductCardProps
                 <Plus className="h-3 w-3" />
               </button>
             </div>
+            
+            <button 
+              onClick={handleAdd}
+              className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 transition-colors active:scale-95 shadow-sm py-2 px-1"
+            >
+              <ShoppingCart className="h-4 w-4 shrink-0" />
+              <span className="text-[11px] sm:text-sm font-bold truncate">Agregar</span>
+            </button>
           </div>
-          
-          <button 
-            onClick={handleAdd}
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors active:scale-95 shadow-sm py-2 px-4"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            <span className="text-sm font-bold">Agregar</span>
-          </button>
         </div>
       </div>
     </div>
