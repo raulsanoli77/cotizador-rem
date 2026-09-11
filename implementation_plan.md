@@ -1,30 +1,23 @@
-# Plan: Reversión al Diseño Anterior y Optimización de Espacios
+# Plan: Ajuste Micrométrico de Controles (Ultra-Compacto)
 
-## 1. Problema Actual (Retroalimentación)
-- **Recorte de Precio:** Al intentar apilar cantidad y precio en la misma línea horizontal, el precio se corta debido a la falta de espacio en tarjetas angostas.
-- **Preferencia de Layout:** El usuario prefiere el diseño original donde el "Precio" tiene su propia línea, y en la línea de abajo conviven el "Contador" y el botón "Agregar".
-- **Botón Cortado (Original):** El botón "Agregar" seguía viéndose apretado en la versión original junto al contador.
-- **Detalles Estéticos:** Falta el acento de color verde en texto para dar contraste, y los precios deben verse más limpios (solo 2 decimales sin la extensión "MXN").
+## 1. Problema Restante
+- En el monitor panorámico (donde caben 5 columnas con márgenes), los botones siguen peleando por espacio horizontal, ocasionando que la palabra "Agregar" se corte ("Agrega") en resoluciones donde las tarjetas se hacen muy delgadas justo antes del quiebre responsivo.
 
-## 2. Solución y Ajustes (Pasos de Implementación)
+## 2. Solución: Layout Ultra-Compacto
 
-### Paso 1: Optimización de la Cuadrícula para Ganar Espacio
-- **Archivo:** `src/components/catalogo/ProductGrid.tsx`
-- **Cambio:** Reducir la separación entre tarjetas (`gap-6` a `gap-3 sm:gap-4`).
-- **Beneficio:** Al reducir el hueco "muerto" entre tarjetas, cada tarjeta gana valiosos píxeles de ancho, lo que le da más espacio a los botones interiores sin tener que reducir el número de columnas (se mantienen 5 máximo).
+### Ajustes en la Caja de Cantidad:
+- **Reducción de ancho:** Cambiamos de `w-[72px]` a `w-[64px]`.
+- **Reducción de texto:** El número de cantidad pasa de `text-sm` a `text-xs`.
+- **Botones interiores:** Reducimos ligeramente el padding (`px-1.5 py-1.5`) manteniendo el área táctil funcional.
 
-### Paso 2: Revertir Layout de Tarjeta y Ajustar Botones
-- **Archivo:** `src/components/catalogo/ProductCard.tsx`
-- **Cambios de Layout:**
-  1. Devolver el **Precio** a su propia línea superior (nunca se cortará).
-  2. Colocar el **Contador** y el botón **Agregar** juntos en la línea inferior (como te gustaba).
-  3. Hacer el contador ligeramente más angosto (`w-[72px]` en lugar de `w-20`) y el botón `flex-1` con padding reducido (`px-1`). Además, usar la propiedad `truncate` y un tamaño de letra adaptativo (`text-[11px] sm:text-sm`) para que la palabra "Agregar" se encoja inteligentemente en lugar de romperse o desaparecer.
+### Ajustes en el Botón "Agregar":
+- **Icono más sutil:** Reducimos el carrito de `h-4 w-4` a `h-3.5 w-3.5`.
+- **Texto estricto:** Fijamos el texto en `text-[11px]` (muy compacto pero legible) y eliminamos la regla `sm:text-sm` (que era la culpable de que la letra se agrandara y se cortara en el monitor grande).
+- **Separación (Gap):** Bajamos el margen entre el icono y la letra a `gap-1` para exprimir cada píxel útil.
 
-### Paso 3: Detalles Estéticos (Color y Precio Limpio)
-- **Archivo:** `src/components/catalogo/ProductCard.tsx`
-- **Cambio de Color:** El nombre de la **Categoría** pasará de ser gris a color **verde marca** (`text-brand-600 font-bold`). Esto da el contraste sutil y elegante que solicitaste.
-- **Cambio de Precio:** Modificaremos la visualización para imprimir directamente el precio con formato numérico a 2 decimales (`$326.89`), omitiendo el texto "MXN" para que se vea ultra limpio y ahorre espacio visual.
+### Previos Ya Aplicados y Comprobados:
+- El precio ya tiene la estructura "192.14" en grande y "MXN" en pequeño.
+- El color verde ya está aplicado al nombre de la categoría para dar un contraste sutil (si no lo has visto, asegúrate de refrescar la página).
 
 ## 3. Seguridad
-- Las funciones de agregar al carrito y cálculos internos se mantienen intactas. 
-- Los cambios son de distribución CSS (flexbox) para maximizar la usabilidad en espacios pequeños.
+- Ninguna función de cálculo o base de datos se ve alterada. Estos cambios son puramente micrométricos en las clases de Tailwind CSS para garantizar que el diseño "viejito" (lado a lado) funcione perfectamente sin romperse jamás en 5 columnas.
