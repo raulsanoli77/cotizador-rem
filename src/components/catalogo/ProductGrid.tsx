@@ -3,9 +3,10 @@ import ProductCard from './ProductCard';
 
 interface ProductGridProps {
   productos: ProductoConPrecio[];
+  marcasLogos?: Record<string, string>;
 }
 
-export default function ProductGrid({ productos }: ProductGridProps) {
+export default function ProductGrid({ productos, marcasLogos = {} }: ProductGridProps) {
   if (productos.length === 0) {
     return (
       <div className="text-center py-16">
@@ -17,7 +18,7 @@ export default function ProductGrid({ productos }: ProductGridProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {productos.map((producto) => (
-        <ProductCard key={producto.id} producto={producto} />
+        <ProductCard key={producto.id} producto={producto} marcaLogoUrl={marcasLogos[producto.marca]} />
       ))}
     </div>
   );

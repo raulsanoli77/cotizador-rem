@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { LayoutDashboard, Package, UploadCloud, Users, Settings, LogOut, Loader2, Tags } from 'lucide-react';
+import { LayoutDashboard, Package, UploadCloud, Users, Settings, LogOut, Loader2, Tags, Award } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -60,6 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const menu = [
     { name: 'Catálogo', icon: Package, href: '/admin/productos' },
     { name: 'Categorías', icon: Tags, href: '/admin/categorias' },
+    { name: 'Marcas', icon: Award, href: '/admin/marcas' },
     { name: 'Carga Masiva', icon: UploadCloud, href: '/admin/carga-masiva' },
     { name: 'Leads B2B', icon: Users, href: '/admin/leads' },
     { name: 'Configuración', icon: Settings, href: '/admin/config' },

@@ -17,6 +17,7 @@ export default function ProductDetailPage() {
   const id = params.id as string;
   
   const [producto, setProducto] = useState<ProductoConPrecio | null>(null);
+  const [marcaLogoUrl, setMarcaLogoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [cantidad, setCantidad] = useState(1);
   const agregarItem = useCartStore((s) => s.agregarItem);
@@ -38,6 +39,12 @@ export default function ProductDetailPage() {
           return;
         }
 
+        // Obtener logo de marca si existe
+        const { data: configData } = await supabase.from('configuracion').select('valor').eq('clave', 'marcas_logos').single();
+        if (configData?.valor && configData.valor[prodData.marca]) {
+          setMarcaLogoUrl(configData.valor[prodData.marca]);
+        }
+
         // Calcular precio final
         const tipoCambioCache = await obtenerTipoCambio();
         const resultado = calcularPrecioVenta(
@@ -52,10 +59,9 @@ export default function ProductDetailPage() {
           precio_venta: resultado.precioVenta,
           moneda_venta: resultado.monedaVenta,
           formula_aplicada: resultado.formulaAplicada
-        } as ProductoConPrecio);
-      } catch (error) {
-        console.error('Error al cargar producto:', error);
-        router.push('/catalogo');
+        });
+      } catch (err) {
+        console.error('Error cargando producto:', err);
       } finally {
         setLoading(false);
       }
@@ -131,10 +137,16 @@ export default function ProductDetailPage() {
             </h1>
 
             <div className="flex flex-wrap items-center gap-3 mb-6">
-               <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider border border-slate-200">
-                  Marca: {producto.marca}
-               </span>
-               <span className="text-sm font-mono text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-md">
+               {marcaLogoUrl ? (
+                 <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-md flex items-center h-8" title={`Marca: ${producto.marca}`}>
+                   <img src={marcaLogoUrl} alt={producto.marca} className="h-full object-contain mix-blend-multiply" />
+                 </div>
+               ) : (
+                 <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider border border-slate-200 flex items-center h-8">
+                    Marca: {producto.marca}
+                 </span>
+               )}
+               <span className="text-sm font-mono text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-md h-8 flex items-center">
                   SKU: {producto.sku_interno || producto.id.split('-')[0]}
                </span>
             </div>

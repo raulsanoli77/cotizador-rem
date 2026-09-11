@@ -1,28 +1,21 @@
-# Plan: Agregar Filtro de Ordenamiento por Precio
+# Plan: Módulo de Marcas y Logos
 
-## 1. Problema Actual
-El catálogo muestra los resultados basándose únicamente en cómo vienen ordenados de la base de datos (por Marca/Número de parte). No existe forma de ordenar herramientas buscando la opción más barata o la de mayor precio.
+## 1. Almacenamiento (Base de Datos)
+- Usaremos la tabla existente de `configuracion` (donde ya guardas los colores y logos) para crear un nuevo registro de `marcas_logos`.
+- Esto nos evitará tener que modificar los 20,000 productos. Solo asociaremos el nombre de texto (ej. "GWS") con la imagen correspondiente.
 
-## 2. Pasos de Implementación
+## 2. Panel de Administración (`/admin/marcas`)
+- Se creará una nueva pantalla en tu panel de control dedicada exclusivamente a las Marcas.
+- Podrás presionar "Agregar Marca", escribir el nombre exactamente como aparece en el catálogo (ej. "GWS") y subir la imagen de su logo.
+- El sistema subirá las imágenes al mismo almacenamiento seguro que ya usamos (`media`) y las vinculará automáticamente a todas las herramientas que compartan ese nombre.
 
-### A. Gestión de Estado (Memoria)
-- Se agregará una nueva variable al componente principal del catálogo: `orden`.
-- Valores posibles: `'relevancia'` (por defecto), `'precio_asc'` (menor a mayor), y `'precio_desc'` (mayor a menor).
+## 3. Carrusel de Marcas (Pantalla Principal)
+- Justo debajo de la sección "Nuestras Categorías", agregaré una nueva tira visual llamada **"Nuestras Marcas"**.
+- Todas las marcas a las que les hayas subido un logo en el administrador aparecerán aquí con un diseño elegante, resaltando la calidad comercial de REM.
 
-### B. Modificación de la Barra Superior de la Cuadrícula
-- Actualmente, la barra que dice "Mostrando X resultados" desaparece si hay menos de 50 productos.
-- La vamos a separar para que **siempre sea visible**.
-- Del lado izquierdo dirá el número de resultados (ej. "Mostrando 12 resultados").
-- Del lado derecho agregaremos un menú desplegable elegante (Dropdown):
-  - "Relevancia"
-  - "Precio: Menor a Mayor"
-  - "Precio: Mayor a Menor"
+## 4. Integración en el Catálogo y Producto
+- **Tarjetas de Producto (Grid):** En lugar de que aparezca la "píldora" gris con el nombre de la marca en texto, aparecerá el logo visual de la marca en la esquina superior de la tarjeta (tal como en la imagen de ejemplo que subiste).
+- **Detalle de Producto (`/catalogo/[id]`):** Al abrir una broca específica, el logo también se mostrará grande y profesional en la sección de especificaciones técnicas o encabezado de la herramienta.
 
-### C. Lógica de Ordenamiento
-- Dentro del algoritmo que filtra y busca los productos, justo antes de enviarlos a la pantalla, interceptaremos la lista completa.
-- Si el usuario selecciona "Menor a Mayor", ejecutaremos una función `.sort()` que comparará el `precio_venta` calculado de cada herramienta y pondrá las baratas al inicio.
-- Al cambiar esta opción, automáticamente regresaremos al usuario a la Página 1 para evitar errores de navegación.
-
-## 3. Seguridad
-- **Calculo de Precios:** El ordenamiento tomará en cuenta el precio *final* de venta ya procesado (después de conversiones de tipo de cambio USD/MXN y recargos), garantizando que el orden sea matemáticamente exacto para el cliente.
-- **Paginación:** No romperá la división de 50 ítems por página.
+## 5. Prevención de Errores
+- Si un producto pertenece a una marca a la cual aún no le subes su logo, el sistema seguirá mostrando el texto normal (como "OSG") para que nunca quede vacío.

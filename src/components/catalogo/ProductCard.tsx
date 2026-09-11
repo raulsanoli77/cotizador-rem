@@ -10,9 +10,10 @@ import Link from 'next/link';
 
 interface ProductCardProps {
   producto: ProductoConPrecio;
+  marcaLogoUrl?: string;
 }
 
-export default function ProductCard({ producto }: ProductCardProps) {
+export default function ProductCard({ producto, marcaLogoUrl }: ProductCardProps) {
   const agregarItem = useCartStore((s) => s.agregarItem);
   const [cantidad, setCantidad] = useState(1);
   
@@ -29,8 +30,12 @@ export default function ProductCard({ producto }: ProductCardProps) {
         className="relative w-full aspect-square bg-slate-50 flex items-center justify-center p-6 border-b border-slate-100 group-hover:bg-white transition-colors cursor-pointer overflow-hidden block"
       >
         {/* Etiqueta de Marca Flotante */}
-        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm shadow-sm border border-slate-200 px-2.5 py-1 rounded text-[10px] font-black text-brand-700 uppercase tracking-widest z-10">
-          {producto.marca}
+        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm shadow-sm border border-slate-200 px-2 py-1 rounded z-10 flex items-center justify-center">
+          {marcaLogoUrl ? (
+            <img src={marcaLogoUrl} alt={producto.marca} className="h-4 w-auto object-contain mix-blend-multiply" />
+          ) : (
+            <span className="text-[10px] font-black text-brand-700 uppercase tracking-widest">{producto.marca}</span>
+          )}
         </div>
         
         {producto.imagen_url ? (

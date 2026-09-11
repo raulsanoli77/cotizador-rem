@@ -3,6 +3,7 @@ import { Search, FileText, Settings, ArrowRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import CategoryShowcase from '@/components/home/CategoryShowcase';
+import BrandShowcase from '@/components/home/BrandShowcase';
 import { createServerClient } from '@/lib/supabase/server';
 
 // Server Component
@@ -13,8 +14,10 @@ export default async function Home() {
   const logoUrl = apariencia.logo_url;
   const titulo = apariencia.titulo || 'REM Industrial';
 
-  // Fetch categories for the showcase
+  // Fetch categories and brands
   const { data: categorias } = await supabase.from('categorias').select('id, nombre, imagen_url').order('nombre');
+  const { data: marcasData } = await supabase.from('configuracion').select('valor').eq('clave', 'marcas_logos').single();
+  const marcasLogos = marcasData?.valor || {};
 
   return (
     <div className="min-h-screen flex flex-col pt-16 bg-slate-900">
@@ -80,6 +83,7 @@ export default async function Home() {
         </section>
         
         <CategoryShowcase categories={categorias || []} />
+        <BrandShowcase marcas={marcasLogos} />
 
         {/* Features Section (Dark Technical Look) */}
         <section className="py-24 px-4 bg-slate-900">
