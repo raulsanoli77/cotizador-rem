@@ -27,6 +27,8 @@ export default function ProductCard({ producto, marcaLogoUrl }: ProductCardProps
       {/* Imagen (Clicable) - Área grande superior */}
       <Link 
         href={`/catalogo/${producto.id}`}
+        target="_blank"
+        rel="noopener noreferrer"
         className="relative w-full aspect-square bg-slate-50 flex items-center justify-center p-6 border-b border-slate-100 group-hover:bg-white transition-colors cursor-pointer overflow-hidden block"
       >
         {/* Etiqueta de Marca Flotante */}
