@@ -1,21 +1,24 @@
-# Plan: Módulo de Marcas y Logos
+# Plan: Mostrar Logos de Marcas en el Catálogo
 
-## 1. Almacenamiento (Base de Datos)
-- Usaremos la tabla existente de `configuracion` (donde ya guardas los colores y logos) para crear un nuevo registro de `marcas_logos`.
-- Esto nos evitará tener que modificar los 20,000 productos. Solo asociaremos el nombre de texto (ej. "GWS") con la imagen correspondiente.
+## 1. Problema Actual
+Las imágenes de las marcas se ven correctamente en la página de inicio y en la página de detalle de producto. Sin embargo, en la cuadrícula principal del catálogo (`ProductGrid`) todavía aparece el texto original en la esquina superior izquierda. 
 
-## 2. Panel de Administración (`/admin/marcas`)
-- Se creará una nueva pantalla en tu panel de control dedicada exclusivamente a las Marcas.
-- Podrás presionar "Agregar Marca", escribir el nombre exactamente como aparece en el catálogo (ej. "GWS") y subir la imagen de su logo.
-- El sistema subirá las imágenes al mismo almacenamiento seguro que ya usamos (`media`) y las vinculará automáticamente a todas las herramientas que compartan ese nombre.
+El motivo: Aunque el componente de la tarjeta ya está programado para recibir la imagen de la marca, la página principal del catálogo olvidó enviarle el "diccionario" con los logos de la base de datos a esa sección.
 
-## 3. Carrusel de Marcas (Pantalla Principal)
-- Justo debajo de la sección "Nuestras Categorías", agregaré una nueva tira visual llamada **"Nuestras Marcas"**.
-- Todas las marcas a las que les hayas subido un logo en el administrador aparecerán aquí con un diseño elegante, resaltando la calidad comercial de REM.
+## 2. Pasos de Implementación
 
-## 4. Integración en el Catálogo y Producto
-- **Tarjetas de Producto (Grid):** En lugar de que aparezca la "píldora" gris con el nombre de la marca en texto, aparecerá el logo visual de la marca en la esquina superior de la tarjeta (tal como en la imagen de ejemplo que subiste).
-- **Detalle de Producto (`/catalogo/[id]`):** Al abrir una broca específica, el logo también se mostrará grande y profesional en la sección de especificaciones técnicas o encabezado de la herramienta.
+### A. Estado de Logos en el Catálogo (`page.tsx`)
+- Declarar una nueva variable de estado en `src/app/catalogo/page.tsx` para almacenar los logos de las marcas (`marcasLogos`).
 
-## 5. Prevención de Errores
-- Si un producto pertenece a una marca a la cual aún no le subes su logo, el sistema seguirá mostrando el texto normal (como "OSG") para que nunca quede vacío.
+### B. Descarga de Datos (Fetch)
+- Cuando el catálogo se cargue por primera vez (al mismo tiempo que se descargan las categorías), ejecutar una consulta ligera a la tabla `configuracion`.
+- Esta consulta descargará el diccionario de `marcas_logos` que configuraste previamente en el panel de administrador.
+
+### C. Conexión de Datos (Prop Passing)
+- Ubicar la línea donde se dibuja la cuadrícula de productos (`<ProductGrid ... />`).
+- Inyectar la variable recién descargada: `<ProductGrid productos={...} marcasLogos={marcasLogos} />`.
+- De esta manera, cada tarjeta de producto podrá buscar si su marca de texto (ej. "GWS") tiene un logo correspondiente y reemplazarlo visualmente.
+
+## 3. Seguridad
+- La carga de los logos se hace una sola vez al entrar al catálogo. No ralentizará la paginación ni los filtros ya que es un pequeño archivo JSON de memoria.
+- No afectará la vista si alguna marca no tiene logo asignado.

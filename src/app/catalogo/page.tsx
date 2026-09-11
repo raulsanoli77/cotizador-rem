@@ -16,6 +16,7 @@ export default function CatalogoPage() {
   const [productos, setProductos] = useState<ProductoConPrecio[]>([]);
   const [paginaActual, setPaginaActual] = useState(1);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [marcasLogos, setMarcasLogos] = useState<Record<string, string>>({});
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
   const [filtrosActivos, setFiltrosActivos] = useState<Record<string, string[]>>({});
   const [busqueda, setBusqueda] = useState('');
@@ -38,7 +39,18 @@ export default function CatalogoPage() {
         .order('nombre');
       if (data) setCategorias(data as Categoria[]);
     }
+    
+    async function cargarMarcasLogos() {
+      const { data } = await supabase
+        .from('configuracion')
+        .select('valor')
+        .eq('clave', 'marcas_logos')
+        .single();
+      if (data?.valor) setMarcasLogos(data.valor);
+    }
+
     cargarCategorias();
+    cargarMarcasLogos();
 
     // Leer la categoría y búsqueda inicial de la URL
     if (typeof window !== 'undefined') {
@@ -379,7 +391,10 @@ export default function CatalogoPage() {
                 <div className="flex flex-col gap-6">
                   {renderPagination(true)}
                   
-                  <ProductGrid productos={productos.slice((paginaActual - 1) * 50, paginaActual * 50)} />
+                  <ProductGrid 
+                    productos={productos.slice((paginaActual - 1) * 50, paginaActual * 50)} 
+                    marcasLogos={marcasLogos}
+                  />
                   
                   {renderPagination(false)}
                 </div>
