@@ -9,6 +9,7 @@ import FilterSidebar from '@/components/catalogo/FilterSidebar';
 import { supabase } from '@/lib/supabase/client';
 import { calcularPrecioVenta } from '@/lib/pricing/engine';
 import { obtenerTipoCambio } from '@/lib/pricing/exchange-rate';
+import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
 import type { Producto, ProductoConPrecio, Categoria, CampoFiltro } from '@/types';
 
 export default function CatalogoPage() {
@@ -38,12 +39,16 @@ export default function CatalogoPage() {
     }
     cargarCategorias();
 
-    // Leer la categoría inicial de la URL
+    // Leer la categoría y búsqueda inicial de la URL
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlCategoria = params.get('categoria');
       if (urlCategoria) {
         setCategoriaActiva(urlCategoria);
+      }
+      const urlSearch = params.get('q');
+      if (urlSearch) {
+        setBusqueda(urlSearch);
       }
     }
 
@@ -61,20 +66,14 @@ export default function CatalogoPage() {
         .select('*')
         .eq('activo', true)
         .order('marca')
-        .limit(500); // Aumentado para mejor filtrado en cliente
+        .limit(2500); // Aumentado para filtrado profundo en cliente
 
       // Filtro por categoría (único filtro estricto en servidor)
       if (categoriaActiva) {
         query = query.eq('categoria', categoriaActiva);
       }
 
-      // Búsqueda por texto (servidor)
-      if (busqueda) {
-        query = query.or(
-          `numero_parte.ilike.%${busqueda}%,marca.ilike.%${busqueda}%,categoria.ilike.%${busqueda}%`
-        );
-      }
-
+      // La búsqueda profunda ahora se hace en el cliente para abarcar descripciones
       const { data, error } = await query;
 
       if (error) {
@@ -100,9 +99,24 @@ export default function CatalogoPage() {
           };
         });
 
-        // Helper para evaluar si un producto cumple con los filtros activos (saltándose uno en específico para lógica cruzada)
-        // Lógica: OR dentro de un campo (ej. Flautas 2 ó 4), AND entre campos (ej. Diámetro Y Flautas)
+        const terminoBusqueda = busqueda.toLowerCase().trim();
+
+        // Helper para evaluar si un producto cumple con los filtros activos y búsqueda
         const cumpleFiltrosCruzados = (prod: ProductoConPrecio, llaveAIgnorar: string | null = null) => {
+          // 1. Búsqueda profunda (Texto)
+          if (terminoBusqueda) {
+             const descFormateada = formatearDescripcionProducto(prod as any).toLowerCase();
+             const matchBusqueda = 
+                (prod.numero_parte?.toLowerCase().includes(terminoBusqueda) || false) ||
+                (prod.marca?.toLowerCase().includes(terminoBusqueda) || false) ||
+                (prod.categoria?.toLowerCase().includes(terminoBusqueda) || false) ||
+                (prod.sku_interno?.toLowerCase().includes(terminoBusqueda) || false) ||
+                descFormateada.includes(terminoBusqueda);
+                
+             if (!matchBusqueda) return false;
+          }
+
+          // 2. Filtros dinámicos de sidebar
           return Object.entries(filtrosActivos).every(([key, valores]) => {
             if (key === llaveAIgnorar || !valores || valores.length === 0) return true;
             

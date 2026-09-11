@@ -14,6 +14,7 @@ export default function Header() {
   const cantidadItems = items.reduce((acc, item) => acc + item.cantidad, 0);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [titulo, setTitulo] = useState('REM Industrial');
+  const [headerBusqueda, setHeaderBusqueda] = useState('');
 
   useEffect(() => {
     async function fetchBranding() {
@@ -45,19 +46,29 @@ export default function Header() {
             />
           </Link>
 
-          {/* Buscador Global (Visual) */}
+          {/* Buscador Global (Funcional) */}
           <div className="hidden md:flex flex-1 max-w-xl relative">
-            <div className="relative w-full">
+            <form 
+              className="relative w-full"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (headerBusqueda.trim()) {
+                  window.location.href = `/catalogo?q=${encodeURIComponent(headerBusqueda.trim())}`;
+                } else {
+                  window.location.href = '/catalogo';
+                }
+              }}
+            >
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input 
                 type="text" 
-                placeholder="Buscar por número de parte, marca o descripción..." 
+                value={headerBusqueda}
+                onChange={(e) => setHeaderBusqueda(e.target.value)}
+                placeholder="Buscar por nmero de parte, marca o descripcin..." 
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
-                onFocus={() => {
-                  if(window.location.pathname !== '/catalogo') window.location.href = '/catalogo';
-                }}
               />
-            </div>
+              <button type="submit" className="hidden">Buscar</button>
+            </form>
           </div>
 
           {/* Carrito + Menu Móvil */}
