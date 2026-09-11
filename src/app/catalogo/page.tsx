@@ -19,6 +19,7 @@ export default function CatalogoPage() {
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
   const [filtrosActivos, setFiltrosActivos] = useState<Record<string, string[]>>({});
   const [busqueda, setBusqueda] = useState('');
+  const [orden, setOrden] = useState('relevancia');
   const [loading, setLoading] = useState(true);
   const [tipoCambio, setTipoCambio] = useState(20.0);
   const [camposFiltro, setCamposFiltro] = useState<CampoFiltro[]>([]);
@@ -131,7 +132,17 @@ export default function CatalogoPage() {
         };
 
         // 1. Filtrar productos finales (se muestran en el grid)
-        const productosFiltrados = productosConPrecio.filter(prod => cumpleFiltrosCruzados(prod));
+        let productosFiltrados = productosConPrecio.filter(prod => cumpleFiltrosCruzados(prod));
+        
+        // 1.5 Aplicar ordenamiento
+        if (orden === 'precio_asc') {
+          productosFiltrados.sort((a, b) => a.precio_venta - b.precio_venta);
+        } else if (orden === 'precio_desc') {
+          productosFiltrados.sort((a, b) => b.precio_venta - a.precio_venta);
+        } else {
+          productosFiltrados.sort((a, b) => a.marca.localeCompare(b.marca) || a.numero_parte.localeCompare(b.numero_parte));
+        }
+
         setProductos(productosFiltrados);
         setPaginaActual(1);
 
@@ -170,7 +181,7 @@ export default function CatalogoPage() {
     }
 
     cargarProductos();
-  }, [categoriaActiva, busqueda, filtrosActivos, tipoCambio, monedaVenta, categorias]);
+  }, [categoriaActiva, busqueda, filtrosActivos, tipoCambio, monedaVenta, categorias, orden]);
 
   // Actualizar campos de filtro cuando cambia la categoría
   useEffect(() => {
@@ -204,24 +215,47 @@ export default function CatalogoPage() {
     };
 
     const renderPagination = (isTop: boolean = false) => {
-      if (productos.length <= 50) return null;
-      
+    if (isTop) {
       return (
-        <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${isTop ? 'border-b border-gray-200 pb-6 mb-2' : 'border-t border-gray-200 pt-6 mt-4'}`}>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-200 pb-6 mb-2">
           <div className="text-sm text-gray-500">
-            Mostrando <span className="font-bold text-gray-900">{((paginaActual - 1) * 50) + 1}</span> a <span className="font-bold text-gray-900">{Math.min(paginaActual * 50, productos.length)}</span> de <span className="font-bold text-gray-900">{productos.length}</span> resultados
+            {productos.length > 0 ? (
+              <>Mostrando <span className="font-bold text-gray-900">{((paginaActual - 1) * 50) + 1}</span> a <span className="font-bold text-gray-900">{Math.min(paginaActual * 50, productos.length)}</span> de <span className="font-bold text-gray-900">{productos.length}</span> resultados</>
+            ) : (
+              <span>No se encontraron resultados</span>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => {
-                setPaginaActual(prev => Math.max(prev - 1, 1));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              disabled={paginaActual === 1}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Anterior
-            </button>
+          <div className="flex items-center gap-3">
+             <span className="text-sm font-medium text-gray-700">Ordenar por:</span>
+             <select 
+               value={orden} 
+               onChange={(e) => { setOrden(e.target.value); setPaginaActual(1); }} 
+               className="border border-gray-300 rounded-lg text-sm text-gray-700 py-1.5 pl-3 pr-8 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 bg-white"
+             >
+               <option value="relevancia">Relevancia</option>
+               <option value="precio_asc">Precio: Menor a Mayor</option>
+               <option value="precio_desc">Precio: Mayor a Menor</option>
+             </select>
+          </div>
+        </div>
+      );
+    }
+
+    if (productos.length <= 50) return null;
+    
+    return (
+      <div className="flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-gray-200 pt-6 mt-4">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => {
+              setPaginaActual(prev => Math.max(prev - 1, 1));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={paginaActual === 1}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Anterior
+          </button>
             
             <div className="hidden md:flex items-center gap-1">
               {Array.from({ length: Math.ceil(productos.length / 50) }).map((_, i) => {

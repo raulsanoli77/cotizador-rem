@@ -1,23 +1,28 @@
-# Plan: Corrección de Búsqueda Global y Descripción
+# Plan: Agregar Filtro de Ordenamiento por Precio
 
 ## 1. Problema Actual
-- La barra de búsqueda superior (Header) te expulsa al catálogo apenas haces clic, borrando lo que ibas a escribir.
-- Al llegar al catálogo, el buscador local solo revisa Número de Parte y Marca, pero ignora la Descripción (Especificaciones Técnicas).
+El catálogo muestra los resultados basándose únicamente en cómo vienen ordenados de la base de datos (por Marca/Número de parte). No existe forma de ordenar herramientas buscando la opción más barata o la de mayor precio.
 
 ## 2. Pasos de Implementación
 
-### A. Reparar la Barra Superior (`Header.tsx`)
-- Cambiaremos el `input` por un `<form>`.
-- Ahora te permitirá escribir libremente desde cualquier página (Inicio, Checkout, etc.).
-- Al presionar *Enter*, te llevará al catálogo inyectando tu búsqueda en la URL (ej. `/catalogo?q=1/64`).
+### A. Gestión de Estado (Memoria)
+- Se agregará una nueva variable al componente principal del catálogo: `orden`.
+- Valores posibles: `'relevancia'` (por defecto), `'precio_asc'` (menor a mayor), y `'precio_desc'` (mayor a menor).
 
-### B. Inicializar Búsqueda en el Catálogo (`SearchBar.tsx` y `page.tsx`)
-- Leeremos el parámetro `?q=` de la URL en cuanto cargue la página del catálogo.
-- La barra local de búsqueda tomará ese texto automáticamente para que no tengas que escribirlo dos veces.
+### B. Modificación de la Barra Superior de la Cuadrícula
+- Actualmente, la barra que dice "Mostrando X resultados" desaparece si hay menos de 50 productos.
+- La vamos a separar para que **siempre sea visible**.
+- Del lado izquierdo dirá el número de resultados (ej. "Mostrando 12 resultados").
+- Del lado derecho agregaremos un menú desplegable elegante (Dropdown):
+  - "Relevancia"
+  - "Precio: Menor a Mayor"
+  - "Precio: Mayor a Menor"
 
-### C. Expandir el Filtro a Descripción (Búsqueda Inteligente)
-- Tal como lo hicimos en el panel de Administración, implementaremos una capa de filtrado adicional en la página del Catálogo.
-- Cuando escribas un término (ej. "TIN" o "1/64"), el sistema no solo buscará en la base de datos por `numero_parte`, sino que iterará sobre todos los resultados disponibles para buscar coincidencias dentro de la **Descripción generada dinámicamente** (la cual contiene el material, recubrimiento, serie, flautas, etc.).
+### C. Lógica de Ordenamiento
+- Dentro del algoritmo que filtra y busca los productos, justo antes de enviarlos a la pantalla, interceptaremos la lista completa.
+- Si el usuario selecciona "Menor a Mayor", ejecutaremos una función `.sort()` que comparará el `precio_venta` calculado de cada herramienta y pondrá las baratas al inicio.
+- Al cambiar esta opción, automáticamente regresaremos al usuario a la Página 1 para evitar errores de navegación.
 
 ## 3. Seguridad
-- No afectaremos la paginación ni los filtros laterales (categorías/marcas). Ambos sistemas trabajarán en armonía con la nueva búsqueda profunda.
+- **Calculo de Precios:** El ordenamiento tomará en cuenta el precio *final* de venta ya procesado (después de conversiones de tipo de cambio USD/MXN y recargos), garantizando que el orden sea matemáticamente exacto para el cliente.
+- **Paginación:** No romperá la división de 50 ítems por página.
