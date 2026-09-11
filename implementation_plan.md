@@ -1,26 +1,34 @@
-# Plan: Optimización Visual del Catálogo (Responsive & Proporciones)
+# Plan: Refinamiento de Tarjetas y Cuadrícula
 
-## 1. Problema Actual
-- **Pantallas Cuadradas/Laptops:** Hay mucho espacio en blanco desperdiciado en los laterales, el contenedor principal está limitado y no se expande a lo ancho.
-- **Monitores (16:9):** Las tarjetas de producto son demasiado altas (muy largas verticalmente) porque la imagen está forzada a ser completamente cuadrada (`aspect-square` 1:1), lo que escala su altura de forma exagerada cuando la tarjeta se ensancha. Esto empuja la información hacia abajo y reduce cuántos productos caben en pantalla.
+## 1. Problema Actual (Análisis de Capturas)
+- **Columnas:** Al permitir 6 columnas, las tarjetas se vuelven demasiado angostas.
+- **Imagen:** La proporción `4:3` recortó demasiado el alto, haciendo que las herramientas largas (endmills) se vean minúsculas.
+- **Elementos cortados:** El botón "Agregar" y el selector de cantidad están peleando por espacio horizontal, causando que el texto se corte ("Agre...").
+- **Tipografía:** El precio y el título son demasiado grandes para el ancho actual de la tarjeta.
 
-## 2. Pasos de Implementación
+## 2. Solución Propuesta (Pasos de Implementación)
 
-### Paso 1: Aprovechar el Espacio Lateral (Contenedor Más Ancho)
-- **Archivo:** `src/app/catalogo/page.tsx`
-- **Cambio:** El contenedor principal actualmente usa `max-w-7xl` (1280px). Lo ampliaremos a `max-w-[1600px]` con márgenes responsivos (`px-4 sm:px-6 lg:px-8`).
-- **Resultado:** La interfaz "respirará" mejor en monitores grandes y laptops, llenando el espacio horizontal desperdiciado.
-
-### Paso 2: Aumentar el Número de Columnas
+### Paso 1: Fijar a 5 Columnas Máximo
 - **Archivo:** `src/components/catalogo/ProductGrid.tsx`
-- **Cambio:** Modificar la cuadrícula. Actualmente está topada a 4 columnas (`xl:grid-cols-4`). La cambiaremos a un modelo más denso: `grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6`.
-- **Resultado:** Tendrás 5 productos por fila en pantallas estándar y hasta 6 en monitores muy anchos. Esto hace las tarjetas naturalmente más esbeltas.
+- **Cambio:** Eliminar `2xl:grid-cols-6`. La cuadrícula será: `grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5`.
+- **Beneficio:** Las tarjetas serán más anchas, dándole espacio a los botones para respirar.
 
-### Paso 3: Reducir Altura de Tarjetas (≈20% más pequeñas)
+### Paso 2: Aumentar la Imagen (Punto Medio)
 - **Archivo:** `src/components/catalogo/ProductCard.tsx`
-- **Cambio:** Reemplazar el contenedor de imagen `aspect-square` (proporción 1:1) por `aspect-[4/3]` o `aspect-[5/4]`. 
-- **Resultado:** La fotografía seguirá viéndose perfecta y contenida (`object-contain`), pero la "caja" será rectangular (más ancha que alta), reduciendo la altura total de la tarjeta aproximadamente un 20%. Toda la información clave (precio, botón de agregar) subirá y será visible sin necesidad de *scroll*.
+- **Cambio:** Cambiar `aspect-[4/3]` a `aspect-[5/4]`.
+- **Beneficio:** Es un punto medio perfecto. Es más alto que el 4:3 (las fotos se verán más grandes y claras), pero sigue siendo más compacto que el cuadro 1:1 original. Además, reduciremos el padding interno de `p-6` a `p-4` para que la imagen aproveche todo el borde.
 
-## 3. Seguridad y Diseño
-- Estas modificaciones son **estrictamente de CSS (Tailwind)**. No afectarán las funciones del carrito, precios o filtros.
-- Mantendremos tus estilos preferidos (fuentes, distribución interior de la tarjeta, colores oscuros y estilos de cajas). Solo estamos alterando las dimensiones exteriores y la densidad de la cuadrícula.
+### Paso 3: Rediseño Responsivo de Botones y Textos
+- **Archivo:** `src/components/catalogo/ProductCard.tsx`
+- **Cambio en Tipografía:**
+  - Reducir título de `text-lg sm:text-xl` a `text-base font-bold`.
+  - Reducir precio de `text-2xl` a `text-xl`.
+- **Cambio en Botones (Crucial):**
+  - Reducir el ancho del contador de cantidad de `w-24` a `w-20` (más compacto).
+  - Hacer que el botón "Agregar" use `flex-1` (toma el resto del espacio disponible automáticamente), reduciendo su padding horizontal y tamaño de fuente (`text-sm`) para garantizar que la palabra "Agregar" **nunca** se corte.
+  - Para pantallas *extremadamente* angostas, usaremos `flex-wrap` para que, si no caben, el botón baje ordenadamente sin romperse.
+
+## 3. Sugerencia Adicional de Diseño
+
+> [!TIP]
+> **Ocultar el texto en móviles pequeños:** En pantallas muy chiquitas (celulares en vertical), la palabra "Agregar" suele estorbar. Sugiero que en móviles solo se vea el **ícono del carrito** en el botón, y en tablets/escritorio sí diga "Agregar". ¿Te parece bien implementarlo así para hacerlo 100% a prueba de recortes? Por ahora, aplicaré el auto-ajuste de texto para escritorio como pediste.
