@@ -1,59 +1,49 @@
-# Plan: Correcciones de Búsqueda y Filtros del Catálogo
+# Plan: Buscador Global → Descubridor de Categorías
 
 ## 1. Problema Actual
+El buscador de la barra superior (Header) y el buscador interno del catálogo son redundantes. Ambos filtran productos por texto, pero el usuario no necesita dos buscadores para lo mismo.
 
-### A. Typo en el Buscador Principal
-El placeholder del `Header.tsx` dice `"Buscar por nmero de parte, marca o descripcin..."` — le faltan las tildes: **número** y **descripción**.
+## 2. Nuevo Concepto
+Convertir el buscador del Header en un **"Descubridor de Categorías"**:
 
-### B. Búsqueda Persistente Incontrolable
-Cuando el usuario busca "3/8", el filtro de texto se queda enclavado y **no se limpia al cambiar de categoría**. Tampoco hay una forma clara de quitar ese filtro si no borras manualmente el texto de la barra.
+- El usuario escribe **"3/8"** desde cualquier página → se abre `/buscar?q=3/8`
+- La nueva pantalla muestra las **categorías que contienen artículos** con esa medida
+- Ejemplo: "Endmills (24 productos)", "Brocas (8 productos)"
+- El usuario da clic en la categoría que le interesa → llega al catálogo ya filtrado en esa sección
 
-### C. Sin Filtros en la Sección "Todas"
-Cuando la categoría activa es "Todas" (`categoriaActiva === null`), el `FilterSidebar` se oculta completamente. Esto deja al usuario sin la capacidad de filtrar por Marca u otras propiedades cuando navega por todas las categorías a la vez.
+Esto separa responsabilidades:
+- **Barra superior** = "¿En qué categoría encuentro lo que busco?" (descubrimiento)
+- **Barra del catálogo** = "Buscar producto específico dentro de esta categoría" (precisión)
 
-### D. Búsqueda No Se Refleja en los Checkboxes
-El usuario espera que, al buscar "3/8", el filtro "Diámetro: 3/8" se auto-seleccione como un checkbox, de modo que pueda quitarlo fácilmente con un clic.
+## 3. Pasos de Implementación
 
----
-
-## 2. Pasos de Implementación
-
-### Paso 1: Corregir Typo en Header.tsx
-- **Archivo:** `src/components/layout/Header.tsx` (línea 67)
-- **Cambio:** Reemplazar `nmero` → `número` y `descripcin` → `descripción`
-
-### Paso 2: Limpiar Búsqueda al Cambiar de Categoría
-- **Archivo:** `src/app/catalogo/page.tsx`
-- **Cambio:** En los botones de las categorías (tanto "Todas" como las específicas), agregar `setBusqueda('')` al handler de clic. Así, al presionar "Endmills", el texto de búsqueda anterior desaparece limpiamente.
-
-### Paso 3: Mostrar Filtros en la Sección "Todas"
-- **Archivo:** `src/app/catalogo/page.tsx`
-- **Cambio:**
-  1. Quitar la condición `categoriaActiva &&` que oculta el `FilterSidebar`.
-  2. Cuando `categoriaActiva === null`, generar `camposFiltro` dinámicamente extrayendo las claves de especificaciones técnicas únicas de **todos** los productos cargados (ej. Diámetro, Flautas, Material, Recubrimiento, etc.).
-  3. Las `opcionesDinamicas` ya se calculan correctamente con filtros cruzados — solo necesitamos que se ejecuten también cuando no hay categoría activa.
-
-### Paso 4: Búsqueda Inteligente → Auto-Seleccionar Filtros
-- **Archivo:** `src/app/catalogo/page.tsx`
+### Paso 1: Crear la Página de Resultados `/buscar`
+- **Archivo nuevo:** `src/app/buscar/page.tsx`
 - **Lógica:**
-  1. Cuando el usuario busca "3/8", después de cargar los productos filtrados, el sistema escaneará todas las opciones dinámicas disponibles.
-  2. Si encuentra un valor **exacto** que coincida con el texto buscado (ej. `Diámetro = "3/8"`), auto-seleccionará ese checkbox en `filtrosActivos`.
-  3. Luego limpiará el texto de `busqueda`, dejando los checkboxes activos como único filtro.
-  4. Si el texto **no coincide exactamente** con ningún valor de filtro (ej. buscar un número de parte como "203-001170"), el texto de búsqueda se mantendrá intacto como filtro general.
-- **Resultado:** El usuario verá la palomita en "Diámetro: 3/8" y podrá quitarla con un clic.
+  1. Lee el parámetro `?q=` de la URL
+  2. Consulta TODOS los productos activos de Supabase (limit 2500)
+  3. Filtra localmente por coincidencia profunda (número de parte, marca, descripción, especificaciones) — exactamente como lo hace el catálogo
+  4. Agrupa los resultados por `producto.categoria`
+  5. Muestra tarjetas de categoría con: imagen de la categoría, nombre, y el conteo de productos que coinciden
+  6. Al dar clic → navega a `/catalogo?categoria=Endmills`
+- **Diseño:** Fondo oscuro (`slate-900`) consistente con la estética de REM. Reutilizaremos el estilo de las tarjetas de `CategoryShowcase` para mantener coherencia visual.
 
-### Paso 5: Actualizar SearchBar con `initialValue` reactivo
-- **Archivo:** `src/components/catalogo/SearchBar.tsx`
-- **Cambio:** Asegurarnos de que el componente refleje correctamente cuando `busqueda` cambia externamente (ya sea por limpieza al cambiar categoría o por auto-selección de filtros).
+### Paso 2: Cambiar el Destino del Header
+- **Archivo:** `src/components/layout/Header.tsx`
+- **Cambio:** Redirigir de `/catalogo?q=...` a `/buscar?q=...`
+- **Placeholder nuevo:** `"Buscar categorías por medida, material, recubrimiento..."`
 
----
+### Paso 3: Incluir Header y Footer en la Nueva Página
+- La página `/buscar` tendrá `<Header />` arriba y `<Footer />` abajo para mantener la navegación completa.
 
-## 3. Observación Adicional (Mejora Recomendada)
+## 4. Observación Adicional
 
 > [!TIP]
-> **Botón "Limpiar Todo" más visible:** Actualmente el botón "Limpiar" del sidebar solo se muestra cuando hay filtros de checkbox activos. Sugiero agregar una **etiqueta visual** debajo de la barra de búsqueda que muestre las búsquedas/filtros activos como "chips" (pastillas removibles), por ejemplo: `[× 3/8] [× GWS]`. Esto le da al usuario control visual total. ¿Quieres que lo incluya en esta implementación?
+> **Caso "sin resultados":** Si la búsqueda no coincide con ningún producto en ninguna categoría, mostraremos un mensaje amigable con un botón para ir directo al catálogo completo.
 
-## 4. Seguridad
-- La lógica de precios, carrito y paginación NO se toca.
-- Los filtros cruzados existentes siguen funcionando igual; solo expandimos su alcance a la vista "Todas".
-- Los `campos_filtro` de cada categoría (definidos en Supabase) se siguen respetando cuando una categoría específica está seleccionada.
+> [!TIP]
+> **Caso "una sola categoría":** Si solo hay coincidencia en UNA categoría, podríamos redirigir automáticamente al catálogo de esa categoría en lugar de mostrar una pantalla con una sola tarjeta. ¿Te gustaría este comportamiento o prefieres siempre ver la pantalla de categorías?
+
+## 5. Seguridad
+- El catálogo y sus filtros, chips, paginación y ordenamiento NO se tocan.
+- La nueva página es completamente independiente: un archivo nuevo que no modifica ningún componente existente excepto la URL de destino en el Header.

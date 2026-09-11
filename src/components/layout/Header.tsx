@@ -53,7 +53,7 @@ export default function Header() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (headerBusqueda.trim()) {
-                  window.location.href = `/catalogo?q=${encodeURIComponent(headerBusqueda.trim())}`;
+                  window.location.href = `/buscar?q=${encodeURIComponent(headerBusqueda.trim())}`;
                 } else {
                   window.location.href = '/catalogo';
                 }
@@ -64,7 +64,7 @@ export default function Header() {
                 type="text" 
                 value={headerBusqueda}
                 onChange={(e) => setHeaderBusqueda(e.target.value)}
-                placeholder="Buscar por número de parte, marca o descripción..." 
+                placeholder="Buscar categorías por medida, material, recubrimiento..." 
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors"
               />
               <button type="submit" className="hidden">Buscar</button>
