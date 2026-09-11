@@ -372,7 +372,7 @@ export default function CatalogoPage() {
     <>
       <Header />
       <main className="min-h-screen bg-gray-50 pt-20 pb-12">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Título y búsqueda */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Catálogo de Herramientas</h1>

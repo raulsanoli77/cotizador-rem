@@ -1,49 +1,26 @@
-# Plan: Buscador Global → Descubridor de Categorías
+# Plan: Optimización Visual del Catálogo (Responsive & Proporciones)
 
 ## 1. Problema Actual
-El buscador de la barra superior (Header) y el buscador interno del catálogo son redundantes. Ambos filtran productos por texto, pero el usuario no necesita dos buscadores para lo mismo.
+- **Pantallas Cuadradas/Laptops:** Hay mucho espacio en blanco desperdiciado en los laterales, el contenedor principal está limitado y no se expande a lo ancho.
+- **Monitores (16:9):** Las tarjetas de producto son demasiado altas (muy largas verticalmente) porque la imagen está forzada a ser completamente cuadrada (`aspect-square` 1:1), lo que escala su altura de forma exagerada cuando la tarjeta se ensancha. Esto empuja la información hacia abajo y reduce cuántos productos caben en pantalla.
 
-## 2. Nuevo Concepto
-Convertir el buscador del Header en un **"Descubridor de Categorías"**:
+## 2. Pasos de Implementación
 
-- El usuario escribe **"3/8"** desde cualquier página → se abre `/buscar?q=3/8`
-- La nueva pantalla muestra las **categorías que contienen artículos** con esa medida
-- Ejemplo: "Endmills (24 productos)", "Brocas (8 productos)"
-- El usuario da clic en la categoría que le interesa → llega al catálogo ya filtrado en esa sección
+### Paso 1: Aprovechar el Espacio Lateral (Contenedor Más Ancho)
+- **Archivo:** `src/app/catalogo/page.tsx`
+- **Cambio:** El contenedor principal actualmente usa `max-w-7xl` (1280px). Lo ampliaremos a `max-w-[1600px]` con márgenes responsivos (`px-4 sm:px-6 lg:px-8`).
+- **Resultado:** La interfaz "respirará" mejor en monitores grandes y laptops, llenando el espacio horizontal desperdiciado.
 
-Esto separa responsabilidades:
-- **Barra superior** = "¿En qué categoría encuentro lo que busco?" (descubrimiento)
-- **Barra del catálogo** = "Buscar producto específico dentro de esta categoría" (precisión)
+### Paso 2: Aumentar el Número de Columnas
+- **Archivo:** `src/components/catalogo/ProductGrid.tsx`
+- **Cambio:** Modificar la cuadrícula. Actualmente está topada a 4 columnas (`xl:grid-cols-4`). La cambiaremos a un modelo más denso: `grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6`.
+- **Resultado:** Tendrás 5 productos por fila en pantallas estándar y hasta 6 en monitores muy anchos. Esto hace las tarjetas naturalmente más esbeltas.
 
-## 3. Pasos de Implementación
+### Paso 3: Reducir Altura de Tarjetas (≈20% más pequeñas)
+- **Archivo:** `src/components/catalogo/ProductCard.tsx`
+- **Cambio:** Reemplazar el contenedor de imagen `aspect-square` (proporción 1:1) por `aspect-[4/3]` o `aspect-[5/4]`. 
+- **Resultado:** La fotografía seguirá viéndose perfecta y contenida (`object-contain`), pero la "caja" será rectangular (más ancha que alta), reduciendo la altura total de la tarjeta aproximadamente un 20%. Toda la información clave (precio, botón de agregar) subirá y será visible sin necesidad de *scroll*.
 
-### Paso 1: Crear la Página de Resultados `/buscar`
-- **Archivo nuevo:** `src/app/buscar/page.tsx`
-- **Lógica:**
-  1. Lee el parámetro `?q=` de la URL
-  2. Consulta TODOS los productos activos de Supabase (limit 2500)
-  3. Filtra localmente por coincidencia profunda (número de parte, marca, descripción, especificaciones) — exactamente como lo hace el catálogo
-  4. Agrupa los resultados por `producto.categoria`
-  5. Muestra tarjetas de categoría con: imagen de la categoría, nombre, y el conteo de productos que coinciden
-  6. Al dar clic → navega a `/catalogo?categoria=Endmills`
-- **Diseño:** Fondo oscuro (`slate-900`) consistente con la estética de REM. Reutilizaremos el estilo de las tarjetas de `CategoryShowcase` para mantener coherencia visual.
-
-### Paso 2: Cambiar el Destino del Header
-- **Archivo:** `src/components/layout/Header.tsx`
-- **Cambio:** Redirigir de `/catalogo?q=...` a `/buscar?q=...`
-- **Placeholder nuevo:** `"Buscar categorías por medida, material, recubrimiento..."`
-
-### Paso 3: Incluir Header y Footer en la Nueva Página
-- La página `/buscar` tendrá `<Header />` arriba y `<Footer />` abajo para mantener la navegación completa.
-
-## 4. Observación Adicional
-
-> [!TIP]
-> **Caso "sin resultados":** Si la búsqueda no coincide con ningún producto en ninguna categoría, mostraremos un mensaje amigable con un botón para ir directo al catálogo completo.
-
-> [!TIP]
-> **Caso "una sola categoría":** Si solo hay coincidencia en UNA categoría, podríamos redirigir automáticamente al catálogo de esa categoría en lugar de mostrar una pantalla con una sola tarjeta. ¿Te gustaría este comportamiento o prefieres siempre ver la pantalla de categorías?
-
-## 5. Seguridad
-- El catálogo y sus filtros, chips, paginación y ordenamiento NO se tocan.
-- La nueva página es completamente independiente: un archivo nuevo que no modifica ningún componente existente excepto la URL de destino en el Header.
+## 3. Seguridad y Diseño
+- Estas modificaciones son **estrictamente de CSS (Tailwind)**. No afectarán las funciones del carrito, precios o filtros.
+- Mantendremos tus estilos preferidos (fuentes, distribución interior de la tarjeta, colores oscuros y estilos de cajas). Solo estamos alterando las dimensiones exteriores y la densidad de la cuadrícula.

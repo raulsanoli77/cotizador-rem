@@ -29,7 +29,7 @@ export default function ProductCard({ producto, marcaLogoUrl }: ProductCardProps
         href={`/catalogo/${producto.id}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="relative w-full aspect-square bg-slate-50 flex items-center justify-center p-6 border-b border-slate-100 group-hover:bg-white transition-colors cursor-pointer overflow-hidden block"
+        className="relative w-full aspect-[4/3] bg-slate-50 flex items-center justify-center p-4 sm:p-6 border-b border-slate-100 group-hover:bg-white transition-colors cursor-pointer overflow-hidden block"
       >
         {/* Etiqueta de Marca Flotante */}
         <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm shadow-sm border border-slate-200 px-2 py-1 rounded z-10 flex items-center justify-center">
