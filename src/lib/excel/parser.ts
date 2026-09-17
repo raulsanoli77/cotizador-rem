@@ -81,11 +81,15 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
         }
       });
 
-      // Validaciones obligatorias
-      if (!mapped.sku_interno) {
-        errores.push(`Fila ${rowNum}: Falta SKU_Interno`);
-        return;
+      // Validaciones obligatorias (saltamos la fila si no tiene datos válidos en lugar de bloquear todo el archivo)
+      if (!mapped.sku_interno || mapped.sku_interno.includes('CO--') || mapped.sku_interno.includes('CO––')) {
+        return; // Fila vacía o SKU de relleno, ignorar
       }
+      
+      if (mapped.costo_base === undefined || mapped.costo_base === null || mapped.costo_base === '') {
+        return; // Sin costo, ignorar
+      }
+
       if (!mapped.numero_parte) {
         errores.push(`Fila ${rowNum}: Falta Numero_Parte / NUMERO DE PARTE (${mapped.sku_interno})`);
         return;
@@ -96,10 +100,6 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
       }
       if (!mapped.categoria) {
         errores.push(`Fila ${rowNum}: Falta Categoria (${mapped.sku_interno})`);
-        return;
-      }
-      if (mapped.costo_base === undefined || mapped.costo_base === null) {
-        errores.push(`Fila ${rowNum}: Falta Costo / Costo_Base (${mapped.sku_interno})`);
         return;
       }
 
