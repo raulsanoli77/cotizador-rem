@@ -94,9 +94,11 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
           const isNA = finalValue.toUpperCase() === 'N/A' || finalValue === '-';
           
           if (!isNA) {
-            // Auto-agregar sufijo de medida (solo a Diametro, Corte, Largo, Zanco)
+            // Auto-agregar sufijo de medida (solo a Diametro, Corte (L1), Largo, Zanco)
             if (sufijoMedida) {
-              const isMedida = palabrasMedida.some(p => upperName.includes(p));
+              const isMedida = ['DIAMETRO', 'LARGO', 'ZANCO'].some(p => upperName.includes(p)) || 
+                               (upperName.includes('CORTE') && !upperName.includes('CENTRAL') && !upperName.includes('DIRECCION'));
+              
               if (isMedida && !finalValue.endsWith('"') && !finalValue.toLowerCase().endsWith('mm')) {
                 finalValue += sufijoMedida;
               }
@@ -108,6 +110,12 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
             }
             if (upperName.includes('CHAFLAN') && !finalValue.toUpperCase().startsWith('CH')) {
               finalValue = `CH ${finalValue}`;
+            }
+            // Auto-agregar grados a Ángulo
+            if (upperName.includes('ANGULO') || upperName.includes('ÁNGULO')) {
+              if (!finalValue.includes('°')) {
+                finalValue = `${finalValue}°`;
+              }
             }
           }
           

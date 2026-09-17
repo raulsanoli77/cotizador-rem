@@ -227,7 +227,10 @@ export default function ProductDetailPage() {
                   // Auto-sufijo dinámico para UI si el usuario aún no recarga el Excel
                   const upperKey = key.toUpperCase();
                   const unidadBase = String(specs['UNIDAD DE MEDIDA'] || specs['unidad de medida'] || '').toUpperCase();
-                  const isMedida = ['DIAMETRO', 'CORTE', 'LARGO', 'ZANCO'].some(p => upperKey.includes(p));
+                  
+                  // Evitar falsos positivos con CORTE CENTRAL y DIRECCION DE CORTE
+                  const isMedida = ['DIAMETRO', 'LARGO', 'ZANCO'].some(p => upperKey.includes(p)) || 
+                                   (upperKey.includes('CORTE') && !upperKey.includes('CENTRAL') && !upperKey.includes('DIRECCION'));
                   
                   if (isMedida && finalValue.toUpperCase() !== 'N/A' && finalValue !== '-') {
                     if (unidadBase === 'IN' || unidadBase === 'PULGADAS') {
@@ -238,6 +241,18 @@ export default function ProductDetailPage() {
                       if (!finalValue.endsWith('"') && !finalValue.toLowerCase().endsWith('mm')) {
                         finalValue += ' mm';
                       }
+                    }
+                  }
+
+                  // Reglas adicionales de visualización (solo UI)
+                  if (finalValue.toUpperCase() !== 'N/A' && finalValue !== '-') {
+                    if (upperKey.includes('ANGULO') || upperKey.includes('ÁNGULO')) {
+                      if (!finalValue.includes('°')) {
+                        finalValue += '°';
+                      }
+                    }
+                    if (upperKey.includes('RECUBRIMIENTO') && finalValue.toUpperCase() === 'SIN RECUBRIMIENTO') {
+                      finalValue = 'NO';
                     }
                   }
 
