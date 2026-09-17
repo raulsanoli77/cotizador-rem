@@ -201,7 +201,7 @@ export default function GestorImagenes() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
               {filteredProducts.map(prod => (
                 <div 
                   key={prod.id}
@@ -248,7 +248,7 @@ export default function GestorImagenes() {
         </div>
 
         {/* PANEL DERECHO: Subida y Aplicación */}
-        <div className="w-80 shrink-0 flex flex-col gap-4">
+        <div className="w-72 xl:w-80 shrink-0 flex flex-col gap-4">
           
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden max-h-full">
             <div className="flex border-b border-gray-200 bg-gray-50">
