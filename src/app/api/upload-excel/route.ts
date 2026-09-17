@@ -25,11 +25,20 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    // Desduplicar el array basándonos en sku_interno
+    // PostgreSQL lanza error si intentas hacer upsert del mismo SKU más de una vez en el mismo query
+    const productosDesduplicados = Object.values(
+      productosEnriquecidos.reduce((acc, current) => {
+        acc[current.sku_interno] = current;
+        return acc;
+      }, {} as Record<string, any>)
+    );
+
     // Upsert masivo (requiere que el array tenga la misma estructura y sku_interno sea unique)
     // Usamos onConflict para actualizar si el SKU ya existe
     const { data, error } = await supabase
       .from('productos')
-      .upsert(productosEnriquecidos, { onConflict: 'sku_interno' })
+      .upsert(productosDesduplicados, { onConflict: 'sku_interno' })
       .select('id');
 
     if (error) {

@@ -182,12 +182,32 @@ export default function AdminCategorias() {
           <h1 className="text-2xl font-bold text-gray-900">Gestor de Categorías y Atributos</h1>
           <p className="text-sm text-gray-500 mt-1">Configura los campos técnicos de tus productos por categoría.</p>
         </div>
-        <button 
-          onClick={handleOpenNew}
-          className="bg-brand-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-brand-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" /> Nueva Categoría
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={async () => {
+              try {
+                setLoading(true);
+                const res = await fetch('/api/setup-endmills');
+                if (!res.ok) throw new Error('Error en el setup');
+                alert('¡Éxito! La categoría ENDMILLS ahora tiene los 22 campos exactos del Excel listos.');
+                await fetchCategorias();
+              } catch (error) {
+                alert('Error configurando ENDMILLS');
+              } finally {
+                setLoading(false);
+              }
+            }}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-purple-700 transition-colors"
+          >
+            <Settings2 className="h-4 w-4" /> Auto-Configurar ENDMILLS (29 col)
+          </button>
+          <button 
+            onClick={handleOpenNew}
+            className="bg-brand-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-brand-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Nueva Categoría
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
