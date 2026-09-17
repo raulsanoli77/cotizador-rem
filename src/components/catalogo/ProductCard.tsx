@@ -53,7 +53,7 @@ export default function ProductCard({ producto, marcaLogoUrl }: ProductCardProps
         <Link href={`/catalogo/${producto.id}`} className="text-left group-hover:text-brand-600 transition-colors mb-1 block">
           <h3 className="font-mono font-bold text-slate-900 text-base leading-tight truncate">{producto.numero_parte}</h3>
         </Link>
-        <p className="text-xs text-slate-500 leading-snug line-clamp-2 mb-3 flex-1" title={formatearDescripcionProducto(producto)}>
+        <p className="text-xs text-slate-500 leading-snug line-clamp-3 mb-3 flex-1" title={formatearDescripcionProducto(producto)}>
           {formatearDescripcionProducto(producto)}
         </p>
 
