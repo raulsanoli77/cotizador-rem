@@ -256,6 +256,11 @@ export default function ProductDetailPage() {
                     }
                   }
 
+                  const isEspecial = upperKey.includes('CARACTERISTICA') || upperKey.includes('DESCRIP') || finalValue.length > 20;
+                  const colSpanClass = isEspecial 
+                    ? "col-span-2 sm:col-span-3 md:col-span-2 lg:col-span-3" 
+                    : "col-span-1";
+
                   const urlFiltro = `/catalogo?categoria=${encodeURIComponent(producto.categoria || '')}&f_${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
                   return (
                     <Link 
@@ -263,10 +268,10 @@ export default function ProductDetailPage() {
                       href={urlFiltro}
                       target="_blank"
                       title={`Buscar más productos con ${key}: ${finalValue}`}
-                      className="bg-white border border-slate-200 p-3 sm:p-4 rounded-xl flex flex-col hover:border-brand-400 hover:shadow-md hover:bg-brand-50 transition-all cursor-pointer group"
+                      className={`bg-white border border-slate-200 p-3 sm:p-4 rounded-xl flex flex-col justify-center hover:border-brand-400 hover:shadow-md hover:bg-brand-50 transition-all cursor-pointer group ${colSpanClass}`}
                     >
                       <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-brand-600 transition-colors line-clamp-1">{key}</span>
-                      <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-brand-700 transition-colors line-clamp-1">{finalValue}</span>
+                      <span className={`text-sm sm:text-base font-bold text-slate-900 group-hover:text-brand-700 transition-colors ${isEspecial ? 'leading-tight break-words' : 'line-clamp-1'}`}>{finalValue}</span>
                     </Link>
                   );
                 })}
