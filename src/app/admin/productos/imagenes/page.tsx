@@ -134,13 +134,26 @@ export default function GestorImagenes() {
     setApplying(true);
 
     const idsArray = Array.from(selectedIds);
-    const { error } = await supabase
-      .from('productos')
-      .update({ imagen_url: imageUrl })
-      .in('id', idsArray);
+    const chunkSize = 100; // Chunking to avoid URL length limit (Bad Request) on huge selections
+    let hasError = false;
+    let errorMessage = '';
 
-    if (error) {
-      alert('Error al aplicar la imagen: ' + error.message);
+    for (let i = 0; i < idsArray.length; i += chunkSize) {
+      const chunk = idsArray.slice(i, i + chunkSize);
+      const { error } = await supabase
+        .from('productos')
+        .update({ imagen_url: imageUrl })
+        .in('id', chunk);
+
+      if (error) {
+        hasError = true;
+        errorMessage = error.message;
+        break;
+      }
+    }
+
+    if (hasError) {
+      alert('Error al aplicar la imagen: ' + errorMessage);
     } else {
       alert(`Imagen aplicada a ${idsArray.length} productos con éxito.`);
       fetchProductos(); 
