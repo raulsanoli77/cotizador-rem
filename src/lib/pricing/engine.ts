@@ -161,8 +161,5 @@ export function calcularPrecioVenta(
  * Formatea un precio con símbolo de moneda y 2 decimales.
  */
 export function formatearPrecio(precio: number, moneda: MonedaVenta): string {
-  if (moneda === 'MXN') {
-    return `$${precio.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`;
-  }
-  return `$${precio.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
+  return `$${precio.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

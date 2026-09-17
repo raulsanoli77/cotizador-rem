@@ -77,8 +77,8 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
         sufijoMedida = ' mm';
       }
 
-      // Palabras clave para saber si un campo es una medida física
-      const palabrasMedida = ['DIAMETRO', 'CORTE', 'LARGO', 'ZANCO', 'RADIO', 'CHAFLAN', 'CUELLO'];
+      // Palabras clave para saber si un campo es una medida física que lleva " o mm
+      const palabrasMedida = ['DIAMETRO', 'CORTE', 'LARGO', 'ZANCO'];
 
       excelColumns.forEach(col => {
         const value = row[col];
@@ -90,13 +90,24 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
         } else if (value !== null && value !== '' && value !== undefined) {
           // Es una especificación técnica
           let finalValue = String(value).trim();
+          const upperName = originalName.toUpperCase();
+          const isNA = finalValue.toUpperCase() === 'N/A' || finalValue === '-';
           
-          // Auto-agregar sufijo si es una medida y tenemos la unidad identificada
-          if (sufijoMedida) {
-            const isMedida = palabrasMedida.some(p => originalName.toUpperCase().includes(p));
-            // Evitamos agregar sufijo si ya lo trae
-            if (isMedida && !finalValue.endsWith('"') && !finalValue.toLowerCase().endsWith('mm')) {
-              finalValue += sufijoMedida;
+          if (!isNA) {
+            // Auto-agregar sufijo de medida (solo a Diametro, Corte, Largo, Zanco)
+            if (sufijoMedida) {
+              const isMedida = palabrasMedida.some(p => upperName.includes(p));
+              if (isMedida && !finalValue.endsWith('"') && !finalValue.toLowerCase().endsWith('mm')) {
+                finalValue += sufijoMedida;
+              }
+            }
+            
+            // Auto-agregar prefijos a Radio y Chaflan
+            if (upperName.includes('RADIO') && !finalValue.toUpperCase().startsWith('R')) {
+              finalValue = `R ${finalValue}`;
+            }
+            if (upperName.includes('CHAFLAN') && !finalValue.toUpperCase().startsWith('CH')) {
+              finalValue = `CH ${finalValue}`;
             }
           }
           
