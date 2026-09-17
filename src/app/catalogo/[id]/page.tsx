@@ -21,6 +21,7 @@ export default function ProductDetailPage() {
   
   const [producto, setProducto] = useState<ProductoConPrecio | null>(null);
   const [marcaLogoUrl, setMarcaLogoUrl] = useState<string | null>(null);
+  const [ordenCampos, setOrdenCampos] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [cantidad, setCantidad] = useState(1);
   const agregarItem = useCartStore((s) => s.agregarItem);
@@ -56,6 +57,21 @@ export default function ProductDetailPage() {
           'MXN',
           tipoCambioCache.valor
         );
+
+        // Obtener el orden de los campos desde la categoría para ordenar las cajas
+        const { data: catData } = await supabase
+          .from('categorias')
+          .select('campos_filtro')
+          .ilike('nombre', prodData.categoria)
+          .single();
+          
+        let mapOrden: Record<string, number> = {};
+        if (catData?.campos_filtro) {
+          catData.campos_filtro.forEach((campo: any, index: number) => {
+            mapOrden[campo.nombre.toUpperCase()] = index;
+          });
+        }
+        setOrdenCampos(mapOrden);
 
         setProducto({
           ...(prodData as Producto),
@@ -96,7 +112,17 @@ export default function ProductDetailPage() {
   };
 
   const specs = producto.especificaciones_tecnicas || {};
-  const specsEntries = Object.entries(specs);
+  const specsEntries = Object.entries(specs).sort((a, b) => {
+    const keyA = a[0].toUpperCase();
+    const keyB = b[0].toUpperCase();
+    const indexA = ordenCampos[keyA] !== undefined ? ordenCampos[keyA] : 999;
+    const indexB = ordenCampos[keyB] !== undefined ? ordenCampos[keyB] : 999;
+    
+    if (indexA !== indexB) {
+      return indexA - indexB;
+    }
+    return keyA.localeCompare(keyB);
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
