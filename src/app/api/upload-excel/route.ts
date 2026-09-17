@@ -16,11 +16,37 @@ export async function POST(request: NextRequest) {
     const { data: categorias } = await supabase.from('categorias').select('id, nombre');
     const categoriasMap = new Map(categorias?.map((c) => [c.nombre.toLowerCase(), c.id]));
 
-    // Mapear el categoria_id
+    // Obtener imágenes existentes para no sobreescribirlas (en chunks por si el excel es muy grande)
+    const skus = productos.map(p => p.sku_interno);
+    const chunkSize = 100;
+    const productosExistentes: any[] = [];
+    
+    for (let i = 0; i < skus.length; i += chunkSize) {
+      const chunk = skus.slice(i, i + chunkSize);
+      const { data } = await supabase
+        .from('productos')
+        .select('sku_interno, imagen_url')
+        .in('sku_interno', chunk);
+      if (data) productosExistentes.push(...data);
+    }
+      
+    const imagenesExistentesMap = new Map(
+      productosExistentes?.map((p) => [p.sku_interno, p.imagen_url])
+    );
+
+    // Mapear el categoria_id y preservar imagen_url
     const productosEnriquecidos = productos.map((p) => {
       const catId = categoriasMap.get(p.categoria.toLowerCase());
+      
+      // Si el excel no trae imagen, pero en BD ya existe una, la preservamos
+      let finalImageUrl = p.imagen_url;
+      if (!finalImageUrl && imagenesExistentesMap.has(p.sku_interno)) {
+        finalImageUrl = imagenesExistentesMap.get(p.sku_interno);
+      }
+
       return {
         ...p,
+        imagen_url: finalImageUrl,
         categoria_id: catId || null
       };
     });
