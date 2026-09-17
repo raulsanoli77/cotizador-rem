@@ -83,8 +83,9 @@ export default function CatalogoPage() {
         .limit(2500); // Aumentado para filtrado profundo en cliente
 
       // Filtro por categoría (único filtro estricto en servidor)
+      // Usamos ilike para evitar problemas si en la BD está en mayúsculas (ENDMILLS) y en la UI en Title Case (Endmills)
       if (categoriaActiva) {
-        query = query.eq('categoria', categoriaActiva);
+        query = query.ilike('categoria', categoriaActiva);
       }
 
       // La búsqueda profunda ahora se hace en el cliente para abarcar descripciones

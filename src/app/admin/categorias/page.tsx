@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Plus, Edit, Trash2, Save, X, GripVertical, Settings2, Tags, Type } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, Save, X, GripVertical, Settings2, Tags, Type, ChevronUp, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { getCategoriasServer, saveCategoriaServer, deleteCategoriaServer } from './actions';
 import { supabase } from '@/lib/supabase/client';
@@ -156,6 +156,16 @@ export default function AdminCategorias() {
 
   const removeCampo = (index: number) => {
     setEditCampos(editCampos.filter((_, i) => i !== index));
+  };
+
+  const moveCampo = (index: number, direction: 'up' | 'down') => {
+    if ((direction === 'up' && index === 0) || (direction === 'down' && index === editCampos.length - 1)) return;
+    const newCampos = [...editCampos];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    const temp = newCampos[index];
+    newCampos[index] = newCampos[targetIndex];
+    newCampos[targetIndex] = temp;
+    setEditCampos(newCampos);
   };
 
   const updateCampo = (index: number, key: keyof CampoFiltro, value: any) => {
@@ -395,14 +405,34 @@ export default function AdminCategorias() {
                             </div>
                           </div>
 
-                          {/* Botón eliminar */}
-                          <button 
-                            onClick={() => removeCampo(index)}
-                            className="p-2.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors border border-transparent hover:border-red-200 shrink-0"
-                            title="Quitar Campo"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
+                          {/* Botones de orden y eliminar */}
+                          <div className="flex flex-col items-center gap-1 shrink-0">
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => moveCampo(index, 'up')}
+                                disabled={index === 0}
+                                className={`p-1 rounded-md transition-colors ${index === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-200'}`}
+                                title="Mover Arriba"
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => moveCampo(index, 'down')}
+                                disabled={index === editCampos.length - 1}
+                                className={`p-1 rounded-md transition-colors ${index === editCampos.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-200'}`}
+                                title="Mover Abajo"
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <button 
+                              onClick={() => removeCampo(index)}
+                              className="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition-colors w-full flex justify-center"
+                              title="Quitar Campo"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
 
                         {/* Previsualización del sufijo */}

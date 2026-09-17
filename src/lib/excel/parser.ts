@@ -68,6 +68,18 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
       const mapped: Record<string, any> = {};
       const especificaciones_tecnicas: Record<string, any> = {};
 
+      // Determinar la unidad base del producto para auto-formato
+      let sufijoMedida = '';
+      const unidadMedidaVal = String(row['UNIDAD DE MEDIDA'] || row['unidad de medida'] || '').trim().toUpperCase();
+      if (unidadMedidaVal === 'IN' || unidadMedidaVal === 'PULGADAS') {
+        sufijoMedida = '"';
+      } else if (unidadMedidaVal === 'MM' || unidadMedidaVal === 'MILIMETROS') {
+        sufijoMedida = ' mm';
+      }
+
+      // Palabras clave para saber si un campo es una medida física
+      const palabrasMedida = ['DIAMETRO', 'CORTE', 'LARGO', 'ZANCO', 'RADIO', 'CHAFLAN', 'CUELLO'];
+
       excelColumns.forEach(col => {
         const value = row[col];
         const { systemField, originalName } = columnMapping[col];
@@ -76,8 +88,19 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
           // Es un campo fijo del sistema
           mapped[systemField] = value;
         } else if (value !== null && value !== '' && value !== undefined) {
-          // Es una especificación técnica - usar el nombre original de la columna
-          especificaciones_tecnicas[originalName] = String(value);
+          // Es una especificación técnica
+          let finalValue = String(value).trim();
+          
+          // Auto-agregar sufijo si es una medida y tenemos la unidad identificada
+          if (sufijoMedida) {
+            const isMedida = palabrasMedida.some(p => originalName.toUpperCase().includes(p));
+            // Evitamos agregar sufijo si ya lo trae
+            if (isMedida && !finalValue.endsWith('"') && !finalValue.toLowerCase().endsWith('mm')) {
+              finalValue += sufijoMedida;
+            }
+          }
+          
+          especificaciones_tecnicas[originalName] = finalValue;
         }
       });
 
