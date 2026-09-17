@@ -24,10 +24,10 @@ export default function FilterSidebar({
   const [seccionesAbiertas, setSeccionesAbiertas] = useState<Record<string, boolean>>({});
   const [busquedas, setBusquedas] = useState<Record<string, string>>({});
 
-  const toggleSeccion = (nombre: string) => {
+  const toggleSeccion = (nombre: string, defaultOpen: boolean) => {
     setSeccionesAbiertas((p) => {
-      const isOculto = p[nombre] === false;
-      return { ...p, [nombre]: !isOculto ? false : true };
+      const estadoActual = p[nombre] !== undefined ? p[nombre] : defaultOpen;
+      return { ...p, [nombre]: !estadoActual };
     });
   };
 
@@ -37,7 +37,9 @@ export default function FilterSidebar({
 
   const tieneFiltros = Object.keys(filtrosActivos).length > 0;
 
-  const isAbierta = (nombre: string) => seccionesAbiertas[nombre] !== false; // Abiertas por defecto
+  const isAbierta = (nombre: string, defaultOpen: boolean) => {
+    return seccionesAbiertas[nombre] !== undefined ? seccionesAbiertas[nombre] : defaultOpen;
+  };
 
   const isChecked = (nombre: string, op: string) => {
     return (filtrosActivos[nombre] || []).includes(op);
@@ -100,16 +102,18 @@ export default function FilterSidebar({
 
       <div className="p-4 overflow-y-auto flex-1">
         {/* Marca */}
-        <div className="border-b border-slate-100 pb-4 mb-4">
-          <button onClick={() => toggleSeccion('marca')} className="flex items-center justify-between w-full text-sm font-bold text-gray-800 py-1">
-            <span>Marca</span>
-            {isAbierta('marca') ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
-          </button>
-          {isAbierta('marca') && renderOpciones('marca', marcas)}
-        </div>
+        {marcas && marcas.length > 0 && (
+          <div className="border-b border-slate-100 pb-4 mb-4">
+            <button onClick={() => toggleSeccion('marca', true)} className="flex items-center justify-between w-full text-sm font-bold text-gray-800 py-1">
+              <span>Marca</span>
+              {isAbierta('marca', true) ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+            </button>
+            {isAbierta('marca', true) && renderOpciones('marca', marcas)}
+          </div>
+        )}
 
         {/* Dinámicos */}
-        {campos.map((campo) => {
+        {campos.map((campo, idx) => {
           // Siempre preferimos las opciones dinámicas (ya vienen filtradas en cascada)
           // Solo usamos las opciones estáticas de la categoría como fallback
           const opcionesBase = (opcionesDinamicas[campo.nombre] && opcionesDinamicas[campo.nombre].length > 0)
@@ -118,14 +122,18 @@ export default function FilterSidebar({
           
           if (opcionesBase.length === 0) return null;
 
+          // Si Marca está presente, ya es 1 abierto. Queremos solo las primeras 2 secciones abiertas en total.
+          // Por simplicidad, abriremos 'Marca' y el primer campo dinámico (idx === 0). Si Marca no está, idx 0 y 1.
+          const defaultOpen = (!marcas || marcas.length === 0) ? idx < 2 : idx < 1;
+
           return (
             <div key={campo.nombre} className="border-b border-gray-100 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
-              <button onClick={() => toggleSeccion(campo.nombre)} className="flex items-center justify-between w-full text-sm font-bold text-gray-800 py-1">
+              <button onClick={() => toggleSeccion(campo.nombre, defaultOpen)} className="flex items-center justify-between w-full text-sm font-bold text-gray-800 py-1">
                 <span className="text-left">{campo.nombre.replace(/_/g, ' ')}{campo.unidad ? ` (${campo.unidad})` : ''}</span>
-                {isAbierta(campo.nombre) ? <ChevronUp className="h-4 w-4 text-gray-400 shrink-0" /> : <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />}
+                {isAbierta(campo.nombre, defaultOpen) ? <ChevronUp className="h-4 w-4 text-gray-400 shrink-0" /> : <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />}
               </button>
               
-              {isAbierta(campo.nombre) && renderOpciones(campo.nombre, opcionesBase)}
+              {isAbierta(campo.nombre, defaultOpen) && renderOpciones(campo.nombre, opcionesBase)}
             </div>
           );
         })}
