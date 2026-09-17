@@ -201,7 +201,7 @@ export default function GestorImagenes() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
               {filteredProducts.map(prod => (
                 <div 
                   key={prod.id}
@@ -217,20 +217,20 @@ export default function GestorImagenes() {
                   </div>
                   <div className="flex items-center gap-3 mb-2">
                     {prod.imagen_url ? (
-                      <img src={prod.imagen_url} alt={prod.sku_interno} className="w-12 h-12 object-contain bg-white rounded border border-gray-100 p-1" />
+                      <img src={prod.imagen_url} alt={prod.sku_interno} className="w-12 h-12 object-contain bg-white rounded border border-gray-100 p-1 shrink-0" />
                     ) : (
-                      <div className="w-12 h-12 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                      <div className="w-12 h-12 bg-gray-100 rounded border border-gray-200 flex items-center justify-center shrink-0">
                         <ImageIcon className="w-6 h-6 text-gray-400" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0 pr-6">
                       <h4 className="font-bold text-sm text-gray-900 truncate">{prod.numero_parte}</h4>
-                      <span className="text-xs text-brand-600 font-semibold">{prod.sku_interno}</span>
+                      <span className="text-xs text-brand-600 font-semibold truncate block">{prod.sku_interno}</span>
                     </div>
                   </div>
-                  <div className="text-[10px] text-gray-500 truncate flex gap-2">
-                    <span className="bg-gray-100 px-1.5 py-0.5 rounded">{prod.marca}</span>
-                    <span className="bg-gray-100 px-1.5 py-0.5 rounded">{prod.categoria}</span>
+                  <div className="text-[10px] text-gray-500 flex gap-2 overflow-hidden">
+                    <span className="bg-gray-100 px-1.5 py-0.5 rounded truncate max-w-[50%]">{prod.marca}</span>
+                    <span className="bg-gray-100 px-1.5 py-0.5 rounded truncate max-w-[50%]">{prod.categoria}</span>
                   </div>
                 </div>
               ))}
@@ -242,13 +242,13 @@ export default function GestorImagenes() {
             </div>
           </div>
           
-          <div className="p-4 border-t bg-white text-sm font-bold text-brand-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <div className="p-4 border-t bg-white text-sm font-bold text-brand-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0">
             {selectedIds.size} productos seleccionados para actualizar
           </div>
         </div>
 
         {/* PANEL DERECHO: Subida y Aplicación */}
-        <div className="w-72 xl:w-80 shrink-0 flex flex-col gap-4">
+        <div className="w-64 xl:w-80 shrink-0 flex flex-col gap-4">
           
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden max-h-full">
             <div className="flex border-b border-gray-200 bg-gray-50">
