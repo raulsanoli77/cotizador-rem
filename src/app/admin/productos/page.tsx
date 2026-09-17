@@ -6,7 +6,7 @@ import type { Producto } from '@/types';
 import { Loader2, Plus, Edit, Trash2, ImageIcon, Eye, EyeOff, Search, ChevronLeft, ChevronRight, X, Save } from 'lucide-react';
 import Link from 'next/link';
 import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
-import { toggleProductoActivoServer, deleteProductoServer, updateProductoServer, bulkDeleteProductosServer, bulkUpdateActivoServer } from './actions';
+import { toggleProductoActivoServer, deleteProductoServer, updateProductoServer, bulkDeleteProductosServer, bulkUpdateActivoServer, deleteAllProductosServer } from './actions';
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -26,6 +26,7 @@ export default function AdminProductos() {
   const [modalEditar, setModalEditar] = useState<Producto | null>(null);
   const [editForm, setEditForm] = useState<Partial<Producto>>({});
   const [guardando, setGuardando] = useState(false);
+  const [borrandoTodo, setBorrandoTodo] = useState(false);
 
   useEffect(() => {
     fetchProductos();
@@ -66,6 +67,26 @@ export default function AdminProductos() {
       setProductos(productos.filter(p => p.id !== id));
     } catch (error: any) {
       alert('Error al eliminar: ' + error.message);
+    }
+  };
+
+  const handleEmptyCatalog = async () => {
+    const confirmation = window.prompt('ATENCIÓN: Esto eliminará TODOS los productos de la base de datos sin importar cuántos estés viendo ahora mismo.\n\nEscribe "ELIMINAR" para confirmar:');
+    if (confirmation !== 'ELIMINAR') {
+      if (confirmation !== null) alert('Operación cancelada. La palabra no coincide.');
+      return;
+    }
+    
+    setBorrandoTodo(true);
+    try {
+      await deleteAllProductosServer();
+      setProductos([]);
+      setSelectedIds(new Set());
+      alert('Catálogo vaciado con éxito.');
+    } catch (error: any) {
+      alert('Error al vaciar catálogo: ' + error.message);
+    } finally {
+      setBorrandoTodo(false);
     }
   };
 
@@ -146,8 +167,20 @@ export default function AdminProductos() {
 
   return (
     <div>
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">Catálogo de Productos</h1>
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">Catálogo de Productos</h1>
+          {productos.length > 0 && (
+            <button
+              onClick={handleEmptyCatalog}
+              disabled={borrandoTodo}
+              className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-red-100 transition-colors disabled:opacity-50"
+            >
+              {borrandoTodo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              {borrandoTodo ? 'Borrando...' : 'Vaciar Catálogo'}
+            </button>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-3">
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-2 animate-in fade-in mr-2 border-r border-gray-200 pr-4">

@@ -37,10 +37,14 @@ export async function updateProductoServer(id: string, data: any) {
 
 export async function bulkDeleteProductosServer(ids: string[]) {
   const supabase = createAdminClient();
-  const { error } = await supabase.from('productos').delete().in('id', ids);
+  const chunkSize = 100;
   
-  if (error) {
-    throw new Error(error.message);
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    const { error } = await supabase.from('productos').delete().in('id', chunk);
+    if (error) {
+      throw new Error(error.message);
+    }
   }
   
   return true;
@@ -48,7 +52,23 @@ export async function bulkDeleteProductosServer(ids: string[]) {
 
 export async function bulkUpdateActivoServer(ids: string[], activo: boolean) {
   const supabase = createAdminClient();
-  const { error } = await supabase.from('productos').update({ activo }).in('id', ids);
+  const chunkSize = 100;
+  
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    const { error } = await supabase.from('productos').update({ activo }).in('id', chunk);
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+  
+  return true;
+}
+
+export async function deleteAllProductosServer() {
+  const supabase = createAdminClient();
+  // Using a filter that matches everything to delete all rows safely
+  const { error } = await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   
   if (error) {
     throw new Error(error.message);
