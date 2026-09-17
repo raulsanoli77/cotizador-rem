@@ -4,13 +4,15 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { LayoutDashboard, Package, UploadCloud, Users, Settings, LogOut, Loader2, Tags, Award } from 'lucide-react';
+import { LayoutDashboard, Package, UploadCloud, Users, Settings, LogOut, Loader2, Tags, Award, Menu, ChevronLeft, ImageIcon } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -63,52 +65,67 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Marcas', icon: Award, href: '/admin/marcas' },
     { name: 'Carga Masiva', icon: UploadCloud, href: '/admin/carga-masiva' },
     { name: 'Leads B2B', icon: Users, href: '/admin/leads' },
+    { name: 'Imágenes', icon: ImageIcon, href: '/admin/productos/imagenes' },
     { name: 'Configuración', icon: Settings, href: '/admin/config' },
   ];
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col">
-        <div className="h-16 flex items-center px-6 border-b border-slate-800">
-          <LayoutDashboard className="h-5 w-5 text-brand-400 mr-2" />
-          <span className="font-bold text-lg">Admin REM</span>
+      <aside className={`bg-slate-900 text-white flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'} shrink-0`}>
+        <div className={`h-16 flex items-center border-b border-slate-800 ${isCollapsed ? 'justify-center' : 'px-6 justify-between'}`}>
+          {!isCollapsed && (
+            <div className="flex items-center">
+              <LayoutDashboard className="h-5 w-5 text-brand-400 mr-2" />
+              <span className="font-bold text-lg">Admin REM</span>
+            </div>
+          )}
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)} 
+            className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
+            title={isCollapsed ? "Expandir menú" : "Contraer menú"}
+          >
+            {isCollapsed ? <Menu className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+          </button>
         </div>
-        <nav className="flex-1 py-4 space-y-1 px-3">
+        
+        <nav className="flex-1 py-4 space-y-2 px-3 overflow-y-auto overflow-x-hidden custom-scrollbar">
           {menu.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${isActive ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+                title={isCollapsed ? item.name : undefined}
+                className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${isActive ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'} ${isCollapsed ? 'justify-center' : ''}`}
               >
-                <item.icon className="h-5 w-5 mr-3 shrink-0" />
-                <span className="font-medium text-sm">{item.name}</span>
+                <item.icon className={`h-5 w-5 shrink-0 ${isCollapsed ? '' : 'mr-3'}`} />
+                {!isCollapsed && <span className="font-medium text-sm whitespace-nowrap">{item.name}</span>}
               </Link>
             );
           })}
         </nav>
 
         {/* Widget de Tipo de Cambio */}
-        <div className="px-4 mb-4">
+        <div className={`px-4 mb-4 transition-all duration-300 ${isCollapsed ? 'opacity-0 h-0 overflow-hidden mb-0' : 'opacity-100 h-auto'}`}>
           <AdminExchangeRateWidget />
         </div>
 
         <div className="p-4 border-t border-slate-800">
           <button
             onClick={handleLogout}
-            className="flex items-center w-full px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            title={isCollapsed ? "Cerrar Sesión" : undefined}
+            className={`flex items-center w-full px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : ''}`}
           >
-            <LogOut className="h-5 w-5 mr-3" />
-            <span className="font-medium text-sm">Cerrar Sesión</span>
+            <LogOut className={`h-5 w-5 shrink-0 ${isCollapsed ? '' : 'mr-3'}`} />
+            {!isCollapsed && <span className="font-medium text-sm whitespace-nowrap">Cerrar Sesión</span>}
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
+      <main className="flex-1 overflow-auto min-w-0">
+        <div className="p-4 md:p-8">
           {children}
         </div>
       </main>
