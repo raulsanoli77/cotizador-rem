@@ -2,18 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import type { Producto } from '@/types';
-import { Loader2, Search, CheckSquare, Square, ImageIcon } from 'lucide-react';
+import type { Producto, CampoFiltro } from '@/types/product';
+import { Loader2, Search, CheckSquare, Square, ImageIcon, Filter, Image as ImageIcon2, UploadCloud } from 'lucide-react';
 import ImageUploader from '@/components/admin/ImageUploader';
+import FilterSidebar from '@/components/catalogo/FilterSidebar';
 
 export default function GestorImagenes() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Estados de búsqueda y filtros
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtrosActivos, setFiltrosActivos] = useState<Record<string, string[]>>({});
+  
+  // Selección
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
-  // Estado para la subida
+  // Estado para la imagen a aplicar
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageMode, setImageMode] = useState<'upload' | 'gallery'>('upload');
   const [applying, setApplying] = useState(false);
 
   useEffect(() => {
@@ -27,11 +34,82 @@ export default function GestorImagenes() {
     setLoading(false);
   };
 
-  const filteredProducts = productos.filter(p => 
-    p.sku_interno.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.categoria.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 1. Lógica de Filtrado Avanzado (Buscador + Sidebar)
+  let filteredProducts = productos.filter(p => {
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      const specsText = p.especificaciones_tecnicas ? Object.values(p.especificaciones_tecnicas).join(' ').toLowerCase() : '';
+      const matchText = 
+        p.sku_interno.toLowerCase().includes(q) ||
+        p.marca.toLowerCase().includes(q) ||
+        p.categoria.toLowerCase().includes(q) ||
+        p.numero_parte.toLowerCase().includes(q) ||
+        specsText.includes(q);
+      
+      if (!matchText) return false;
+    }
+    return true;
+  });
+
+  Object.entries(filtrosActivos).forEach(([key, values]) => {
+    if (values.length === 0) return;
+    if (key === 'marca') {
+      filteredProducts = filteredProducts.filter(p => values.includes(p.marca));
+    } else if (key === 'categoria') {
+      filteredProducts = filteredProducts.filter(p => values.includes(p.categoria));
+    } else {
+      filteredProducts = filteredProducts.filter(p => p.especificaciones_tecnicas && values.includes(String(p.especificaciones_tecnicas[key])));
+    }
+  });
+
+  // 2. Extraer Opciones Dinámicas para la Barra de Filtros
+  const marcasUnicas = new Set<string>();
+  const categoriasUnicas = new Set<string>();
+  const specsDinamic: Record<string, Set<string>> = {};
+
+  productos.forEach(p => {
+    if (p.marca) marcasUnicas.add(p.marca);
+    if (p.categoria) categoriasUnicas.add(p.categoria);
+    
+    if (p.especificaciones_tecnicas) {
+      Object.entries(p.especificaciones_tecnicas).forEach(([key, val]) => {
+        if (!specsDinamic[key]) specsDinamic[key] = new Set();
+        specsDinamic[key].add(String(val));
+      });
+    }
+  });
+
+  const opcionesDinamicas: Record<string, string[]> = {
+    categoria: Array.from(categoriasUnicas).sort()
+  };
+  Object.entries(specsDinamic).forEach(([k, set]) => {
+    opcionesDinamicas[k] = Array.from(set).sort();
+  });
+
+  const camposFiltro: CampoFiltro[] = [
+    { nombre: 'categoria', tipo: 'texto', visible_en_filtros: true },
+    ...Object.keys(specsDinamic).sort().map(k => ({ nombre: k, tipo: 'texto' as const, visible_en_filtros: true }))
+  ];
+
+  // 3. Extraer Galería de Imágenes
+  const uniqueImages = Array.from(new Set(productos.map(p => p.imagen_url).filter(Boolean))) as string[];
+
+  const handleFiltroChange = (nombre: string, valor: string) => {
+    setFiltrosActivos((prev) => {
+      const actuales = prev[nombre] || [];
+      if (actuales.includes(valor)) {
+        const nuevos = actuales.filter(v => v !== valor);
+        if (nuevos.length === 0) {
+          const next = { ...prev };
+          delete next[nombre];
+          return next;
+        }
+        return { ...prev, [nombre]: nuevos };
+      } else {
+        return { ...prev, [nombre]: [...actuales, valor] };
+      }
+    });
+  };
 
   const toggleSelectAll = () => {
     if (selectedIds.size === filteredProducts.length) {
@@ -56,7 +134,6 @@ export default function GestorImagenes() {
     setApplying(true);
 
     const idsArray = Array.from(selectedIds);
-    
     const { error } = await supabase
       .from('productos')
       .update({ imagen_url: imageUrl })
@@ -66,7 +143,7 @@ export default function GestorImagenes() {
       alert('Error al aplicar la imagen: ' + error.message);
     } else {
       alert(`Imagen aplicada a ${idsArray.length} productos con éxito.`);
-      fetchProductos(); // Recargar para ver los cambios
+      fetchProductos(); 
       setSelectedIds(new Set());
       setImageUrl(null);
     }
@@ -79,12 +156,24 @@ export default function GestorImagenes() {
     <div className="flex flex-col h-[calc(100vh-6rem)]">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Gestor Masivo de Imágenes</h1>
-        <p className="text-gray-500 mt-1">Sube una imagen y aplícala a múltiples productos al mismo tiempo.</p>
+        <p className="text-gray-500 mt-1">Filtra tus productos con precisión y aplícales imágenes masivamente, subiendo nuevas o reusando existentes.</p>
       </div>
 
-      <div className="flex gap-6 flex-1 min-h-0">
+      <div className="flex gap-4 lg:gap-6 flex-1 min-h-0 items-stretch">
         
-        {/* Panel Izquierdo: Selección de Productos */}
+        {/* PANEL IZQUIERDO: Filtros (Oculto en móvil, asume admin en desktop) */}
+        <div className="hidden lg:block">
+          <FilterSidebar 
+            campos={camposFiltro}
+            filtrosActivos={filtrosActivos}
+            onFiltroChange={handleFiltroChange}
+            onLimpiarFiltros={() => setFiltrosActivos({})}
+            marcas={Array.from(marcasUnicas).sort()}
+            opcionesDinamicas={opcionesDinamicas}
+          />
+        </div>
+
+        {/* PANEL CENTRAL: Productos y Búsqueda */}
         <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col min-h-0">
           <div className="p-4 border-b flex gap-4 items-center">
             <div className="relative flex-1">
@@ -93,15 +182,15 @@ export default function GestorImagenes() {
               </div>
               <input
                 type="text"
-                placeholder="Buscar por SKU, marca o categoría..."
+                placeholder="Buscar por SKU, Serie, Medida, etc..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-brand-500 sm:text-sm"
               />
             </div>
             <button 
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 shrink-0"
             >
               {selectedIds.size === filteredProducts.length && filteredProducts.length > 0 ? (
                 <><CheckSquare className="w-5 h-5 text-brand-600" /> Desmarcar Todos</>
@@ -111,15 +200,15 @@ export default function GestorImagenes() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {filteredProducts.map(prod => (
                 <div 
                   key={prod.id}
                   onClick={() => toggleSelect(prod.id)}
-                  className={`relative p-4 rounded-lg border-2 cursor-pointer transition-colors ${selectedIds.has(prod.id) ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}
+                  className={`relative p-3 rounded-lg border-2 cursor-pointer bg-white transition-all ${selectedIds.has(prod.id) ? 'border-brand-500 shadow-md ring-1 ring-brand-500' : 'border-gray-200 hover:border-brand-300 shadow-sm'}`}
                 >
-                  <div className="absolute top-3 right-3">
+                  <div className="absolute top-2 right-2">
                     {selectedIds.has(prod.id) ? (
                       <CheckSquare className="w-5 h-5 text-brand-600" />
                     ) : (
@@ -128,53 +217,103 @@ export default function GestorImagenes() {
                   </div>
                   <div className="flex items-center gap-3 mb-2">
                     {prod.imagen_url ? (
-                      <img src={prod.imagen_url} alt={prod.sku_interno} className="w-10 h-10 object-contain bg-white rounded border p-1" />
+                      <img src={prod.imagen_url} alt={prod.sku_interno} className="w-12 h-12 object-contain bg-white rounded border border-gray-100 p-1" />
                     ) : (
-                      <div className="w-10 h-10 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
-                        <ImageIcon className="w-5 h-5 text-gray-400" />
+                      <div className="w-12 h-12 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6 text-gray-400" />
                       </div>
                     )}
-                    <div>
-                      <h4 className="font-medium text-sm text-gray-900">{prod.sku_interno}</h4>
-                      <span className="text-xs text-gray-500">{prod.marca}</span>
+                    <div className="flex-1 min-w-0 pr-6">
+                      <h4 className="font-bold text-sm text-gray-900 truncate">{prod.numero_parte}</h4>
+                      <span className="text-xs text-brand-600 font-semibold">{prod.sku_interno}</span>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600 truncate">{prod.numero_parte}</div>
+                  <div className="text-[10px] text-gray-500 truncate flex gap-2">
+                    <span className="bg-gray-100 px-1.5 py-0.5 rounded">{prod.marca}</span>
+                    <span className="bg-gray-100 px-1.5 py-0.5 rounded">{prod.categoria}</span>
+                  </div>
                 </div>
               ))}
+              {filteredProducts.length === 0 && (
+                <div className="col-span-full py-12 text-center text-gray-500">
+                  No se encontraron productos con estos filtros.
+                </div>
+              )}
             </div>
           </div>
           
-          <div className="p-4 border-t bg-gray-50 text-sm font-medium text-gray-700">
-            {selectedIds.size} productos seleccionados
+          <div className="p-4 border-t bg-white text-sm font-bold text-brand-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            {selectedIds.size} productos seleccionados para actualizar
           </div>
         </div>
 
-        {/* Panel Derecho: Subida y Aplicación */}
-        <div className="w-80 bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
-          <h2 className="font-semibold text-gray-900 mb-4 border-b pb-2">Imagen a Aplicar</h2>
+        {/* PANEL DERECHO: Subida y Aplicación */}
+        <div className="w-80 shrink-0 flex flex-col gap-4">
           
-          <ImageUploader 
-            folder="productos"
-            currentUrl={imageUrl}
-            onUploadSuccess={(url) => setImageUrl(url)}
-          />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden max-h-full">
+            <div className="flex border-b border-gray-200 bg-gray-50">
+              <button 
+                onClick={() => setImageMode('upload')}
+                className={`flex-1 py-3 text-sm font-medium flex justify-center items-center gap-2 border-b-2 transition-colors ${imageMode === 'upload' ? 'border-brand-600 text-brand-700 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                <UploadCloud className="w-4 h-4" /> Subir
+              </button>
+              <button 
+                onClick={() => setImageMode('gallery')}
+                className={`flex-1 py-3 text-sm font-medium flex justify-center items-center gap-2 border-b-2 transition-colors ${imageMode === 'gallery' ? 'border-brand-600 text-brand-700 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                <ImageIcon2 className="w-4 h-4" /> Galería
+              </button>
+            </div>
 
-          <div className="mt-8 flex-1">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Resumen de acción</h3>
-            <ul className="text-sm text-gray-600 space-y-2 mb-6">
-              <li>• Se actualizará la imagen de <strong>{selectedIds.size}</strong> productos.</li>
-              <li>• Los productos seleccionados reemplazarán su imagen actual si ya tienen una.</li>
-            </ul>
+            <div className="p-4 flex-1 overflow-y-auto">
+              {imageMode === 'upload' ? (
+                <div className="flex flex-col gap-4">
+                  <ImageUploader 
+                    folder="productos"
+                    currentUrl={imageUrl}
+                    onUploadSuccess={(url) => setImageUrl(url)}
+                  />
+                  {imageUrl && (
+                    <div className="text-xs text-center text-gray-500 bg-gray-50 p-2 rounded border border-gray-200 break-all">
+                      Imagen lista para aplicar
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {uniqueImages.length === 0 ? (
+                    <p className="col-span-2 text-xs text-gray-500 text-center py-8">No hay imágenes previas en la base de datos.</p>
+                  ) : (
+                    uniqueImages.map(url => (
+                      <div 
+                        key={url} 
+                        onClick={() => setImageUrl(url)}
+                        className={`cursor-pointer rounded-lg border-2 p-1 transition-all ${imageUrl === url ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-200' : 'border-gray-200 hover:border-gray-300'}`}
+                      >
+                        <img src={url} alt="Galeria" className="w-full h-20 object-contain bg-white rounded mix-blend-multiply" />
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-gray-100 bg-gray-50">
+              <h3 className="text-xs font-bold text-gray-900 mb-2 uppercase tracking-wide">Acción a realizar</h3>
+              <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+                Asignarás la imagen seleccionada a los <strong>{selectedIds.size}</strong> productos marcados, reemplazando la actual si ya tenían una.
+              </p>
 
-            <button
-              onClick={handleApplyImage}
-              disabled={applying || selectedIds.size === 0 || !imageUrl}
-              className="w-full bg-brand-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-brand-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
-            >
-              {applying ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckSquare className="h-5 w-5" />}
-              {applying ? 'Aplicando...' : 'Aplicar a Seleccionados'}
-            </button>
+              <button
+                onClick={handleApplyImage}
+                disabled={applying || selectedIds.size === 0 || !imageUrl}
+                className="w-full bg-brand-600 text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-brand-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                {applying ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckSquare className="h-5 w-5" />}
+                {applying ? 'Aplicando...' : 'Aplicar a Selección'}
+              </button>
+            </div>
           </div>
         </div>
 
