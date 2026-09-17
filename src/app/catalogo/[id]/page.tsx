@@ -222,17 +222,36 @@ export default function ProductDetailPage() {
             {specsEntries.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 {specsEntries.map(([key, value]) => {
+                  let finalValue = String(value).trim();
+                  
+                  // Auto-sufijo dinámico para UI si el usuario aún no recarga el Excel
+                  const upperKey = key.toUpperCase();
+                  const unidadBase = String(specs['UNIDAD DE MEDIDA'] || specs['unidad de medida'] || '').toUpperCase();
+                  const isMedida = ['DIAMETRO', 'CORTE', 'LARGO', 'ZANCO'].some(p => upperKey.includes(p));
+                  
+                  if (isMedida && finalValue.toUpperCase() !== 'N/A' && finalValue !== '-') {
+                    if (unidadBase === 'IN' || unidadBase === 'PULGADAS') {
+                      if (!finalValue.endsWith('"') && !finalValue.toLowerCase().endsWith('mm')) {
+                        finalValue += '"';
+                      }
+                    } else if (unidadBase === 'MM' || unidadBase === 'MILIMETROS') {
+                      if (!finalValue.endsWith('"') && !finalValue.toLowerCase().endsWith('mm')) {
+                        finalValue += ' mm';
+                      }
+                    }
+                  }
+
                   const urlFiltro = `/catalogo?categoria=${encodeURIComponent(producto.categoria || '')}&f_${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
                   return (
                     <Link 
                       key={key} 
                       href={urlFiltro}
                       target="_blank"
-                      title={`Buscar más productos con ${key}: ${value}`}
+                      title={`Buscar más productos con ${key}: ${finalValue}`}
                       className="bg-white border border-slate-200 p-3 sm:p-4 rounded-xl flex flex-col hover:border-brand-400 hover:shadow-md hover:bg-brand-50 transition-all cursor-pointer group"
                     >
                       <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-brand-600 transition-colors line-clamp-1">{key}</span>
-                      <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-brand-700 transition-colors line-clamp-1">{String(value)}</span>
+                      <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-brand-700 transition-colors line-clamp-1">{finalValue}</span>
                     </Link>
                   );
                 })}

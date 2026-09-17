@@ -188,7 +188,7 @@ export default function CatalogoPage() {
         // Determinar qué campos de filtro usar
         let camposParaFiltrar: CampoFiltro[] = [];
         if (categoriaActiva) {
-          const cat = categorias.find((c) => c.nombre === categoriaActiva);
+          const cat = categorias.find((c) => c.nombre.toLowerCase() === categoriaActiva.toLowerCase());
           camposParaFiltrar = (cat?.campos_filtro || []).filter(c => c.visible_en_filtros !== false);
         } else {
           // "Todas": extraer campos dinámicamente de TODOS los productos
@@ -432,8 +432,8 @@ export default function CatalogoPage() {
                   window.history.pushState(null, '', `/catalogo?categoria=${encodeURIComponent(cat.nombre)}`);
                 }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  categoriaActiva === cat.nombre
-                    ? 'bg-brand-600 text-white'
+                  categoriaActiva?.toLowerCase() === cat.nombre.toLowerCase()
+                    ? 'bg-brand-700 text-white shadow-sm'
                     : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
                 }`}
               >
