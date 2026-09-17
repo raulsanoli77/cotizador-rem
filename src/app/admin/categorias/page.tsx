@@ -12,6 +12,7 @@ interface CampoFiltro {
   sufijo?: string;
   opciones?: string[];
   opcionesText?: string;
+  visible_en_filtros?: boolean;
 }
 
 interface Categoria {
@@ -90,6 +91,7 @@ export default function AdminCategorias() {
       sufijo: c.sufijo || (c as any).unidad || '',
       opcionesText: (c.opciones || []).join(', '),
       opciones: c.opciones,
+      visible_en_filtros: c.visible_en_filtros ?? true,
     })));
     setModalOpen(true);
   };
@@ -114,6 +116,7 @@ export default function AdminCategorias() {
       const payload: any = { 
         nombre: campo.nombre, 
         tipo: campo.tipo,
+        visible_en_filtros: campo.visible_en_filtros ?? true
       };
 
       // Guardar sufijo solo si tiene valor
@@ -148,7 +151,7 @@ export default function AdminCategorias() {
 
   // Funciones para manejar campos dinámicos
   const addCampo = () => {
-    setEditCampos([...editCampos, { nombre: '', tipo: 'texto', sufijo: '', opcionesText: '' }]);
+    setEditCampos([...editCampos, { nombre: '', tipo: 'texto', sufijo: '', opcionesText: '', visible_en_filtros: true }]);
   };
 
   const removeCampo = (index: number) => {
@@ -356,6 +359,20 @@ export default function AdminCategorias() {
                               placeholder="°, %, mm"
                               className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none text-center font-mono" 
                             />
+                          </div>
+
+                          {/* Toggle Filtros */}
+                          <div className="w-20 shrink-0">
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 text-center">Filtro</label>
+                            <div className="flex justify-center">
+                              <input 
+                                type="checkbox"
+                                checked={campo.visible_en_filtros ?? true}
+                                onChange={e => updateCampo(index, 'visible_en_filtros', e.target.checked)}
+                                className="w-5 h-5 text-brand-600 rounded border-gray-300 focus:ring-brand-500"
+                                title="Mostrar como filtro en el catálogo"
+                              />
+                            </div>
                           </div>
 
                           {/* Botón eliminar */}

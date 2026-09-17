@@ -30,6 +30,7 @@ export interface CampoFiltro {
   opciones?: string[];
   unidad?: string;
   sufijo?: string;
+  visible_en_filtros?: boolean;
 }
 
 export interface ProductoConPrecio extends Producto {

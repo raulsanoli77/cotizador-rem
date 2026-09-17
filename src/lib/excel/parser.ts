@@ -5,6 +5,35 @@ export interface ParseResult {
   errores: string[];
 }
 
+// Mapa de aliases: permite que el Excel use nombres diferentes a los del sistema
+// La clave es el nombre NORMALIZADO (lowercase, sin espacios extra)
+// El valor es el campo del sistema al que corresponde
+const COLUMN_ALIASES: Record<string, string> = {
+  // Formato del Excel del usuario → campo del sistema
+  'sku_interno': 'sku_interno',
+  'numero de parte': 'numero_parte',
+  'numero_parte': 'numero_parte',
+  'marca': 'marca',
+  'categoria': 'categoria',
+  'costo': 'costo_base',
+  'costo_base': 'costo_base',
+  'moneda': 'moneda_costo',
+  'moneda_costo': 'moneda_costo',
+  'pais de origen': 'proveedor_origen',
+  'proveedor_origen': 'proveedor_origen',
+  'imagen_url': 'imagen_url',
+};
+
+// Columnas que son campos fijos del producto (no van a especificaciones_tecnicas)
+const CAMPOS_FIJOS = new Set([
+  'sku_interno', 'numero_parte', 'marca', 'categoria',
+  'costo_base', 'moneda_costo', 'proveedor_origen', 'imagen_url'
+]);
+
+function normalizeKey(key: string): string {
+  return key.trim().toLowerCase();
+}
+
 export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
   const errores: string[] = [];
   const productos: any[] = [];
@@ -17,50 +46,72 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
     // Convertir a JSON, asumiendo la fila 1 como encabezados
     const rows = XLSX.utils.sheet_to_json(worksheet, { defval: null }) as any[];
     
+    if (rows.length === 0) {
+      errores.push('El archivo está vacío o no tiene datos.');
+      return { productos, errores };
+    }
+
+    // Construir el mapeo de columnas del Excel actual
+    const excelColumns = Object.keys(rows[0]);
+    const columnMapping: Record<string, { systemField: string | null; originalName: string }> = {};
+    
+    excelColumns.forEach(col => {
+      const normalized = normalizeKey(col);
+      const systemField = COLUMN_ALIASES[normalized] || null;
+      columnMapping[col] = { systemField, originalName: col };
+    });
+
     rows.forEach((row, index) => {
       const rowNum = index + 2; // +2 por encabezado y base 0
       
-      // Columnas fijas obligatorias
-      if (!row['SKU_Interno']) {
-        errores.push(`Fila ${rowNum}: Falta SKU_Interno`);
-        return;
-      }
-      if (!row['Numero_Parte']) {
-        errores.push(`Fila ${rowNum}: Falta Numero_Parte (${row['SKU_Interno']})`);
-        return;
-      }
-      if (!row['Marca']) {
-        errores.push(`Fila ${rowNum}: Falta Marca (${row['SKU_Interno']})`);
-        return;
-      }
-      if (!row['Categoria']) {
-        errores.push(`Fila ${rowNum}: Falta Categoria (${row['SKU_Interno']})`);
-        return;
-      }
-      if (row['Costo_Base'] === undefined || row['Costo_Base'] === null) {
-        errores.push(`Fila ${rowNum}: Falta Costo_Base (${row['SKU_Interno']})`);
-        return;
-      }
-
-      // Separar columnas fijas y dinámicas
-      const columnasFijas = ['SKU_Interno', 'Numero_Parte', 'Marca', 'Proveedor_Origen', 'Costo_Base', 'Moneda_Costo', 'Categoria', 'Imagen_URL'];
+      // Construir objeto con campos mapeados
+      const mapped: Record<string, any> = {};
       const especificaciones_tecnicas: Record<string, any> = {};
 
-      Object.keys(row).forEach((key) => {
-        if (!columnasFijas.includes(key) && row[key] !== null && row[key] !== '') {
-          especificaciones_tecnicas[key] = row[key];
+      excelColumns.forEach(col => {
+        const value = row[col];
+        const { systemField, originalName } = columnMapping[col];
+        
+        if (systemField && CAMPOS_FIJOS.has(systemField)) {
+          // Es un campo fijo del sistema
+          mapped[systemField] = value;
+        } else if (value !== null && value !== '' && value !== undefined) {
+          // Es una especificación técnica - usar el nombre original de la columna
+          especificaciones_tecnicas[originalName] = String(value);
         }
       });
 
+      // Validaciones obligatorias
+      if (!mapped.sku_interno) {
+        errores.push(`Fila ${rowNum}: Falta SKU_Interno`);
+        return;
+      }
+      if (!mapped.numero_parte) {
+        errores.push(`Fila ${rowNum}: Falta Numero_Parte / NUMERO DE PARTE (${mapped.sku_interno})`);
+        return;
+      }
+      if (!mapped.marca) {
+        errores.push(`Fila ${rowNum}: Falta Marca (${mapped.sku_interno})`);
+        return;
+      }
+      if (!mapped.categoria) {
+        errores.push(`Fila ${rowNum}: Falta Categoria (${mapped.sku_interno})`);
+        return;
+      }
+      if (mapped.costo_base === undefined || mapped.costo_base === null) {
+        errores.push(`Fila ${rowNum}: Falta Costo / Costo_Base (${mapped.sku_interno})`);
+        return;
+      }
+
       productos.push({
-        sku_interno: String(row['SKU_Interno']).trim(),
-        numero_parte: String(row['Numero_Parte']).trim(),
-        marca: String(row['Marca']).trim(),
-        proveedor_origen: String(row['Proveedor_Origen'] || 'No especificado').trim(),
-        costo_base: parseFloat(row['Costo_Base']) || 0,
-        moneda_costo: String(row['Moneda_Costo'] || 'USD').trim().toUpperCase(),
-        categoria: String(row['Categoria']).trim(),
-        imagen_url: row['Imagen_URL'] ? String(row['Imagen_URL']).trim() : null,
+        sku_interno: String(mapped.sku_interno).trim(),
+        numero_parte: String(mapped.numero_parte).trim(),
+        marca: String(mapped.marca).trim(),
+        proveedor_origen: String(mapped.proveedor_origen || 'No especificado').trim(),
+        costo_base: parseFloat(mapped.costo_base) || 0,
+        moneda_costo: String(mapped.moneda_costo || 'USD').trim().toUpperCase(),
+        categoria: String(mapped.categoria).trim(),
+        imagen_url: mapped.imagen_url ? String(mapped.imagen_url).trim() : null,
         especificaciones_tecnicas,
         activo: true
       });

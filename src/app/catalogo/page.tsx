@@ -175,13 +175,23 @@ export default function CatalogoPage() {
         let camposParaFiltrar: CampoFiltro[] = [];
         if (categoriaActiva) {
           const cat = categorias.find((c) => c.nombre === categoriaActiva);
-          camposParaFiltrar = cat?.campos_filtro || [];
+          camposParaFiltrar = (cat?.campos_filtro || []).filter(c => c.visible_en_filtros !== false);
         } else {
           // "Todas": extraer campos dinámicamente de TODOS los productos
+          // Pero solo permitir los que están marcados como visibles en sus categorías
+          const allowedKeys = new Set<string>();
+          categorias.forEach(cat => {
+            (cat.campos_filtro || []).forEach(c => {
+              if (c.visible_en_filtros !== false) allowedKeys.add(c.nombre);
+            });
+          });
+
           const clavesUnicas = new Set<string>();
           productosConPrecio.forEach(prod => {
             if (prod.especificaciones_tecnicas) {
-              Object.keys(prod.especificaciones_tecnicas).forEach(k => clavesUnicas.add(k));
+              Object.keys(prod.especificaciones_tecnicas).forEach(k => {
+                if (allowedKeys.has(k)) clavesUnicas.add(k);
+              });
             }
           });
           camposParaFiltrar = Array.from(clavesUnicas).sort().map(k => ({

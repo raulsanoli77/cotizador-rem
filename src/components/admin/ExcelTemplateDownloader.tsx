@@ -26,15 +26,15 @@ export default function ExcelTemplateDownloader() {
     const categoria = categorias.find(c => c.id === selectedCat);
     if (!categoria) return;
 
-    // Columnas base requeridas
+    // Columnas base con los nombres que el usuario ya usa en sus Excels
     const baseColumns = [
       'SKU_Interno', 
-      'Numero_Parte', 
       'Marca', 
       'Categoria',
-      'Proveedor_Origen', 
-      'Costo_Base', 
-      'Moneda_Costo'
+      'COSTO', 
+      'MONEDA',
+      'PAIS DE ORIGEN',
+      'NUMERO DE PARTE', 
     ];
     
     // Columnas dinámicas de la categoría
@@ -46,10 +46,13 @@ export default function ExcelTemplateDownloader() {
     // Cabeceras finales
     const headers = [...baseColumns, ...dynamicColumns];
 
-    // Crear un libro de trabajo vacío con solo las cabeceras
+    // Crear un libro de trabajo con las cabeceras y una fila de ejemplo
     const ws = XLSX.utils.aoa_to_sheet([headers]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Plantilla');
+
+    // Ajustar anchos de columna
+    ws['!cols'] = headers.map(h => ({ wch: Math.max(h.length + 4, 15) }));
 
     // Descargar el archivo
     XLSX.writeFile(wb, `Plantilla_${categoria.nombre.replace(/\s+/g, '_')}.xlsx`);
