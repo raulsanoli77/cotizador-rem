@@ -53,7 +53,7 @@ export default function CatalogoPage() {
     cargarCategorias();
     cargarMarcasLogos();
 
-    // Leer la categoría y búsqueda inicial de la URL
+    // Leer la categoría, búsqueda inicial y filtros dinámicos de la URL
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlCategoria = params.get('categoria');
@@ -63,6 +63,19 @@ export default function CatalogoPage() {
       const urlSearch = params.get('q');
       if (urlSearch) {
         setBusqueda(urlSearch);
+      }
+      
+      // Extraer filtros dinámicos (empiezan con f_)
+      const initialFiltros: Record<string, string[]> = {};
+      params.forEach((value, key) => {
+        if (key.startsWith('f_')) {
+          const filterName = key.replace('f_', '');
+          initialFiltros[filterName] = [value];
+        }
+      });
+      
+      if (Object.keys(initialFiltros).length > 0) {
+        setFiltrosActivos(initialFiltros);
       }
     }
 

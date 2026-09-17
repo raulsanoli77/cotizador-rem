@@ -220,13 +220,22 @@ export default function ProductDetailPage() {
             </h3>
             
             {specsEntries.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {specsEntries.map(([key, value]) => (
-                  <div key={key} className="bg-white border border-slate-200 p-5 rounded-xl flex flex-col hover:border-brand-400 hover:shadow-md transition-all">
-                    <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{key}</span>
-                    <span className="text-base sm:text-lg font-bold text-slate-900">{String(value)}</span>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {specsEntries.map(([key, value]) => {
+                  const urlFiltro = `/catalogo?categoria=${encodeURIComponent(producto.categoria || '')}&f_${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
+                  return (
+                    <Link 
+                      key={key} 
+                      href={urlFiltro}
+                      target="_blank"
+                      title={`Buscar más productos con ${key}: ${value}`}
+                      className="bg-white border border-slate-200 p-3 sm:p-4 rounded-xl flex flex-col hover:border-brand-400 hover:shadow-md hover:bg-brand-50 transition-all cursor-pointer group"
+                    >
+                      <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-brand-600 transition-colors line-clamp-1">{key}</span>
+                      <span className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-brand-700 transition-colors line-clamp-1">{String(value)}</span>
+                    </Link>
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white border border-slate-200 p-8 rounded-xl text-center shadow-sm">
