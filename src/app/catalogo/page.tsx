@@ -88,27 +88,41 @@ export default function CatalogoPage() {
     async function cargarProductos() {
       setLoading(true);
 
-      let query = supabase
-        .from('productos')
-        .select('*')
-        .eq('activo', true)
-        .order('marca')
-        .limit(2500); // Aumentado para filtrado profundo en cliente
+      let allData: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
 
-      // Filtro por categoría (único filtro estricto en servidor)
-      // Usamos ilike para evitar problemas si en la BD está en mayúsculas (ENDMILLS) y en la UI en Title Case (Endmills)
-      if (categoriaActiva) {
-        query = query.ilike('categoria', categoriaActiva);
+      while (hasMore) {
+        let query = supabase
+          .from('productos')
+          .select('*')
+          .eq('activo', true)
+          .order('marca')
+          .range(from, from + step - 1);
+
+        if (categoriaActiva) {
+          query = query.ilike('categoria', categoriaActiva);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('Error cargando productos:', error);
+          setLoading(false);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          if (data.length < step) hasMore = false;
+          else from += step;
+        } else {
+          hasMore = false;
+        }
       }
 
-      // La búsqueda profunda ahora se hace en el cliente para abarcar descripciones
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error cargando productos:', error);
-        setLoading(false);
-        return;
-      }
+      const data = allData;
 
       if (data) {
         // Calcular precios de venta

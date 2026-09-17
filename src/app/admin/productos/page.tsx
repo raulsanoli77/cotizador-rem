@@ -40,13 +40,32 @@ export default function AdminProductos() {
 
   const fetchProductos = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('productos')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (data) setProductos(data as Producto[]);
-    if (error) console.error('Error fetch productos:', error);
+    try {
+      let allData: any[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('productos')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + step - 1);
+        
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          if (data.length < step) hasMore = false;
+          else from += step;
+        } else {
+          hasMore = false;
+        }
+      }
+      setProductos(allData as Producto[]);
+    } catch (error) {
+      console.error('Error fetch productos:', error);
+    }
     setLoading(false);
   };
 
@@ -169,7 +188,10 @@ export default function AdminProductos() {
     <div>
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">Catálogo de Productos</h1>
+          <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">
+            Catálogo de Productos
+            <span className="text-sm font-normal text-slate-500 ml-3 bg-slate-100 px-2 py-1 rounded-md">({productos.length} total)</span>
+          </h1>
           {productos.length > 0 && (
             <button
               onClick={handleEmptyCatalog}
