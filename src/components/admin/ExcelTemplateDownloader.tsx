@@ -41,9 +41,6 @@ export default function ExcelTemplateDownloader() {
     const dynamicColumns: string[] = [];
     (categoria.campos_filtro || []).forEach((campo: any) => {
       dynamicColumns.push(campo.nombre);
-      if (campo.unidadTipo === 'seleccion') {
-        dynamicColumns.push(`Unidad_${campo.nombre}`);
-      }
     });
     
     // Cabeceras finales

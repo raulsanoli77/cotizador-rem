@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Loader2, Plus, Edit, Trash2, Save, X, GripVertical, Settings2, Tags } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, Save, X, GripVertical, Settings2, Tags, Type } from 'lucide-react';
 import Link from 'next/link';
 import { getCategoriasServer, saveCategoriaServer, deleteCategoriaServer } from './actions';
 import { supabase } from '@/lib/supabase/client';
@@ -9,12 +9,9 @@ import { supabase } from '@/lib/supabase/client';
 interface CampoFiltro {
   nombre: string;
   tipo: 'texto' | 'seleccion';
-  unidad?: string;
+  sufijo?: string;
   opciones?: string[];
   opcionesText?: string;
-  unidadTipo?: 'fijo' | 'seleccion';
-  unidadOpciones?: string[];
-  unidadOpcionesText?: string;
 }
 
 interface Categoria {
@@ -86,12 +83,13 @@ export default function AdminCategorias() {
     setEditId(cat.id);
     setEditNombre(cat.nombre);
     setEditImagenUrl(cat.imagen_url || '');
-    // Transformamos las opciones a texto crudo para que el textarea funcione libremente
+    // Migración: si un campo tiene la estructura vieja (unidadTipo, unidad), se migra a sufijo
     setEditCampos((cat.campos_filtro || []).map(c => ({
-      ...c,
+      nombre: c.nombre,
+      tipo: c.tipo || 'texto',
+      sufijo: c.sufijo || (c as any).unidad || '',
       opcionesText: (c.opciones || []).join(', '),
-      unidadTipo: c.unidadTipo || 'fijo',
-      unidadOpcionesText: (c.unidadOpciones || []).join(', ')
+      opciones: c.opciones,
     })));
     setModalOpen(true);
   };
@@ -113,23 +111,20 @@ export default function AdminCategorias() {
     const camposToSave = editCampos.map(campo => {
       if (!campo.nombre.trim()) throw new Error('Todos los campos deben tener un nombre.');
       
-      const payload: CampoFiltro = { 
+      const payload: any = { 
         nombre: campo.nombre, 
-        tipo: campo.tipo, 
-        unidad: campo.unidad,
-        unidadTipo: campo.unidadTipo || 'fijo'
+        tipo: campo.tipo,
       };
+
+      // Guardar sufijo solo si tiene valor
+      if (campo.sufijo && campo.sufijo.trim()) {
+        payload.sufijo = campo.sufijo.trim();
+      }
 
       if (campo.tipo === 'seleccion') {
         const opcionesLimpio = (campo.opcionesText || '').split(',').map(s => s.trim()).filter(s => s !== '');
         if (opcionesLimpio.length === 0) throw new Error(`El campo "${campo.nombre}" es de tipo selección y debe tener al menos una opción.`);
         payload.opciones = opcionesLimpio;
-      }
-
-      if (campo.unidadTipo === 'seleccion') {
-        const uniOpcionesLimpio = (campo.unidadOpcionesText || '').split(',').map(s => s.trim()).filter(s => s !== '');
-        if (uniOpcionesLimpio.length === 0) throw new Error(`La unidad del campo "${campo.nombre}" es de tipo selección y debe tener al menos una opción (ej. mm, in).`);
-        payload.unidadOpciones = uniOpcionesLimpio;
       }
       
       return payload;
@@ -153,7 +148,7 @@ export default function AdminCategorias() {
 
   // Funciones para manejar campos dinámicos
   const addCampo = () => {
-    setEditCampos([...editCampos, { nombre: '', tipo: 'texto', unidad: '', opcionesText: '', unidadTipo: 'fijo', unidadOpcionesText: '' }]);
+    setEditCampos([...editCampos, { nombre: '', tipo: 'texto', sufijo: '', opcionesText: '' }]);
   };
 
   const removeCampo = (index: number) => {
@@ -174,16 +169,6 @@ export default function AdminCategorias() {
       newCampos[index].opcionesText = (newCampos[index].opciones || []).join(', ');
     }
 
-    // Limpiar opciones de unidad si cambia a fijo
-    if (key === 'unidadTipo' && value === 'fijo') {
-      delete newCampos[index].unidadOpciones;
-      delete newCampos[index].unidadOpcionesText;
-    }
-    // Inicializar si cambia unidad a seleccion
-    if (key === 'unidadTipo' && value === 'seleccion' && typeof newCampos[index].unidadOpcionesText === 'undefined') {
-      newCampos[index].unidadOpcionesText = (newCampos[index].unidadOpciones || []).join(', ');
-    }
-
     setEditCampos(newCampos);
   };
 
@@ -192,7 +177,7 @@ export default function AdminCategorias() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestor de Categorías y Atributos</h1>
-          <p className="text-sm text-gray-500 mt-1">Configura los menús desplegables y campos técnicos de tus productos.</p>
+          <p className="text-sm text-gray-500 mt-1">Configura los campos técnicos de tus productos por categoría.</p>
         </div>
         <button 
           onClick={handleOpenNew}
@@ -226,8 +211,8 @@ export default function AdminCategorias() {
                         <div className="flex flex-wrap gap-2">
                           {cat.campos_filtro?.map((campo, idx) => (
                             <span key={idx} className="bg-gray-100 border border-gray-200 text-gray-700 px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1">
-                              {campo.tipo === 'seleccion' ? <Settings2 className="h-3 w-3 text-brand-600" /> : <Tags className="h-3 w-3 text-gray-400" />}
-                              {campo.nombre} {campo.unidadTipo === 'seleccion' ? '(Multi-Unidad)' : (campo.unidad && `(${campo.unidad})`)}
+                              {campo.tipo === 'seleccion' ? <Settings2 className="h-3 w-3 text-brand-600" /> : <Type className="h-3 w-3 text-gray-400" />}
+                              {campo.nombre}{campo.sufijo ? ` (${campo.sufijo})` : (campo as any).unidad ? ` (${(campo as any).unidad})` : ''}
                             </span>
                           ))}
                           {(!cat.campos_filtro || cat.campos_filtro.length === 0) && (
@@ -255,11 +240,11 @@ export default function AdminCategorias() {
       </div>
 
       {/* =========================================================================
-          MODAL: EDITAR / CREAR CATEGORÍA
+          MODAL: EDITAR / CREAR CATEGORÍA (Simplificado)
           ========================================================================= */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col my-8 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col my-8 animate-in fade-in zoom-in-95 duration-200">
             
             <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
               <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -315,7 +300,7 @@ export default function AdminCategorias() {
                 <div className="flex justify-between items-center mb-4">
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">Campos Técnicos (Especificaciones)</h3>
-                    <p className="text-sm text-gray-500">Configura la información que se le pedirá a los productos de esta categoría.</p>
+                    <p className="text-sm text-gray-500">Define los campos que necesitarás capturar por producto.</p>
                   </div>
                   <button 
                     onClick={addCampo}
@@ -329,25 +314,27 @@ export default function AdminCategorias() {
                   {editCampos.length === 0 ? (
                     <div className="text-center p-8 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
                       <p className="text-gray-500 font-medium">Esta categoría no tiene campos técnicos adicionales.</p>
-                      <p className="text-sm text-gray-400 mt-1">Usa el botón de arriba para agregar "Flautas", "Recubrimiento", etc.</p>
+                      <p className="text-sm text-gray-400 mt-1">Usa el botón de arriba para agregar &quot;Flautas&quot;, &quot;Recubrimiento&quot;, etc.</p>
                     </div>
                   ) : (
                     editCampos.map((campo, index) => (
-                      <div key={index} className="flex flex-col gap-4 p-4 border border-gray-200 rounded-xl bg-gray-50 relative group">
+                      <div key={index} className="flex flex-col gap-3 p-4 border border-gray-200 rounded-xl bg-gray-50 relative group">
                         
-                        <div className="flex gap-4">
+                        <div className="flex gap-3 items-end">
+                          {/* Nombre del campo */}
                           <div className="flex-1">
                             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre del Campo</label>
                             <input 
                               type="text" 
                               value={campo.nombre} 
                               onChange={e => updateCampo(index, 'nombre', e.target.value)}
-                              placeholder="Ej. Diámetro"
+                              placeholder="Ej. Diámetro, Flautas, Ángulo"
                               className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" 
                             />
                           </div>
                           
-                          <div className="w-32">
+                          {/* Tipo */}
+                          <div className="w-36">
                             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Tipo</label>
                             <select 
                               value={campo.tipo} 
@@ -359,48 +346,41 @@ export default function AdminCategorias() {
                             </select>
                           </div>
 
-                          <div className="w-40">
-                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Tipo Unidad</label>
-                            <select 
-                              value={campo.unidadTipo || 'fijo'} 
-                              onChange={e => updateCampo(index, 'unidadTipo', e.target.value)}
-                              className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
-                            >
-                              <option value="fijo">Fija / Nula</option>
-                              <option value="seleccion">Lista Desplegable</option>
-                            </select>
+                          {/* Sufijo / Símbolo */}
+                          <div className="w-28">
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Sufijo</label>
+                            <input 
+                              type="text" 
+                              value={campo.sufijo || ''} 
+                              onChange={e => updateCampo(index, 'sufijo', e.target.value)}
+                              placeholder="°, %, mm"
+                              className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none text-center font-mono" 
+                            />
                           </div>
 
-                          {campo.unidadTipo !== 'seleccion' && (
-                            <div className="w-32">
-                              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Unidad</label>
-                              <input 
-                                type="text" 
-                                value={campo.unidad || ''} 
-                                onChange={e => updateCampo(index, 'unidad', e.target.value)}
-                                placeholder="ej. mm, in"
-                                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" 
-                              />
-                            </div>
-                          )}
-
-                          <div className="pt-6">
-                            <button 
-                              onClick={() => removeCampo(index)}
-                              className="p-2.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors border border-transparent hover:border-red-200"
-                              title="Quitar Campo"
-                            >
-                              <Trash2 className="h-5 w-5" />
-                            </button>
-                          </div>
+                          {/* Botón eliminar */}
+                          <button 
+                            onClick={() => removeCampo(index)}
+                            className="p-2.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors border border-transparent hover:border-red-200 shrink-0"
+                            title="Quitar Campo"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
                         </div>
+
+                        {/* Previsualización del sufijo */}
+                        {campo.sufijo && campo.sufijo.trim() && (
+                          <p className="text-xs text-gray-500 ml-1">
+                            Vista previa: <span className="font-mono bg-white px-2 py-0.5 rounded border border-gray-200 text-gray-800">valor{campo.sufijo.trim()}</span>
+                          </p>
+                        )}
 
                         {/* Editor de Opciones (Si el TIPO es selección) */}
                         {campo.tipo === 'seleccion' && (
-                          <div className="bg-white p-4 rounded-lg border border-brand-100 shadow-sm mt-2">
+                          <div className="bg-white p-4 rounded-lg border border-brand-100 shadow-sm">
                             <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-2 flex items-center gap-2">
                               <Settings2 className="h-4 w-4" />
-                              Opciones de Selección para el Campo
+                              Opciones de Selección
                             </label>
                             <p className="text-xs text-gray-500 mb-2">Escribe las opciones separadas por una coma ( , ).</p>
                             <textarea 
@@ -413,29 +393,6 @@ export default function AdminCategorias() {
                             <div className="flex flex-wrap gap-2 mt-3">
                               {(campo.opcionesText || '').split(',').map(s => s.trim()).filter(s => s !== '').map((opt, optIdx) => (
                                 <span key={optIdx} className="bg-brand-100 text-brand-800 border border-brand-200 px-2 py-1 rounded text-xs font-medium">{opt}</span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Editor de Opciones (Si UNIDAD es selección) */}
-                        {campo.unidadTipo === 'seleccion' && (
-                          <div className="bg-white p-4 rounded-lg border border-purple-200 shadow-sm mt-2">
-                            <label className="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-2 flex items-center gap-2">
-                              <Settings2 className="h-4 w-4" />
-                              Opciones de UNIDAD Desplegable
-                            </label>
-                            <p className="text-xs text-gray-500 mb-2">Escribe las opciones de unidad (ej. mm, in, N/A).</p>
-                            <textarea 
-                              rows={2}
-                              value={campo.unidadOpcionesText ?? ''} 
-                              onChange={e => updateCampo(index, 'unidadOpcionesText', e.target.value)}
-                              placeholder="Ej. mm, in, N/A, Grados"
-                              className="w-full border border-purple-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-purple-50/30" 
-                            />
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              {(campo.unidadOpcionesText || '').split(',').map(s => s.trim()).filter(s => s !== '').map((opt, optIdx) => (
-                                <span key={optIdx} className="bg-purple-100 text-purple-800 border border-purple-200 px-2 py-1 rounded text-xs font-medium">{opt}</span>
                               ))}
                             </div>
                           </div>

@@ -29,6 +29,7 @@ export interface CampoFiltro {
   tipo: 'texto' | 'numero' | 'rango' | 'seleccion';
   opciones?: string[];
   unidad?: string;
+  sufijo?: string;
 }
 
 export interface ProductoConPrecio extends Producto {
