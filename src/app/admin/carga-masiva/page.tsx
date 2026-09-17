@@ -11,11 +11,13 @@ export default function AdminCargaMasiva() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  const [reporte, setReporte] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processFile = async (selectedFile: File) => {
     setFile(selectedFile);
     setSuccess(null);
+    setReporte([]);
     const buffer = await selectedFile.arrayBuffer();
     const result = parsearExcelProductos(buffer);
     setParseResult(result);
@@ -51,6 +53,7 @@ export default function AdminCargaMasiva() {
       if (!response.ok) throw new Error(data.error || 'Error al subir a la BD');
       
       setSuccess(data.message);
+      setReporte(data.reporte || []);
       setFile(null);
       setParseResult(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -90,9 +93,31 @@ export default function AdminCargaMasiva() {
 
           {/* Success Message */}
           {success && (
-            <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl flex items-center">
-              <CheckCircle2 className="h-5 w-5 mr-3" />
-              {success}
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl flex items-center">
+                <CheckCircle2 className="h-5 w-5 mr-3" />
+                {success}
+              </div>
+              
+              {reporte.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <div className="flex items-start mb-2">
+                    <AlertTriangle className="h-5 w-5 mr-2 text-amber-600 shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-amber-800 text-sm">Reporte de omisiones ({reporte.length})</h4>
+                      <p className="text-xs text-amber-700">Los siguientes productos no fueron procesados debido a errores en sus datos o por ser duplicados dentro del archivo Excel:</p>
+                    </div>
+                  </div>
+                  <ul className="text-xs text-amber-700 bg-white/50 border border-amber-100 rounded-lg p-3 max-h-48 overflow-y-auto space-y-1 mt-2">
+                    {reporte.map((msg, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="text-amber-400 font-bold">•</span>
+                        <span>{msg}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 

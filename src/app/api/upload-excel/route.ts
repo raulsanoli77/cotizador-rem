@@ -53,8 +53,12 @@ export async function POST(request: NextRequest) {
 
     // Desduplicar el array basándonos en sku_interno
     // PostgreSQL lanza error si intentas hacer upsert del mismo SKU más de una vez en el mismo query
+    const reporte: string[] = [];
     const productosDesduplicados = Object.values(
       productosEnriquecidos.reduce((acc, current) => {
+        if (acc[current.sku_interno]) {
+          reporte.push(`SKU duplicado omitido: ${current.sku_interno} (Se tomó la última fila)`);
+        }
         acc[current.sku_interno] = current;
         return acc;
       }, {} as Record<string, any>)
@@ -74,7 +78,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      message: `Se procesaron ${data?.length || 0} productos correctamente.` 
+      message: `Se procesaron ${data?.length || 0} productos correctamente.`,
+      reporte
     });
 
   } catch (error) {
