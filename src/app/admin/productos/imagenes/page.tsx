@@ -47,19 +47,37 @@ export default function GestorImagenes() {
 
   const handleDeleteImage = async (urlToDelete: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Evitar que se seleccione la imagen al darle clic a la tachita
-    if(!confirm('¿Estás seguro de eliminar esta imagen del servidor permanentemente?')) return;
     
-    // Extraer el nombre del archivo de la URL
-    const parts = urlToDelete.split('/');
-    const fileName = parts[parts.length - 1];
-    if(!fileName) return;
+    try {
+      // 1. Auditoría: Revisar si la imagen está en uso
+      const { count, error: countError } = await supabase
+        .from('productos')
+        .select('*', { count: 'exact', head: true })
+        .eq('imagen_url', urlToDelete);
 
-    const { error } = await supabase.storage.from('media').remove([`productos/${fileName}`]);
-    if (!error) {
+      if (countError) throw countError;
+
+      if (count && count > 0) {
+        const confirmInUse = confirm(`¡ALERTA DE SEGURIDAD!\n\nEsta imagen está actualmente asignada a ${count} producto(s) en tu catálogo.\n\nSi la eliminas, esos productos aparecerán con la imagen rota (error 404). Te recomendamos primero asignarles otra imagen antes de borrar esta.\n\n¿Aún así deseas FORZAR la eliminación y romper esos enlaces?`);
+        if (!confirmInUse) return;
+      } else {
+        const confirmNormal = confirm('¿Estás seguro de eliminar esta imagen del servidor permanentemente?');
+        if (!confirmNormal) return;
+      }
+      
+      // Extraer el nombre del archivo de la URL
+      const parts = urlToDelete.split('/');
+      const fileName = parts[parts.length - 1];
+      if(!fileName) return;
+
+      const { error } = await supabase.storage.from('media').remove([`productos/${fileName}`]);
+      if (error) throw error;
+      
       setGalleryImages(prev => prev.filter(url => url !== urlToDelete));
       if (imageUrl === urlToDelete) setImageUrl(null);
-    } else {
-      alert('Error al eliminar imagen: ' + error.message);
+      
+    } catch (error: any) {
+      alert('Error al realizar la operación: ' + error.message);
     }
   };
 
