@@ -123,13 +123,15 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
         }
       });
 
-      // Validaciones obligatorias (saltamos la fila si no tiene datos válidos en lugar de bloquear todo el archivo)
+      // Validaciones obligatorias
       if (!mapped.sku_interno || mapped.sku_interno.includes('CO--') || mapped.sku_interno.includes('CO––')) {
-        return; // Fila vacía o SKU de relleno, ignorar
+        errores.push(`Fila ${rowNum}: SKU_Interno vacío o inválido (se requiere para actualizar)`);
+        return; 
       }
       
       if (mapped.costo_base === undefined || mapped.costo_base === null || mapped.costo_base === '') {
-        return; // Sin costo, ignorar
+        errores.push(`Fila ${rowNum}: Falta COSTO para el SKU ${mapped.sku_interno}`);
+        return; 
       }
 
       if (!mapped.numero_parte) {
