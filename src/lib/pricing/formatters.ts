@@ -37,7 +37,7 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
   
   if (categoriaStr) partes.push(categoriaStr);
   
-  if (tipoDeFilo && tipoDeFilo.toUpperCase() !== 'CUADRADO') {
+  if (tipoDeFilo && tipoDeFilo.toUpperCase() === 'BOLA') {
     partes.push(tipoDeFilo);
   }
 

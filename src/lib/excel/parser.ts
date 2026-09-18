@@ -96,8 +96,9 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
           if (!isNA) {
             // Auto-agregar sufijo de medida (solo a Diametro, Corte (L1), Largo, Zanco)
             if (sufijoMedida) {
-              const isMedida = ['DIAMETRO', 'LARGO', 'ZANCO'].some(p => upperName.includes(p)) || 
-                               (upperName.includes('CORTE') && !upperName.includes('CENTRAL') && !upperName.includes('DIRECCION'));
+              const upperNameClean = upperName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              const isMedida = ['DIAMETRO', 'LARGO', 'ZANCO'].some(p => upperNameClean.includes(p)) || 
+                               (upperNameClean.includes('CORTE') && !upperNameClean.includes('CENTRAL') && !upperNameClean.includes('DIRECCION') && !upperNameClean.includes('CORTADOR'));
               
               if (isMedida && !finalValue.endsWith('"') && !finalValue.toLowerCase().endsWith('mm')) {
                 finalValue += sufijoMedida;
