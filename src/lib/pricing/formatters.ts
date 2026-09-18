@@ -27,6 +27,8 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
   const recubrimiento = getSpec(['recubrimiento']);
   const radio = getSpec(['radio']);
   const chaflan = getSpec(['chaflan', 'chaflán']);
+  const tipoDeFilo = getSpec(['tipo de filo']);
+  const tipoDeCortador = getSpec(['tipo de cortador']);
   const largoCorte = getSpec(['largo de corte', 'longitud de corte', 'corte (l1)']);
   const largoTotal = getSpec(['largo total', 'longitud total', 'largo (l)']);
 
@@ -35,6 +37,14 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
   
   if (categoriaStr) partes.push(categoriaStr);
   
+  if (tipoDeFilo && tipoDeFilo.toUpperCase() !== 'CUADRADO') {
+    partes.push(tipoDeFilo);
+  }
+
+  if (tipoDeCortador && tipoDeCortador.toUpperCase() !== 'USO GENERAL') {
+    partes.push(tipoDeCortador);
+  }
+
   if (diametro) {
     const dSuffix = (diametro.endsWith('"') || diametro.toLowerCase().endsWith('mm')) ? '' : '"';
     partes.push(`${diametro}${dSuffix}`);
