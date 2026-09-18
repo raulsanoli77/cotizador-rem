@@ -29,8 +29,36 @@ export default function GestorImagenes() {
 
   const fetchProductos = async () => {
     setLoading(true);
-    const { data } = await supabase.from('productos').select('*').order('created_at', { ascending: false });
-    if (data) setProductos(data as Producto[]);
+    let allProductos: Producto[] = [];
+    let hasMore = true;
+    let from = 0;
+    const step = 1000;
+    
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('productos')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + step - 1);
+        
+      if (error) {
+        console.error('Error fetching productos:', error);
+        hasMore = false;
+        break;
+      }
+      
+      if (data && data.length > 0) {
+        allProductos = [...allProductos, ...(data as Producto[])];
+        from += step;
+        if (data.length < step) {
+          hasMore = false;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+    
+    setProductos(allProductos);
     setLoading(false);
   };
 
