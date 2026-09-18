@@ -22,6 +22,7 @@ export default function GestorImagenes() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageMode, setImageMode] = useState<'upload' | 'gallery'>('upload');
   const [applying, setApplying] = useState(false);
+  const [paginaActual, setPaginaActual] = useState(1);
 
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
 
@@ -176,6 +177,7 @@ export default function GestorImagenes() {
   // 3. Ya no extraemos la galería de los productos, sino del Storage (fetchGallery)
 
   const handleFiltroChange = (nombre: string, valor: string) => {
+    setPaginaActual(1);
     setFiltrosActivos((prev) => {
       const actuales = prev[nombre] || [];
       if (actuales.includes(valor)) {
@@ -244,6 +246,11 @@ export default function GestorImagenes() {
     setApplying(false);
   };
 
+  // Paginación
+  const itemsPorPagina = 50;
+  const totalPaginas = Math.ceil(filteredProducts.length / itemsPorPagina);
+  const paginatedProducts = filteredProducts.slice((paginaActual - 1) * itemsPorPagina, paginaActual * itemsPorPagina);
+
   if (loading) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-brand-600" /></div>;
 
   return (
@@ -278,7 +285,7 @@ export default function GestorImagenes() {
                 type="text"
                 placeholder="Buscar por SKU, Serie, Medida, etc..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => { setSearchTerm(e.target.value); setPaginaActual(1); }}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-brand-500 sm:text-sm"
               />
             </div>
@@ -296,7 +303,7 @@ export default function GestorImagenes() {
 
           <div className="flex-1 overflow-y-auto p-4 bg-gray-50/50">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
-              {filteredProducts.map(prod => (
+              {paginatedProducts.map(prod => (
                 <div 
                   key={prod.id}
                   onClick={() => toggleSelect(prod.id)}
@@ -328,12 +335,34 @@ export default function GestorImagenes() {
                   </div>
                 </div>
               ))}
-              {filteredProducts.length === 0 && (
+              {paginatedProducts.length === 0 && (
                 <div className="col-span-full py-12 text-center text-gray-500">
                   No se encontraron productos con estos filtros.
                 </div>
               )}
             </div>
+            
+            {totalPaginas > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-8 pb-4">
+                <button
+                  onClick={() => setPaginaActual(p => Math.max(1, p - 1))}
+                  disabled={paginaActual === 1}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Anterior
+                </button>
+                <span className="text-sm font-medium text-gray-600">
+                  Página {paginaActual} de {totalPaginas}
+                </span>
+                <button
+                  onClick={() => setPaginaActual(p => Math.min(totalPaginas, p + 1))}
+                  disabled={paginaActual === totalPaginas}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
           </div>
           
           <div className="p-4 border-t bg-white text-sm font-bold text-brand-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0">
