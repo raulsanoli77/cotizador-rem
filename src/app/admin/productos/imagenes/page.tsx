@@ -23,9 +23,40 @@ export default function GestorImagenes() {
   const [imageMode, setImageMode] = useState<'upload' | 'gallery'>('upload');
   const [applying, setApplying] = useState(false);
 
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+
   useEffect(() => {
     fetchProductos();
+    fetchGallery();
   }, []);
+
+  const fetchGallery = async () => {
+    const { data, error } = await supabase.storage.from('productos').list();
+    if (data) {
+      const urls = data
+        .filter(f => f.name !== '.emptyFolderPlaceholder' && f.name)
+        .map(f => supabase.storage.from('productos').getPublicUrl(f.name).data.publicUrl);
+      setGalleryImages(urls);
+    }
+  };
+
+  const handleDeleteImage = async (urlToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar que se seleccione la imagen al darle clic a la tachita
+    if(!confirm('¿Estás seguro de eliminar esta imagen del servidor permanentemente?')) return;
+    
+    // Extraer el nombre del archivo de la URL
+    const parts = urlToDelete.split('/');
+    const fileName = parts[parts.length - 1];
+    if(!fileName) return;
+
+    const { error } = await supabase.storage.from('productos').remove([fileName]);
+    if (!error) {
+      setGalleryImages(prev => prev.filter(url => url !== urlToDelete));
+      if (imageUrl === urlToDelete) setImageUrl(null);
+    } else {
+      alert('Error al eliminar imagen: ' + error.message);
+    }
+  };
 
   const fetchProductos = async () => {
     setLoading(true);
@@ -119,8 +150,7 @@ export default function GestorImagenes() {
     ...Object.keys(specsDinamic).sort().map(k => ({ nombre: k, tipo: 'texto' as const, visible_en_filtros: true }))
   ];
 
-  // 3. Extraer Galería de Imágenes
-  const uniqueImages = Array.from(new Set(productos.map(p => p.imagen_url).filter(Boolean))) as string[];
+  // 3. Ya no extraemos la galería de los productos, sino del Storage (fetchGallery)
 
   const handleFiltroChange = (nombre: string, valor: string) => {
     setFiltrosActivos((prev) => {
@@ -323,15 +353,22 @@ export default function GestorImagenes() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
-                  {uniqueImages.length === 0 ? (
-                    <p className="col-span-2 text-xs text-gray-500 text-center py-8">No hay imágenes previas en la base de datos.</p>
+                  {galleryImages.length === 0 ? (
+                    <p className="col-span-2 text-xs text-gray-500 text-center py-8">No hay imágenes en el servidor.</p>
                   ) : (
-                    uniqueImages.map(url => (
+                    galleryImages.map(url => (
                       <div 
                         key={url} 
                         onClick={() => setImageUrl(url)}
-                        className={`cursor-pointer rounded-lg border-2 p-1 transition-all ${imageUrl === url ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-200' : 'border-gray-200 hover:border-gray-300'}`}
+                        className={`group relative cursor-pointer rounded-lg border-2 p-1 transition-all ${imageUrl === url ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-200' : 'border-gray-200 hover:border-gray-300'}`}
                       >
+                        <button
+                          onClick={(e) => handleDeleteImage(url, e)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-600 shadow-md"
+                          title="Eliminar imagen permanentemente"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
                         <img src={url} alt="Galeria" className="w-full h-20 object-contain bg-white rounded mix-blend-multiply" />
                       </div>
                     ))
