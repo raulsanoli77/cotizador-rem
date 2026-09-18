@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const { data: categorias } = await supabase.from('categorias').select('id, nombre');
     const categoriasMap = new Map(categorias?.map((c) => [c.nombre.toLowerCase(), c.id]));
 
-    // Obtener imágenes existentes para no sobreescribirlas (en chunks por si el excel es muy grande)
+    // Obtener imágenes y especificaciones existentes para no sobreescribirlas (en chunks por si el excel es muy grande)
     const skus = productos.map(p => p.sku_interno);
     const chunkSize = 100;
     const productosExistentes: any[] = [];
@@ -25,28 +25,37 @@ export async function POST(request: NextRequest) {
       const chunk = skus.slice(i, i + chunkSize);
       const { data } = await supabase
         .from('productos')
-        .select('sku_interno, imagen_url')
+        .select('sku_interno, imagen_url, especificaciones_tecnicas')
         .in('sku_interno', chunk);
       if (data) productosExistentes.push(...data);
     }
       
-    const imagenesExistentesMap = new Map(
-      productosExistentes?.map((p) => [p.sku_interno, p.imagen_url])
+    const datosExistentesMap = new Map(
+      productosExistentes?.map((p) => [p.sku_interno, p])
     );
 
-    // Mapear el categoria_id y preservar imagen_url
+    // Mapear el categoria_id y preservar imagen_url y specs antiguas
     const productosEnriquecidos = productos.map((p) => {
       const catId = categoriasMap.get(p.categoria.toLowerCase());
+      const existente = datosExistentesMap.get(p.sku_interno);
       
       // Si el excel no trae imagen, pero en BD ya existe una, la preservamos
       let finalImageUrl = p.imagen_url;
-      if (!finalImageUrl && imagenesExistentesMap.has(p.sku_interno)) {
-        finalImageUrl = imagenesExistentesMap.get(p.sku_interno);
+      if (!finalImageUrl && existente?.imagen_url) {
+        finalImageUrl = existente.imagen_url;
       }
+
+      // Merge de especificaciones_tecnicas: 
+      // Mantenemos lo que ya estaba en BD y sobreescribimos solo lo que venga en el Excel
+      const mergedSpecs = {
+        ...(existente?.especificaciones_tecnicas || {}),
+        ...(p.especificaciones_tecnicas || {})
+      };
 
       return {
         ...p,
         imagen_url: finalImageUrl,
+        especificaciones_tecnicas: mergedSpecs,
         categoria_id: catId || null
       };
     });
