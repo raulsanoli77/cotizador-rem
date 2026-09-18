@@ -31,12 +31,17 @@ export default function GestorImagenes() {
   }, []);
 
   const fetchGallery = async () => {
-    const { data, error } = await supabase.storage.from('productos').list();
+    const { data, error } = await supabase.storage
+      .from('media')
+      .list('productos', { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } });
+      
     if (data) {
       const urls = data
         .filter(f => f.name !== '.emptyFolderPlaceholder' && f.name)
-        .map(f => supabase.storage.from('productos').getPublicUrl(f.name).data.publicUrl);
+        .map(f => supabase.storage.from('media').getPublicUrl(`productos/${f.name}`).data.publicUrl);
       setGalleryImages(urls);
+    } else if (error) {
+      console.error("Error fetching gallery:", error);
     }
   };
 
@@ -49,7 +54,7 @@ export default function GestorImagenes() {
     const fileName = parts[parts.length - 1];
     if(!fileName) return;
 
-    const { error } = await supabase.storage.from('productos').remove([fileName]);
+    const { error } = await supabase.storage.from('media').remove([`productos/${fileName}`]);
     if (!error) {
       setGalleryImages(prev => prev.filter(url => url !== urlToDelete));
       if (imageUrl === urlToDelete) setImageUrl(null);
