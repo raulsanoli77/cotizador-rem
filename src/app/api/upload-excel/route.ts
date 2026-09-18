@@ -56,10 +56,11 @@ export async function POST(request: NextRequest) {
     const reporte: string[] = [];
     const productosDesduplicados = Object.values(
       productosEnriquecidos.reduce((acc, current) => {
-        if (acc[current.sku_interno]) {
-          reporte.push(`SKU duplicado omitido: ${current.sku_interno} (Se tomó la última fila)`);
+        if (!acc[current.sku_interno]) {
+          acc[current.sku_interno] = current;
+        } else {
+          reporte.push(`SKU duplicado omitido: ${current.sku_interno} (Se conservó la primera fila encontrada)`);
         }
-        acc[current.sku_interno] = current;
         return acc;
       }, {} as Record<string, any>)
     );
