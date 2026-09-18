@@ -6,6 +6,7 @@ import type { Producto, CampoFiltro } from '@/types/product';
 import { Loader2, Search, CheckSquare, Square, ImageIcon, Filter, Image as ImageIcon2, UploadCloud } from 'lucide-react';
 import ImageUploader from '@/components/admin/ImageUploader';
 import FilterSidebar from '@/components/catalogo/FilterSidebar';
+import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
 
 export default function GestorImagenes() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -329,10 +330,13 @@ export default function GestorImagenes() {
                       <span className="text-xs text-brand-600 font-semibold truncate block">{prod.sku_interno}</span>
                     </div>
                   </div>
-                  <div className="text-[10px] text-gray-500 flex gap-2 overflow-hidden">
+                  <div className="text-[10px] text-gray-500 flex gap-2 overflow-hidden mb-2">
                     <span className="bg-gray-100 px-1.5 py-0.5 rounded truncate max-w-[50%]">{prod.marca}</span>
                     <span className="bg-gray-100 px-1.5 py-0.5 rounded truncate max-w-[50%]">{prod.categoria}</span>
                   </div>
+                  <p className="text-[10px] text-gray-500 line-clamp-2 leading-tight" title={formatearDescripcionProducto(prod as any)}>
+                    {formatearDescripcionProducto(prod as any)}
+                  </p>
                 </div>
               ))}
               {paginatedProducts.length === 0 && (
