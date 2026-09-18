@@ -133,22 +133,24 @@ export default function AdminCargaMasiva() {
               </div>
               
               <div className="p-6">
-                {parseResult.errores.length > 0 ? (
-                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-center text-red-800 font-medium mb-2">
+                {parseResult.errores.length > 0 && (
+                  <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-center text-amber-800 font-medium mb-2">
                       <AlertTriangle className="h-5 w-5 mr-2" />
-                      Se encontraron {parseResult.errores.length} errores:
+                      Se ignorarán {parseResult.errores.length} filas por falta de datos:
                     </div>
-                    <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+                    <ul className="list-disc list-inside text-sm text-amber-700 space-y-1">
                       {parseResult.errores.slice(0, 10).map((err, i) => <li key={i}>{err}</li>)}
                       {parseResult.errores.length > 10 && <li>...y {parseResult.errores.length - 10} más.</li>}
                     </ul>
-                    <p className="text-sm mt-3 text-red-600 font-medium">Por favor corrige el Excel y vuelve a subirlo.</p>
+                    <p className="text-sm mt-3 text-amber-600 font-medium">Estas filas serán omitidas, pero puedes continuar con el resto de los productos válidos.</p>
                   </div>
-                ) : (
+                )}
+                
+                {parseResult.productos.length > 0 ? (
                   <div>
                     <div className="bg-green-50 text-green-800 p-3 rounded-lg text-sm font-medium mb-6">
-                      ✓ El archivo está listo para ser importado. No se encontraron errores de validación básica.
+                      ✓ Se detectaron {parseResult.productos.length} productos listos para ser importados.
                     </div>
                     
                     <button
@@ -159,6 +161,10 @@ export default function AdminCargaMasiva() {
                       {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <UploadCloud className="h-5 w-5" />}
                       {uploading ? 'Importando a la Base de Datos...' : 'Confirmar e Importar Productos'}
                     </button>
+                  </div>
+                ) : (
+                  <div className="bg-red-50 text-red-800 p-4 rounded-lg text-sm font-medium border border-red-200">
+                    No se detectó ningún producto válido en el archivo para importar. Revisa el formato y vuelve a subirlo.
                   </div>
                 )}
               </div>
