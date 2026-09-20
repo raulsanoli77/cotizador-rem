@@ -54,7 +54,7 @@ export default function BuscarPage() {
 
       const imagenesMap: Record<string, string | null> = {};
       (categoriasData || []).forEach(c => {
-        imagenesMap[c.nombre] = c.imagen_url;
+        imagenesMap[c.nombre.toLowerCase().trim()] = c.imagen_url;
       });
 
       // 3. Filtrar productos que coincidan con la búsqueda
@@ -79,7 +79,7 @@ export default function BuscarPage() {
         }
 
         if (coincide || specMatch) {
-          const cat = prod.categoria || 'Sin Categoría';
+          const cat = prod.categoria ? prod.categoria.trim() : 'Sin Categoría';
           conteoCategoria[cat] = (conteoCategoria[cat] || 0) + 1;
           total++;
         }
@@ -89,7 +89,7 @@ export default function BuscarPage() {
       const categoriasResultado: CategoriaResultado[] = Object.entries(conteoCategoria)
         .map(([nombre, cantidad]) => ({
           nombre,
-          imagen_url: imagenesMap[nombre] || null,
+          imagen_url: imagenesMap[nombre.toLowerCase()] || null,
           cantidad,
         }))
         .sort((a, b) => b.cantidad - a.cantidad);
@@ -184,12 +184,13 @@ export default function BuscarPage() {
                       href={`/catalogo?categoria=${encodeURIComponent(cat.nombre)}`}
                       className="group relative flex flex-col bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-brand-500 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(37,99,235,0.15)]"
                     >
-                      {/* Imagen */}
+                      {/* Imagen con fallback */}
                       <div className="aspect-[4/3] w-full relative bg-slate-800 overflow-hidden flex items-center justify-center">
+                        <Package className="absolute h-16 w-16 text-slate-700" />
                         <img
                           src={getImageUrl(cat)}
                           alt={cat.nombre}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 relative z-10"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                           }}
