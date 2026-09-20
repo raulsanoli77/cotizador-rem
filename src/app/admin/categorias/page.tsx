@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Plus, Edit, Trash2, Save, X, GripVertical, Settings2, Tags, Type, ChevronUp, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
-import { getCategoriasServer, saveCategoriaServer, deleteCategoriaServer } from './actions';
+import { getCategoriasServer, saveCategoriaServer, deleteCategoriaServer, autoSincronizarCamposServer } from './actions';
 import { supabase } from '@/lib/supabase/client';
 
 interface CampoFiltro {
@@ -193,24 +193,7 @@ export default function AdminCategorias() {
           <p className="text-sm text-gray-500 mt-1">Configura los campos técnicos de tus productos por categoría.</p>
         </div>
         <div className="flex gap-3">
-          <button 
-            onClick={async () => {
-              try {
-                setLoading(true);
-                const res = await fetch('/api/setup-endmills');
-                if (!res.ok) throw new Error('Error en el setup');
-                alert('¡Éxito! La categoría ENDMILLS ahora tiene los 22 campos exactos del Excel listos.');
-                await fetchCategorias();
-              } catch (error) {
-                alert('Error configurando ENDMILLS');
-              } finally {
-                setLoading(false);
-              }
-            }}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-purple-700 transition-colors"
-          >
-            <Settings2 className="h-4 w-4" /> Auto-Configurar ENDMILLS (29 col)
-          </button>
+
           <button 
             onClick={handleOpenNew}
             className="bg-brand-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-brand-700 transition-colors"
@@ -255,6 +238,24 @@ export default function AdminCategorias() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex justify-center gap-2">
+                          <button 
+                            onClick={async () => {
+                              try {
+                                setLoading(true);
+                                const res = await autoSincronizarCamposServer(cat.id, cat.nombre);
+                                alert(res.message);
+                                await fetchCategorias();
+                              } catch (error: any) {
+                                alert('Error al sincronizar: ' + error.message);
+                              } finally {
+                                setLoading(false);
+                              }
+                            }} 
+                            className="p-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors flex items-center gap-1 font-medium text-xs" 
+                            title="Auto-descubrir campos desde los productos subidos"
+                          >
+                            <Settings2 className="h-4 w-4" /> <span>Sincronizar</span>
+                          </button>
                           <button onClick={() => handleOpenEdit(cat)} className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Configurar Opciones">
                             <Edit className="h-4 w-4" />
                           </button>
