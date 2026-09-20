@@ -181,7 +181,7 @@ export default function BuscarPage() {
                   {resultados.map((cat) => (
                     <Link
                       key={cat.nombre}
-                      href={`/catalogo?categoria=${encodeURIComponent(cat.nombre)}`}
+                      href={`/catalogo?categoria=${encodeURIComponent(cat.nombre)}${query ? `&q=${encodeURIComponent(query)}` : ''}`}
                       className="group relative flex flex-col bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-brand-500 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(37,99,235,0.15)]"
                     >
                       {/* Imagen con fallback */}
