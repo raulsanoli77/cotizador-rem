@@ -226,7 +226,7 @@ export default function BuscarPage() {
                             {cat.nombre}
                           </h3>
                           <p className="text-xs text-slate-400 mt-1">
-                            {cat.cantidad} {cat.cantidad === 1 ? 'artículo encontrado' : 'artículos encontrados'}
+                            Coincidencias con &quot;{query}&quot;
                           </p>
                         </div>
                         <ArrowRight className="h-5 w-5 text-slate-600 group-hover:text-brand-400 group-hover:translate-x-1 transition-all" />
