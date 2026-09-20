@@ -214,19 +214,19 @@ export default function BuscarPage() {
                         />
                         
                         {/* Badge de cantidad */}
-                        <div className="absolute top-3 right-3 bg-brand-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                        <div className="absolute top-3 right-3 bg-brand-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg z-20">
                           {cat.cantidad} {cat.cantidad === 1 ? 'producto' : 'productos'}
                         </div>
                       </div>
 
                       {/* Pie de tarjeta */}
-                      <div className="p-5 border-t border-slate-700/50 flex items-center justify-between">
+                      <div className="p-5 border-t border-slate-700/50 flex items-center justify-between z-20 bg-slate-800">
                         <div>
                           <h3 className="font-bold text-lg text-white group-hover:text-brand-400 transition-colors">
                             {cat.nombre}
                           </h3>
-                          <p className="text-xs text-slate-500 mt-1">
-                            Coincidencias con &quot;{query}&quot;
+                          <p className="text-xs text-slate-400 mt-1">
+                            {cat.cantidad} {cat.cantidad === 1 ? 'artículo encontrado' : 'artículos encontrados'}
                           </p>
                         </div>
                         <ArrowRight className="h-5 w-5 text-slate-600 group-hover:text-brand-400 group-hover:translate-x-1 transition-all" />
