@@ -49,11 +49,16 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                   <div className="flex-1 min-w-0">
                     <p className="font-mono text-sm font-bold text-brand-700 truncate">{item.producto.numero_parte}</p>
                     <p className="text-xs text-slate-500 uppercase truncate mt-0.5">{item.producto.categoria}</p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-900">
-                        {item.cantidad} x {formatearPrecio(item.producto.precio_venta, item.producto.moneda_venta)}
-                      </p>
-                      <button onClick={() => removerItem(item.producto.id)} className="text-xs text-red-500 font-medium hover:underline">
+                    <div className="mt-2 flex items-end justify-between">
+                      <div className="flex flex-col">
+                        <p className="text-[11px] text-slate-500 font-medium mb-0.5">
+                          {item.cantidad} und. x {formatearPrecio(item.producto.precio_venta, item.producto.moneda_venta)}
+                        </p>
+                        <p className="text-sm font-black text-slate-900">
+                          {formatearPrecio(item.cantidad * item.producto.precio_venta, item.producto.moneda_venta)}
+                        </p>
+                      </div>
+                      <button onClick={() => removerItem(item.producto.id)} className="text-[11px] text-red-500 font-bold hover:underline mb-0.5">
                         Remover
                       </button>
                     </div>
