@@ -113,18 +113,18 @@ export default function FilterSidebar({
         )}
 
         {/* Dinámicos */}
-        {campos.map((campo, idx) => {
-          // Siempre preferimos las opciones dinámicas (ya vienen filtradas en cascada)
-          // Solo usamos las opciones estáticas de la categoría como fallback
+        {campos.filter(campo => {
           const opcionesBase = (opcionesDinamicas[campo.nombre] && opcionesDinamicas[campo.nombre].length > 0)
             ? opcionesDinamicas[campo.nombre]
             : (campo.opciones || []);
-          
-          if (opcionesBase.length === 0) return null;
+          return opcionesBase.length > 0;
+        }).map((campo, visibleIdx) => {
+          const opcionesBase = (opcionesDinamicas[campo.nombre] && opcionesDinamicas[campo.nombre].length > 0)
+            ? opcionesDinamicas[campo.nombre]
+            : (campo.opciones || []);
 
-          // Si Marca está presente, ya es 1 abierto. Queremos solo las primeras 2 secciones abiertas en total.
-          // Por simplicidad, abriremos 'Marca' y el primer campo dinámico (idx === 0). Si Marca no está, idx 0 y 1.
-          const defaultOpen = (!marcas || marcas.length === 0) ? idx < 2 : idx < 1;
+          // Siempre abrir 'Marca' (si existe) y los primeros 2 filtros dinámicos visibles
+          const defaultOpen = visibleIdx < 2;
 
           return (
             <div key={campo.nombre} className="border-b border-gray-100 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">

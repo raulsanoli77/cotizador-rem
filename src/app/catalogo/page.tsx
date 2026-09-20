@@ -166,6 +166,10 @@ export default function CatalogoPage() {
               return valores.some(v => prod.marca.toLowerCase() === v.toLowerCase());
             }
 
+            if (key === 'Categoría') {
+              return valores.some(v => (prod.categoria || '').toLowerCase() === v.toLowerCase());
+            }
+
             const specValue = prod.especificaciones_tecnicas?.[key];
             if (!specValue) return false;
             return valores.some(v => String(specValue).toLowerCase() === v.toLowerCase());
@@ -222,11 +226,14 @@ export default function CatalogoPage() {
               });
             }
           });
-          camposParaFiltrar = Array.from(clavesUnicas).sort().map(k => ({
-            nombre: k,
-            tipo: 'seleccion' as const,
-            opciones: [],
-          }));
+          camposParaFiltrar = [
+            { nombre: 'Categoría', tipo: 'seleccion' as const, opciones: [] },
+            ...Array.from(clavesUnicas).sort().map(k => ({
+              nombre: k,
+              tipo: 'seleccion' as const,
+              opciones: [],
+            }))
+          ];
         }
 
         // Actualizar camposFiltro
@@ -237,7 +244,9 @@ export default function CatalogoPage() {
           const valoresUnicos = new Set<string>();
           productosConPrecio.forEach(prod => {
             if (cumpleFiltrosCruzados(prod, campo.nombre)) {
-              if (prod.especificaciones_tecnicas && prod.especificaciones_tecnicas[campo.nombre]) {
+              if (campo.nombre === 'Categoría') {
+                if (prod.categoria) valoresUnicos.add(prod.categoria);
+              } else if (prod.especificaciones_tecnicas && prod.especificaciones_tecnicas[campo.nombre]) {
                 valoresUnicos.add(String(prod.especificaciones_tecnicas[campo.nombre]));
               }
             }
