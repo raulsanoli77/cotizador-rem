@@ -143,6 +143,15 @@ export default function CatalogoPage() {
 
         const terminoBusqueda = busqueda.toLowerCase().trim();
 
+        // Helper case-insensitive para extraer especificaciones técnicas
+        const getSpecValue = (specs: Record<string, any> | undefined, key: string) => {
+          if (!specs) return undefined;
+          if (specs[key] !== undefined) return specs[key];
+          const lowerKey = key.toLowerCase();
+          const foundKey = Object.keys(specs).find(k => k.toLowerCase() === lowerKey);
+          return foundKey ? specs[foundKey] : undefined;
+        };
+
         // Helper para evaluar si un producto cumple con los filtros activos y búsqueda
         const cumpleFiltrosCruzados = (prod: ProductoConPrecio, llaveAIgnorar: string | null = null) => {
           // 1. Búsqueda profunda (Texto)
@@ -170,8 +179,8 @@ export default function CatalogoPage() {
               return valores.some(v => (prod.categoria || '').toLowerCase() === v.toLowerCase());
             }
 
-            const specValue = prod.especificaciones_tecnicas?.[key];
-            if (!specValue) return false;
+            const specValue = getSpecValue(prod.especificaciones_tecnicas, key);
+            if (specValue === undefined || specValue === null) return false;
             return valores.some(v => String(specValue).toLowerCase() === v.toLowerCase());
           });
         };
@@ -246,8 +255,11 @@ export default function CatalogoPage() {
             if (cumpleFiltrosCruzados(prod, campo.nombre)) {
               if (campo.nombre === 'Categoría') {
                 if (prod.categoria) valoresUnicos.add(prod.categoria);
-              } else if (prod.especificaciones_tecnicas && prod.especificaciones_tecnicas[campo.nombre]) {
-                valoresUnicos.add(String(prod.especificaciones_tecnicas[campo.nombre]));
+              } else {
+                const specValue = getSpecValue(prod.especificaciones_tecnicas, campo.nombre);
+                if (specValue !== undefined && specValue !== null) {
+                  valoresUnicos.add(String(specValue));
+                }
               }
             }
           });

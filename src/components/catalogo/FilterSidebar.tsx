@@ -114,14 +114,10 @@ export default function FilterSidebar({
 
         {/* Dinámicos */}
         {campos.filter(campo => {
-          const opcionesBase = (opcionesDinamicas[campo.nombre] && opcionesDinamicas[campo.nombre].length > 0)
-            ? opcionesDinamicas[campo.nombre]
-            : (campo.opciones || []);
+          const opcionesBase = opcionesDinamicas[campo.nombre] || [];
           return opcionesBase.length > 0;
         }).map((campo, visibleIdx) => {
-          const opcionesBase = (opcionesDinamicas[campo.nombre] && opcionesDinamicas[campo.nombre].length > 0)
-            ? opcionesDinamicas[campo.nombre]
-            : (campo.opciones || []);
+          const opcionesBase = opcionesDinamicas[campo.nombre] || [];
 
           // Siempre abrir 'Marca' (si existe) y los primeros 2 filtros dinámicos visibles
           const defaultOpen = visibleIdx < 2;
