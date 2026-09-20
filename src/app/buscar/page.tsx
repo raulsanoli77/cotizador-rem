@@ -34,18 +34,35 @@ export default function BuscarPage() {
       setLoading(true);
       const termino = query.toLowerCase().trim();
 
-      // 1. Traer todos los productos activos
-      const { data: productos, error } = await supabase
-        .from('productos')
-        .select('categoria, numero_parte, marca, sku_interno, especificaciones_tecnicas')
-        .eq('activo', true)
-        .limit(2500);
+      // 1. Traer todos los productos activos en lotes (paginación) para no omitir ninguna categoría
+      let todosLosProductos: any[] = [];
+      let hasMore = true;
+      let from = 0;
+      const step = 1000;
 
-      if (error || !productos) {
-        console.error('Error buscando:', error);
-        setLoading(false);
-        return;
+      while (hasMore) {
+        const { data: chunk, error } = await supabase
+          .from('productos')
+          .select('categoria, numero_parte, marca, sku_interno, especificaciones_tecnicas')
+          .eq('activo', true)
+          .range(from, from + step - 1);
+
+        if (error) {
+          console.error('Error buscando:', error);
+          setLoading(false);
+          return;
+        }
+
+        if (chunk && chunk.length > 0) {
+          todosLosProductos = [...todosLosProductos, ...chunk];
+          if (chunk.length < step) hasMore = false;
+          else from += step;
+        } else {
+          hasMore = false;
+        }
       }
+
+      const productos = todosLosProductos;
 
       // 2. Traer categorías para las imágenes
       const { data: categoriasData } = await supabase
