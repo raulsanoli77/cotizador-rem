@@ -102,9 +102,11 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
     const corteXD = getSpec(['corte (xd)', 'xd']);
     const refrigerante = getSpec(['refrigerante']);
     const material = getSpec(['material']);
+    const materialPunta = getSpec(['material de la punta', 'material punta', 'punta']);
     const recubrimiento = getSpec(['recubrimiento']);
     const largoFlauta = getSpec(['flauta (l1)', 'largo flauta', 'corte (l1)', 'l1']);
     const largoTotal = getSpec(['largo (l)', 'largo total', 'longitud total']);
+    const anguloPunta = getSpec(['angulo de punta (a1)', 'ángulo de punta (a1)', 'angulo de punta', 'ángulo de punta', 'a1', 'angulo']);
 
     const partes: string[] = ['BROCA'];
     if (tipo) partes.push(tipo);
@@ -124,8 +126,20 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
       partes.push(medidas.join(' X '));
     }
 
+    if (anguloPunta) {
+      partes.push(anguloPunta.includes('°') ? anguloPunta : `${anguloPunta}°`);
+    }
+
     if (corteXD) partes.push(corteXD.toLowerCase().includes('xd') ? corteXD : `${corteXD}xD`);
-    if (material) partes.push(material);
+
+    let finalMaterial = material;
+    if (material && materialPunta) {
+      if (material.toUpperCase() !== materialPunta.toUpperCase()) {
+        finalMaterial = null; // Si son diferentes, se omiten de la descripción
+      }
+    }
+    if (finalMaterial) partes.push(finalMaterial);
+
     if (recubrimiento) partes.push(recubrimiento);
     
     if (refrigerante && (refrigerante.toUpperCase() === 'SI' || refrigerante.toUpperCase() === 'YES' || refrigerante.toUpperCase() === 'CON REFRIGERANTE')) {
