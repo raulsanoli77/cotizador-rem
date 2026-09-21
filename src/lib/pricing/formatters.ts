@@ -6,9 +6,18 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
   
   // Función auxiliar para extraer ignorando N/A y guiones, y registrar la llave usada
   const getSpec = (keys: string[]) => {
-    const foundKey = Object.keys(specs).find(k => 
-      keys.some(searchKey => k.toLowerCase().includes(searchKey.toLowerCase()))
+    // 1. Intentar match exacto (case-insensitive)
+    let foundKey = Object.keys(specs).find(k => 
+      keys.some(searchKey => k.toLowerCase() === searchKey.toLowerCase())
     );
+    
+    // 2. Si no, match parcial (includes)
+    if (!foundKey) {
+      foundKey = Object.keys(specs).find(k => 
+        keys.some(searchKey => k.toLowerCase().includes(searchKey.toLowerCase()))
+      );
+    }
+    
     if (!foundKey) return null;
     
     usedKeys.add(foundKey);
@@ -24,8 +33,8 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
   // ----------------------------------------------------
   if (rawCategoria.includes('ENDMILL')) {
     let categoriaStr = 'CORTADOR';
-    const diametro = getSpec(['diametro', 'diámetro']);
-    const filos = getSpec(['filo', 'flauta']);
+    const diametro = getSpec(['diametro (d1)', 'diametro', 'diámetro']);
+    const filos = getSpec(['filos', 'flautas']);
     const material = getSpec(['material']);
     const recubrimiento = getSpec(['recubrimiento']);
     const radio = getSpec(['radio']);
@@ -76,27 +85,43 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
   // LOGICA 2: BROCAS
   // ----------------------------------------------------
   if (rawCategoria.includes('BROCA')) {
-    const diametro = getSpec(['diametro', 'diámetro']);
+    const diametro = getSpec(['diametro (d1)', 'diámetro', 'diametro']);
     const tipo = getSpec(['tipo']);
     const corteXD = getSpec(['corte (xd)', 'xd']);
     const refrigerante = getSpec(['refrigerante']);
     const material = getSpec(['material']);
     const recubrimiento = getSpec(['recubrimiento']);
+    const largoFlauta = getSpec(['largo flauta', 'flauta', 'largo de corte', 'corte (l1)']);
+    const largoTotal = getSpec(['largo total', 'longitud total', 'largo (l)']);
 
     const partes: string[] = ['BROCA'];
     if (tipo) partes.push(tipo);
+    if (material) partes.push(material);
+    if (recubrimiento) partes.push(recubrimiento);
     if (diametro) {
       const dSuffix = (diametro.endsWith('"') || diametro.toLowerCase().endsWith('mm')) ? '' : '"';
       partes.push(`${diametro}${dSuffix}`);
     }
     if (corteXD) partes.push(corteXD.toLowerCase().includes('xd') ? corteXD : `${corteXD}xD`);
-    if (material) partes.push(material);
-    if (recubrimiento) partes.push(recubrimiento);
     if (refrigerante && (refrigerante.toUpperCase() === 'SI' || refrigerante.toUpperCase() === 'YES')) {
       partes.push('C/REFRIGERANTE');
     }
 
-    return partes.join(' ').toUpperCase();
+    const largos: string[] = [];
+    if (largoFlauta) {
+      const suffix = (largoFlauta.endsWith('"') || largoFlauta.toLowerCase().endsWith('mm')) ? '' : '"';
+      largos.push(`${largoFlauta}${suffix} FLAUTA`);
+    }
+    if (largoTotal) {
+      const suffix = (largoTotal.endsWith('"') || largoTotal.toLowerCase().endsWith('mm')) ? '' : '"';
+      largos.push(`${largoTotal}${suffix} LARGO`);
+    }
+
+    let descripcionFinal = partes.join(' ');
+    if (largos.length > 0) {
+      descripcionFinal += `, ${largos.join(', ')}`;
+    }
+    return descripcionFinal.toUpperCase();
   }
 
   // ----------------------------------------------------
