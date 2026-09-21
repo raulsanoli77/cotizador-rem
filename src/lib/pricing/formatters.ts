@@ -21,9 +21,24 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
     if (!foundKey) return null;
     
     usedKeys.add(foundKey);
-    const val = String(specs[foundKey]).trim();
+    let val = String(specs[foundKey]).trim();
     if (val.toUpperCase() === 'N/A' || val === '-') return null;
+
+    // Sanitize wire/letter drill sizes (e.g., #1" -> #1, H" -> H)
+    if ((val.startsWith('#') || /^[A-Za-z]"$/.test(val)) && val.endsWith('"')) {
+      val = val.slice(0, -1);
+    }
+
     return val;
+  };
+
+  // Helper para agragar comillas de pulgadas solo si es pertinente
+  const formatDimension = (val: string) => {
+    if (!val) return '';
+    if (val.endsWith('"') || val.toLowerCase().endsWith('mm') || val.startsWith('#') || /^[A-Za-z]$/.test(val)) {
+      return val;
+    }
+    return `${val}"`;
   };
 
   const rawCategoria = (producto.categoria || '').toUpperCase();
@@ -50,8 +65,7 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
     if (tipoDeCortador && tipoDeCortador.toUpperCase() !== 'USO GENERAL') partes.push(tipoDeCortador);
     
     if (diametro) {
-      const dSuffix = (diametro.endsWith('"') || diametro.toLowerCase().endsWith('mm')) ? '' : '"';
-      partes.push(`${diametro}${dSuffix}`);
+      partes.push(formatDimension(diametro));
     }
     
     if (filos) {
@@ -66,12 +80,10 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
     
     const largos: string[] = [];
     if (largoCorte) {
-      const suffix = (largoCorte.endsWith('"') || largoCorte.toLowerCase().endsWith('mm')) ? '' : '"';
-      largos.push(`${largoCorte}${suffix} CORTE`);
+      largos.push(`${formatDimension(largoCorte)} CORTE`);
     }
     if (largoTotal) {
-      const suffix = (largoTotal.endsWith('"') || largoTotal.toLowerCase().endsWith('mm')) ? '' : '"';
-      largos.push(`${largoTotal}${suffix} LARGO`);
+      largos.push(`${formatDimension(largoTotal)} LARGO`);
     }
 
     let descripcionFinal = partes.join(' ');
@@ -99,13 +111,13 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
 
     const medidas: string[] = [];
     if (diametro) {
-      medidas.push(`${diametro}${(diametro.endsWith('"') || diametro.toLowerCase().endsWith('mm')) ? '' : '"'}`);
+      medidas.push(formatDimension(diametro));
     }
     if (largoFlauta) {
-      medidas.push(`${largoFlauta}${(largoFlauta.endsWith('"') || largoFlauta.toLowerCase().endsWith('mm')) ? '' : '"'}`);
+      medidas.push(formatDimension(largoFlauta));
     }
     if (largoTotal) {
-      medidas.push(`${largoTotal}${(largoTotal.endsWith('"') || largoTotal.toLowerCase().endsWith('mm')) ? '' : '"'}`);
+      medidas.push(formatDimension(largoTotal));
     }
 
     if (medidas.length > 0) {
@@ -133,8 +145,7 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
 
   const partes = [categoriaStr];
   if (diametro) {
-    const dSuffix = (diametro.endsWith('"') || diametro.toLowerCase().endsWith('mm')) ? '' : '"';
-    partes.push(`${diametro}${dSuffix}`);
+    partes.push(formatDimension(diametro));
   }
   if (material) partes.push(material);
   if (recubrimiento) partes.push(recubrimiento);

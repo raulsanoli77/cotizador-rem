@@ -100,7 +100,9 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
               const isMedida = ['DIAMETRO', 'LARGO', 'ZANCO'].some(p => upperNameClean.includes(p)) || 
                                (upperNameClean.includes('CORTE') && !upperNameClean.includes('CENTRAL') && !upperNameClean.includes('DIRECCION') && !upperNameClean.includes('CORTADOR'));
               
-              if (isMedida && !finalValue.endsWith('"') && !finalValue.toLowerCase().endsWith('mm')) {
+              const isWireOrLetter = finalValue.startsWith('#') || /^[A-Za-z]$/.test(finalValue);
+
+              if (isMedida && !isWireOrLetter && !finalValue.endsWith('"') && !finalValue.toLowerCase().endsWith('mm')) {
                 finalValue += sufijoMedida;
               }
             }

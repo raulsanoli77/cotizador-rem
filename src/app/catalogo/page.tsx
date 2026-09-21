@@ -150,10 +150,25 @@ export default function CatalogoPage() {
         // Helper case-insensitive para extraer especificaciones técnicas
         const getSpecValue = (specs: Record<string, any> | undefined, key: string) => {
           if (!specs) return undefined;
-          if (specs[key] !== undefined) return specs[key];
-          const lowerKey = key.toLowerCase();
-          const foundKey = Object.keys(specs).find(k => k.toLowerCase() === lowerKey);
-          return foundKey ? specs[foundKey] : undefined;
+          
+          let val: any;
+          if (specs[key] !== undefined) {
+            val = specs[key];
+          } else {
+            const lowerKey = key.toLowerCase();
+            const foundKey = Object.keys(specs).find(k => k.toLowerCase() === lowerKey);
+            val = foundKey ? specs[foundKey] : undefined;
+          }
+
+          // Sanitize wire/letter drill sizes (e.g., #1" -> #1, H" -> H)
+          if (typeof val === 'string') {
+            const cleanVal = val.trim();
+            if ((cleanVal.startsWith('#') || /^[A-Za-z]"$/.test(cleanVal)) && cleanVal.endsWith('"')) {
+              val = cleanVal.slice(0, -1);
+            }
+          }
+
+          return val;
         };
 
         // Helper para evaluar si un producto cumple con los filtros activos y búsqueda
