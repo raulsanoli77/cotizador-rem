@@ -85,6 +85,8 @@ export default function CatalogoPage() {
 
   // Cargar productos cuando cambian filtros
   useEffect(() => {
+    let isMounted = true;
+
     async function cargarProductos() {
       setLoading(true);
 
@@ -106,6 +108,8 @@ export default function CatalogoPage() {
         }
 
         const { data, error } = await query;
+
+        if (!isMounted) return;
 
         if (error) {
           console.error('Error cargando productos:', error);
@@ -305,10 +309,16 @@ export default function CatalogoPage() {
         }
       }
 
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
     }
 
     cargarProductos();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [categoriaActiva, busqueda, filtrosActivos, tipoCambio, monedaVenta, categorias, orden]);
 
   const handleFiltroChange = (nombre: string, valor: string) => {
