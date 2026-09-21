@@ -91,37 +91,36 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
     const refrigerante = getSpec(['refrigerante']);
     const material = getSpec(['material']);
     const recubrimiento = getSpec(['recubrimiento']);
-    const largoFlauta = getSpec(['largo flauta', 'flauta', 'largo de corte', 'corte (l1)']);
-    const largoTotal = getSpec(['largo total', 'longitud total', 'largo (l)']);
+    const largoFlauta = getSpec(['flauta (l1)', 'largo flauta', 'corte (l1)', 'l1']);
+    const largoTotal = getSpec(['largo (l)', 'largo total', 'longitud total']);
 
     const partes: string[] = ['BROCA'];
     if (tipo) partes.push(tipo);
+
+    const medidas: string[] = [];
+    if (diametro) {
+      medidas.push(`${diametro}${(diametro.endsWith('"') || diametro.toLowerCase().endsWith('mm')) ? '' : '"'}`);
+    }
+    if (largoFlauta) {
+      medidas.push(`${largoFlauta}${(largoFlauta.endsWith('"') || largoFlauta.toLowerCase().endsWith('mm')) ? '' : '"'}`);
+    }
+    if (largoTotal) {
+      medidas.push(`${largoTotal}${(largoTotal.endsWith('"') || largoTotal.toLowerCase().endsWith('mm')) ? '' : '"'}`);
+    }
+
+    if (medidas.length > 0) {
+      partes.push(medidas.join(' X '));
+    }
+
+    if (corteXD) partes.push(corteXD.toLowerCase().includes('xd') ? corteXD : `${corteXD}xD`);
     if (material) partes.push(material);
     if (recubrimiento) partes.push(recubrimiento);
-    if (diametro) {
-      const dSuffix = (diametro.endsWith('"') || diametro.toLowerCase().endsWith('mm')) ? '' : '"';
-      partes.push(`${diametro}${dSuffix}`);
-    }
-    if (corteXD) partes.push(corteXD.toLowerCase().includes('xd') ? corteXD : `${corteXD}xD`);
-    if (refrigerante && (refrigerante.toUpperCase() === 'SI' || refrigerante.toUpperCase() === 'YES')) {
+    
+    if (refrigerante && (refrigerante.toUpperCase() === 'SI' || refrigerante.toUpperCase() === 'YES' || refrigerante.toUpperCase() === 'CON REFRIGERANTE')) {
       partes.push('C/REFRIGERANTE');
     }
 
-    const largos: string[] = [];
-    if (largoFlauta) {
-      const suffix = (largoFlauta.endsWith('"') || largoFlauta.toLowerCase().endsWith('mm')) ? '' : '"';
-      largos.push(`${largoFlauta}${suffix} FLAUTA`);
-    }
-    if (largoTotal) {
-      const suffix = (largoTotal.endsWith('"') || largoTotal.toLowerCase().endsWith('mm')) ? '' : '"';
-      largos.push(`${largoTotal}${suffix} LARGO`);
-    }
-
-    let descripcionFinal = partes.join(' ');
-    if (largos.length > 0) {
-      descripcionFinal += `, ${largos.join(', ')}`;
-    }
-    return descripcionFinal.toUpperCase();
+    return partes.join(' ').toUpperCase();
   }
 
   // ----------------------------------------------------
