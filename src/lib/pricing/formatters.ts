@@ -141,7 +141,22 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
 
     if (corteXD) partes.push(corteXD.toLowerCase().includes('xd') ? corteXD : `${corteXD}xD`);
 
-    if (material) partes.push(material);
+    let finalMaterialStr = '';
+    if (material && materialPunta) {
+      if (material.toUpperCase() === materialPunta.toUpperCase()) {
+        finalMaterialStr = material;
+      } else {
+        finalMaterialStr = `MATERIAL DE PUNTA: ${materialPunta}`;
+      }
+    } else if (materialPunta) {
+      finalMaterialStr = `MATERIAL DE PUNTA: ${materialPunta}`;
+    } else if (material) {
+      finalMaterialStr = material;
+    }
+
+    if (finalMaterialStr) {
+      partes.push(finalMaterialStr);
+    }
     if (recubrimiento) partes.push(recubrimiento);
     
     if (refrigerante && (refrigerante.toUpperCase() === 'SI' || refrigerante.toUpperCase() === 'YES' || refrigerante.toUpperCase() === 'CON REFRIGERANTE')) {
