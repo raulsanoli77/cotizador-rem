@@ -107,9 +107,15 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
     const largoFlauta = getSpec(['flauta (l1)', 'largo flauta', 'corte (l1)', 'l1']);
     const largoTotal = getSpec(['largo (l)', 'largo total', 'longitud total']);
     const anguloPunta = getSpec(['angulo de punta (a1)', 'ángulo de punta (a1)', 'angulo de punta', 'ángulo de punta', 'a1', 'angulo']);
+    const anguloA2 = getSpec(['angulo (a2)', 'ángulo (a2)', 'a2']);
 
-    const partes: string[] = ['BROCA'];
-    if (tipo) partes.push(tipo);
+    const partes: string[] = [];
+    if (tipo && tipo.toUpperCase().includes('BROCA')) {
+      partes.push(tipo);
+    } else {
+      partes.push('BROCA');
+      if (tipo) partes.push(tipo);
+    }
 
     const medidas: string[] = [];
     if (diametro) {
@@ -128,6 +134,9 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
 
     if (anguloPunta) {
       partes.push(anguloPunta.includes('°') ? anguloPunta : `${anguloPunta}°`);
+    }
+    if (anguloA2) {
+      partes.push(anguloA2.includes('°') ? anguloA2 : `${anguloA2}°`);
     }
 
     if (corteXD) partes.push(corteXD.toLowerCase().includes('xd') ? corteXD : `${corteXD}xD`);
