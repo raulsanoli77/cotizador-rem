@@ -112,17 +112,22 @@ export default function ProductDetailPage() {
   };
 
   const specs = producto.especificaciones_tecnicas || {};
-  const specsEntries = Object.entries(specs).sort((a, b) => {
-    const keyA = a[0].toUpperCase();
-    const keyB = b[0].toUpperCase();
-    const indexA = ordenCampos[keyA] !== undefined ? ordenCampos[keyA] : 999;
-    const indexB = ordenCampos[keyB] !== undefined ? ordenCampos[keyB] : 999;
-    
-    if (indexA !== indexB) {
-      return indexA - indexB;
-    }
-    return keyA.localeCompare(keyB);
-  });
+  const specsEntries = Object.entries(specs)
+    .filter(([_, value]) => {
+      const valStr = String(value).trim().toUpperCase();
+      return valStr !== '' && valStr !== 'N/A' && valStr !== '-';
+    })
+    .sort((a, b) => {
+      const keyA = a[0].toUpperCase();
+      const keyB = b[0].toUpperCase();
+      const indexA = ordenCampos[keyA] !== undefined ? ordenCampos[keyA] : 999;
+      const indexB = ordenCampos[keyB] !== undefined ? ordenCampos[keyB] : 999;
+      
+      if (indexA !== indexB) {
+        return indexA - indexB;
+      }
+      return keyA.localeCompare(keyB);
+    });
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
