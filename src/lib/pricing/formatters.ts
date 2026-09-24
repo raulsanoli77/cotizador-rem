@@ -102,7 +102,7 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
     const corteXD = getSpec(['corte (xd)', 'xd']);
     const refrigerante = getSpec(['refrigerante']);
     const material = getSpec(['material de broca', 'material de la broca', 'material']);
-    const materialPunta = getSpec(['material de la punta', 'material punta', 'punta']);
+    const materialPunta = getSpec(['material de punta', 'material de la punta']);
     const recubrimiento = getSpec(['recubrimiento']);
     const largoFlauta = getSpec(['flauta (l1)', 'largo flauta', 'corte (l1)', 'l1']);
     const largoTotal = getSpec(['largo (l)', 'largo total', 'longitud total']);
