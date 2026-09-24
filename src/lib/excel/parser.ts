@@ -97,7 +97,7 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
             // Auto-agregar sufijo de medida (solo a Diametro, Corte (L1), Largo, Zanco)
             if (sufijoMedida) {
               const upperNameClean = upperName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-              const isMedida = ['DIAMETRO', 'LARGO', 'ZANCO'].some(p => upperNameClean.includes(p)) || 
+              const isMedida = (['DIAMETRO', 'LARGO', 'ZANCO'].some(p => upperNameClean.includes(p)) && !upperNameClean.includes('TIPO')) || 
                                (upperNameClean.includes('CORTE') && !upperNameClean.includes('CENTRAL') && !upperNameClean.includes('DIRECCION') && !upperNameClean.includes('CORTADOR'));
               
               const isWireOrLetter = finalValue.startsWith('#') || /^[A-Za-z]$/.test(finalValue);

@@ -257,11 +257,12 @@ export default function ProductDetailPage() {
                   
                   // Auto-sufijo dinámico para UI si el usuario aún no recarga el Excel
                   const upperKey = key.toUpperCase();
+                  const upperKeyClean = upperKey.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                   const unidadBase = String(specs['UNIDAD DE MEDIDA'] || specs['unidad de medida'] || '').toUpperCase();
                   
-                  // Evitar falsos positivos con CORTE CENTRAL y DIRECCION DE CORTE
-                  const isMedida = ['DIAMETRO', 'LARGO', 'ZANCO'].some(p => upperKey.includes(p)) || 
-                                   (upperKey.includes('CORTE') && !upperKey.includes('CENTRAL') && !upperKey.includes('DIRECCION'));
+                  // Evitar falsos positivos con CORTE CENTRAL, DIRECCION DE CORTE y TIPO DE ZANCO
+                  const isMedida = (['DIAMETRO', 'LARGO', 'ZANCO'].some(p => upperKeyClean.includes(p)) && !upperKeyClean.includes('TIPO')) || 
+                                   (upperKeyClean.includes('CORTE') && !upperKeyClean.includes('CENTRAL') && !upperKeyClean.includes('DIRECCION') && !upperKeyClean.includes('CORTADOR'));
                   
                   if (isMedida && finalValue.toUpperCase() !== 'N/A' && finalValue !== '-') {
                     if (unidadBase === 'IN' || unidadBase === 'PULGADAS') {
@@ -273,6 +274,9 @@ export default function ProductDetailPage() {
                         finalValue += ' mm';
                       }
                     }
+                  } else if (!isMedida && finalValue.endsWith('"')) {
+                    // Limpiar comillas guardadas erróneamente en la DB por reglas previas
+                    finalValue = finalValue.slice(0, -1);
                   }
 
                   // Reglas adicionales de visualización (solo UI)
