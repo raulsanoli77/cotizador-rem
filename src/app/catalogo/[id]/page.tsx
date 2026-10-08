@@ -59,11 +59,13 @@ export default function ProductDetailPage() {
         // Obtener margen personalizado y configuración de cruce
         let margenMarcaUSA: number | undefined;
         let aplicaCruce: boolean = false;
+        let margenPublico: number = 1.35;
 
         if (prodData.marca) {
-          const [margenRes, cruceRes] = await Promise.all([
+          const [margenRes, cruceRes, margenPubRes] = await Promise.all([
             supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle(),
-            supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle()
+            supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle(),
+            supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes_publico').maybeSingle()
           ]);
 
           const marcaKey = prodData.marca.toUpperCase();
@@ -72,6 +74,9 @@ export default function ProductDetailPage() {
           }
           if (cruceRes.data?.valor && cruceRes.data.valor[marcaKey]) {
             aplicaCruce = Boolean(cruceRes.data.valor[marcaKey]);
+          }
+          if (margenPubRes.data?.valor && margenPubRes.data.valor[marcaKey]) {
+            margenPublico = Number(margenPubRes.data.valor[marcaKey]);
           }
         }
 
@@ -83,7 +88,8 @@ export default function ProductDetailPage() {
           'MXN',
           tipoCambioCache.valor,
           margenMarcaUSA,
-          aplicaCruce
+          aplicaCruce,
+          margenPublico
         );
 
         // Obtener el orden de los campos desde la categoría para ordenar las cajas
@@ -104,6 +110,7 @@ export default function ProductDetailPage() {
         setProducto({
           ...(prodData as Producto),
           precio_venta: resultado.precioVenta,
+          precio_publico: resultado.precioPublico,
           moneda_venta: resultado.monedaVenta,
           formula_aplicada: resultado.formulaAplicada
         });
@@ -233,7 +240,17 @@ export default function ProductDetailPage() {
                   {isB2B ? (
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                       <div>
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Precio Unitario</p>
+                        {producto.precio_publico && producto.precio_publico > producto.precio_venta && (
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-sm text-slate-400 line-through">
+                              {formatearPrecio(producto.precio_publico, producto.moneda_venta)} {producto.moneda_venta}
+                            </span>
+                            <span className="text-xs font-bold text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded border border-emerald-800">
+                              Ahorras {Math.round((1 - (producto.precio_venta / producto.precio_publico)) * 100)}%
+                            </span>
+                          </div>
+                        )}
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Tu Precio B2B</p>
                         <div className="text-4xl font-black text-white flex items-baseline gap-2 drop-shadow-md">
                           {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
                           <span className="text-lg font-medium text-slate-400 uppercase">{producto.moneda_venta}</span>
@@ -267,7 +284,15 @@ export default function ProductDetailPage() {
                   ) : (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
                       <div>
-                        <h3 className="text-2xl font-bold text-white mb-2">Precios Exclusivos B2B</h3>
+                        {producto.precio_publico && (
+                          <div className="mb-4">
+                            <span className="text-sm font-bold text-slate-400 uppercase tracking-wider block mb-1">Precio de Lista</span>
+                            <div className="text-3xl font-black text-slate-200">
+                              {formatearPrecio(producto.precio_publico, producto.moneda_venta)} <span className="text-lg text-slate-500">{producto.moneda_venta}</span>
+                            </div>
+                          </div>
+                        )}
+                        <h3 className="text-xl font-bold text-white mb-2">Desbloquea Precios Exclusivos B2B</h3>
                         <p className="text-slate-400 text-sm">Para ver tu precio con descuento, hacer órdenes de compra y solicitar crédito, necesitas iniciar sesión.</p>
                       </div>
                       <div className="flex-shrink-0 w-full sm:w-auto flex flex-col gap-3">

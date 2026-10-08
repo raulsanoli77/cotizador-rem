@@ -7,6 +7,7 @@ import { Plus, Edit2, Trash2, Image as ImageIcon, Loader2, Award } from 'lucide-
 export default function MarcasAdminPage() {
   const [marcas, setMarcas] = useState<Record<string, string>>({});
   const [margenes, setMargenes] = useState<Record<string, number>>({});
+  const [margenesPublico, setMargenesPublico] = useState<Record<string, number>>({});
   const [cruces, setCruces] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -17,6 +18,7 @@ export default function MarcasAdminPage() {
   const [nombreMarca, setNombreMarca] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [margenUsa, setMargenUsa] = useState<number>(1.5);
+  const [margenPub, setMargenPub] = useState<number>(1.35);
   const [aplicaCruce, setAplicaCruce] = useState<boolean>(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [marcaOriginal, setMarcaOriginal] = useState('');
@@ -27,30 +29,34 @@ export default function MarcasAdminPage() {
 
   const fetchMarcas = async () => {
     setLoading(true);
-    const [resLogos, resMargenes, resCruces] = await Promise.all([
+    const [resLogos, resMargenes, resMargenesPub, resCruces] = await Promise.all([
       supabase.from('configuracion').select('valor').eq('clave', 'marcas_logos').maybeSingle(),
       supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle(),
+      supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes_publico').maybeSingle(),
       supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle()
     ]);
 
     setMarcas(resLogos.data?.valor || {});
     setMargenes(resMargenes.data?.valor || {});
+    setMargenesPublico(resMargenesPub.data?.valor || {});
     setCruces(resCruces.data?.valor || {});
     setLoading(false);
   };
 
-  const handleOpenModal = (marca?: string, url?: string, margen?: number, cruce?: boolean) => {
+  const handleOpenModal = (marca?: string, url?: string, margen?: number, margenP?: number, cruce?: boolean) => {
     if (marca) {
       setNombreMarca(marca);
       setMarcaOriginal(marca);
       setLogoUrl(url || '');
       setMargenUsa(margen ?? 1.5);
+      setMargenPub(margenP ?? 1.35);
       setAplicaCruce(cruce ?? false);
       setModoEdicion(true);
     } else {
       setNombreMarca('');
       setLogoUrl('');
       setMargenUsa(1.5);
+      setMargenPub(1.35);
       setAplicaCruce(false);
       setModoEdicion(false);
     }
@@ -88,12 +94,14 @@ export default function MarcasAdminPage() {
     try {
       const nuevasMarcas = { ...marcas };
       const nuevosMargenes = { ...margenes };
+      const nuevosMargenesPub = { ...margenesPublico };
       const nuevosCruces = { ...cruces };
       
       // Si estamos editando y cambió el nombre, eliminamos la anterior
       if (modoEdicion && marcaOriginal && marcaOriginal !== nombreMarca) {
         delete nuevasMarcas[marcaOriginal];
         delete nuevosMargenes[marcaOriginal];
+        delete nuevosMargenesPub[marcaOriginal];
         delete nuevosCruces[marcaOriginal];
       }
 
@@ -102,21 +110,25 @@ export default function MarcasAdminPage() {
         nuevasMarcas[marcaLimpia] = logoUrl.trim();
       }
       nuevosMargenes[marcaLimpia] = Number(margenUsa);
+      nuevosMargenesPub[marcaLimpia] = Number(margenPub);
       nuevosCruces[marcaLimpia] = Boolean(aplicaCruce);
 
-      const [errLogos, errMargenes, errCruces] = await Promise.all([
+      const [errLogos, errMargenes, errMargenesPub, errCruces] = await Promise.all([
         supabase.from('configuracion').upsert({ clave: 'marcas_logos', valor: nuevasMarcas }, { onConflict: 'clave' }),
         supabase.from('configuracion').upsert({ clave: 'marcas_margenes', valor: nuevosMargenes }, { onConflict: 'clave' }),
+        supabase.from('configuracion').upsert({ clave: 'marcas_margenes_publico', valor: nuevosMargenesPub }, { onConflict: 'clave' }),
         supabase.from('configuracion').upsert({ clave: 'marcas_cruce_volumen', valor: nuevosCruces }, { onConflict: 'clave' })
       ]);
 
       if (errLogos.error) throw errLogos.error;
       if (errMargenes.error) throw errMargenes.error;
+      if (errMargenesPub.error) throw errMargenesPub.error;
       if (errCruces.error) throw errCruces.error;
 
       setMensaje({ texto: 'Marca guardada exitosamente', tipo: 'success' });
       setMarcas(nuevasMarcas);
       setMargenes(nuevosMargenes);
+      setMargenesPublico(nuevosMargenesPub);
       setCruces(nuevosCruces);
       setModalOpen(false);
     } catch (error: any) {
@@ -130,24 +142,29 @@ export default function MarcasAdminPage() {
     try {
       const nuevasMarcas = { ...marcas };
       const nuevosMargenes = { ...margenes };
+      const nuevosMargenesPub = { ...margenesPublico };
       const nuevosCruces = { ...cruces };
       delete nuevasMarcas[marca];
       delete nuevosMargenes[marca];
+      delete nuevosMargenesPub[marca];
       delete nuevosCruces[marca];
 
-      const [errLogos, errMargenes, errCruces] = await Promise.all([
+      const [errLogos, errMargenes, errMargenesPub, errCruces] = await Promise.all([
         supabase.from('configuracion').upsert({ clave: 'marcas_logos', valor: nuevasMarcas }, { onConflict: 'clave' }),
         supabase.from('configuracion').upsert({ clave: 'marcas_margenes', valor: nuevosMargenes }, { onConflict: 'clave' }),
+        supabase.from('configuracion').upsert({ clave: 'marcas_margenes_publico', valor: nuevosMargenesPub }, { onConflict: 'clave' }),
         supabase.from('configuracion').upsert({ clave: 'marcas_cruce_volumen', valor: nuevosCruces }, { onConflict: 'clave' })
       ]);
 
       if (errLogos.error) throw errLogos.error;
       if (errMargenes.error) throw errMargenes.error;
+      if (errMargenesPub.error) throw errMargenesPub.error;
       if (errCruces.error) throw errCruces.error;
 
       setMensaje({ texto: 'Marca eliminada exitosamente', tipo: 'success' });
       setMarcas(nuevasMarcas);
       setMargenes(nuevosMargenes);
+      setMargenesPublico(nuevosMargenesPub);
       setCruces(nuevosCruces);
     } catch (error: any) {
       setMensaje({ texto: `Error al eliminar: ${error.message}`, tipo: 'error' });
@@ -201,6 +218,7 @@ export default function MarcasAdminPage() {
           {marcasList.map((marca) => {
             const url = marcas[marca];
             const margen = margenes[marca] ?? 1.5;
+            const margenP = margenesPublico[marca] ?? 1.35;
             const cruce = cruces[marca] ?? false;
             
             return (
@@ -212,14 +230,15 @@ export default function MarcasAdminPage() {
                   <ImageIcon className="h-12 w-12 text-slate-300" />
                 )}
                 <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-                  <span className="bg-brand-100 text-brand-800 text-xs font-bold px-2 py-1 rounded">x {margen}</span>
-                  {cruce && <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded">+12% Cruce</span>}
+                  <span className="bg-brand-100 text-brand-800 text-xs font-bold px-2 py-1 rounded">B2B: x{margen}</span>
+                  <span className="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded">Pub: x{margenP}</span>
+                  {cruce && <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">+12% Cruce</span>}
                 </div>
               </div>
               <div className="p-4 flex items-center justify-between bg-white">
                 <span className="font-bold text-slate-900 truncate pr-2">{marca}</span>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleOpenModal(marca, url, margen, cruce)} className="p-1.5 text-slate-400 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 rounded">
+                  <button onClick={() => handleOpenModal(marca, url, margen, margenP, cruce)} className="p-1.5 text-slate-400 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 rounded">
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button onClick={() => handleDelete(marca)} className="p-1.5 text-slate-400 hover:text-red-600 bg-slate-100 hover:bg-red-50 rounded">
@@ -270,7 +289,7 @@ export default function MarcasAdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Multiplicador de Margen (Base USD)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Multiplicador de Margen B2B (Base USD)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -279,7 +298,20 @@ export default function MarcasAdminPage() {
                   onChange={(e) => setMargenUsa(Number(e.target.value))}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2"
                 />
-                <p className="text-xs text-slate-500 mt-1">Ej. 1.5 es el valor por defecto. 1.6 incrementa el precio.</p>
+                <p className="text-xs text-slate-500 mt-1">Ej. 1.5 es el valor B2B por defecto.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Porcentaje Precio Público (Lista)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  value={margenPub}
+                  onChange={(e) => setMargenPub(Number(e.target.value))}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                />
+                <p className="text-xs text-slate-500 mt-1">Ej. 1.35 multiplica el precio final B2B por 1.35 (35% más) para invitados.</p>
               </div>
 
               <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">

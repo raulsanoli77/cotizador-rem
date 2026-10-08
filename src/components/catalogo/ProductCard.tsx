@@ -62,9 +62,21 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
         <div className="mt-auto pt-3 border-t border-slate-100 flex flex-col gap-2.5">
           {isB2B ? (
             <>
-              <div className="text-lg sm:text-xl font-black text-slate-900 leading-none truncate">
-                ${producto.precio_venta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                <span className="text-xs sm:text-sm text-slate-500 font-bold ml-1">{producto.moneda_venta}</span>
+              <div className="flex flex-col mb-1">
+                {producto.precio_publico && producto.precio_publico > producto.precio_venta && (
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[10px] text-slate-400 line-through">
+                      ${producto.precio_publico.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1 rounded border border-green-100">
+                      -{Math.round((1 - (producto.precio_venta / producto.precio_publico)) * 100)}%
+                    </span>
+                  </div>
+                )}
+                <div className="text-lg sm:text-xl font-black text-slate-900 leading-none truncate">
+                  ${producto.precio_venta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <span className="text-xs sm:text-sm text-slate-500 font-bold ml-1">{producto.moneda_venta}</span>
+                </div>
               </div>
               
               <div className="flex gap-1.5 w-full">
@@ -95,9 +107,16 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
             </>
           ) : (
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
-              <p className="text-xs text-slate-500 mb-2 font-medium">Inicia sesión para ver tu precio</p>
-              <Link href="/admin/login" className="block w-full bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold py-2 rounded-md transition-colors">
-                Iniciar Sesión B2B
+              {producto.precio_publico && (
+                <div className="mb-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Precio de Lista</span>
+                  <span className="text-sm font-black text-slate-700">
+                    ${producto.precio_publico.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {producto.moneda_venta}
+                  </span>
+                </div>
+              )}
+              <Link href="/admin/login" className="block w-full bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold py-2 rounded-md transition-colors mt-2">
+                Inicia Sesión para Descuento B2B
               </Link>
             </div>
           )}

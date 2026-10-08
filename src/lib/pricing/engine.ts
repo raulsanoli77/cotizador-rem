@@ -10,6 +10,7 @@ export type FormulaAplicada = 'F1_MX_USA' | 'F2_MX_MX' | 'F3_USA_USA' | 'F4_USA_
 
 export interface ResultadoPrecio {
   precioVenta: number;
+  precioPublico?: number;
   monedaVenta: MonedaVenta;
   formulaAplicada: FormulaAplicada;
   desglose: Record<string, number>;
@@ -73,13 +74,15 @@ export function calcularPrecioVenta(
   monedaVenta: MonedaVenta,
   tipoCambio: number,
   margenMarcaUSA?: number,
-  aplicaCruceVolumen: boolean = false
+  aplicaCruceVolumen: boolean = false,
+  margenPublico: number = 1.35
 ): ResultadoPrecio {
   // Validaciones
   if (costoBase < 0) throw new Error('El costo base no puede ser negativo');
   if (costoBase === 0) {
     return {
       precioVenta: 0,
+      precioPublico: 0,
       monedaVenta,
       formulaAplicada: determinarFormula(monedaCosto, monedaVenta),
       desglose: { costoBase: 0 },
@@ -98,10 +101,11 @@ export function calcularPrecioVenta(
       const conMargen = conRecargo * margenAAplicar;
       const costoCruceVolumen = aplicaCruceVolumen ? (costoBase * FACTORES.CRUCE_ALTO_VOLUMEN) : 0;
       
-      const precioVenta = (conMargen + costoCruceVolumen) * tcAplicado;
+      const precioVentaBruto = (conMargen + costoCruceVolumen) * tcAplicado;
       
       return {
-        precioVenta: Math.round(precioVenta * 100) / 100,
+        precioVenta: Math.round(precioVentaBruto * 100) / 100,
+        precioPublico: Math.round(precioVentaBruto * margenPublico * 100) / 100,
         monedaVenta: 'MXN',
         formulaAplicada: 'F1_MX_USA',
         desglose: {
@@ -116,9 +120,10 @@ export function calcularPrecioVenta(
     }
 
     case 'F2_MX_MX': {
-      const precioVenta = costoBase / FACTORES.MARGEN_BASE;
+      const precioVentaBruto = costoBase / FACTORES.MARGEN_BASE;
       return {
-        precioVenta: Math.round(precioVenta * 100) / 100,
+        precioVenta: Math.round(precioVentaBruto * 100) / 100,
+        precioPublico: Math.round(precioVentaBruto * margenPublico * 100) / 100,
         monedaVenta: 'MXN',
         formulaAplicada: 'F2_MX_MX',
         desglose: {
@@ -129,9 +134,10 @@ export function calcularPrecioVenta(
     }
 
     case 'F3_USA_USA': {
-      const precioVenta = costoBase / FACTORES.MARGEN_BASE;
+      const precioVentaBruto = costoBase / FACTORES.MARGEN_BASE;
       return {
-        precioVenta: Math.round(precioVenta * 100) / 100,
+        precioVenta: Math.round(precioVentaBruto * 100) / 100,
+        precioPublico: Math.round(precioVentaBruto * margenPublico * 100) / 100,
         monedaVenta: 'USD',
         formulaAplicada: 'F3_USA_USA',
         desglose: {
@@ -145,9 +151,10 @@ export function calcularPrecioVenta(
       const tcAplicado = aplicarRedondeoREM(tipoCambio);
       const costoConIVA = costoBase * (1 + FACTORES.IVA);
       const conMargen = costoConIVA / FACTORES.MARGEN_BASE;
-      const precioVenta = conMargen / tcAplicado;
+      const precioVentaBruto = conMargen / tcAplicado;
       return {
-        precioVenta: Math.round(precioVenta * 100) / 100,
+        precioVenta: Math.round(precioVentaBruto * 100) / 100,
+        precioPublico: Math.round(precioVentaBruto * margenPublico * 100) / 100,
         monedaVenta: 'USD',
         formulaAplicada: 'F4_USA_MX',
         desglose: {

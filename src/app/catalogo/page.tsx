@@ -138,18 +138,21 @@ export default function CatalogoPage() {
 
       if (data) {
         // Obtener configuración de marcas desde Supabase
-        const [resMargenes, resCruces] = await Promise.all([
+        const [resMargenes, resCruces, resMargenesPub] = await Promise.all([
           supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle(),
-          supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle()
+          supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle(),
+          supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes_publico').maybeSingle()
         ]);
         
         const margenesMap: Record<string, number> = resMargenes.data?.valor || {};
         const crucesMap: Record<string, boolean> = resCruces.data?.valor || {};
+        const margenesPubMap: Record<string, number> = resMargenesPub.data?.valor || {};
 
         // Calcular precios de venta
         const productosConPrecio: ProductoConPrecio[] = (data as Producto[]).map((prod) => {
           const marcaKey = prod.marca ? prod.marca.toUpperCase() : '';
           const margenPersonalizado = marcaKey ? margenesMap[marcaKey] : undefined;
+          const margenPublico = marcaKey && margenesPubMap[marcaKey] ? margenesPubMap[marcaKey] : 1.35;
           const aplicaCruce = marcaKey ? crucesMap[marcaKey] : false;
           
           const resultado = calcularPrecioVenta(
@@ -158,11 +161,13 @@ export default function CatalogoPage() {
             monedaVenta,
             tipoCambio,
             margenPersonalizado,
-            aplicaCruce
+            aplicaCruce,
+            margenPublico
           );
           return {
             ...prod,
             precio_venta: resultado.precioVenta,
+            precio_publico: resultado.precioPublico,
             moneda_venta: resultado.monedaVenta,
             formula_aplicada: resultado.formulaAplicada,
           };

@@ -35,6 +35,7 @@ export interface CampoFiltro {
 
 export interface ProductoConPrecio extends Producto {
   precio_venta: number;
+  precio_publico?: number;
   moneda_venta: 'USD' | 'MXN';
   formula_aplicada: string;
 }
