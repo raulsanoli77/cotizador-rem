@@ -79,7 +79,7 @@ export default function RegistroB2BPage() {
           
           <div className="bg-brand-900 px-8 py-10 text-center">
             <h2 className="text-3xl font-extrabold text-white mb-2">Portal de Clientes B2B</h2>
-            <p className="text-brand-100">Regístrate para acceder a tus precios con descuento, crédito y gestión de órdenes.</p>
+            <p className="text-brand-100">Regístrate para acceder a tus precios con descuento, gestión de órdenes y términos de pago.</p>
           </div>
 
           <div className="px-8 py-10">
@@ -88,7 +88,7 @@ export default function RegistroB2BPage() {
                 <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
                 <h3 className="text-2xl font-bold text-slate-900 mb-4">¡Registro Exitoso!</h3>
                 <p className="text-slate-600 mb-8 max-w-md mx-auto">
-                  Tu cuenta ha sido creada y enviada a revisión. Nuestro equipo de ventas validará tus datos para asignarte tu descuento y límite de crédito correspondiente.
+                  Tu cuenta ha sido creada y enviada a revisión. Nuestro equipo de ventas validará tus datos para asignarte tu descuento y condiciones comerciales correspondientes.
                 </p>
                 <Link href="/" className="inline-flex items-center justify-center bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-8 rounded-lg transition-colors">
                   Volver al inicio

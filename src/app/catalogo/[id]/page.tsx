@@ -327,7 +327,7 @@ export default function ProductDetailPage() {
                       <div className="bg-slate-900/50 rounded-xl p-5 border border-brand-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div>
                           <h3 className="text-lg font-bold text-white mb-1 text-center sm:text-left">Descuento para Clientes</h3>
-                          <p className="text-slate-400 text-sm text-center sm:text-left">Inicia sesión para acceder a tu descuento especial, órdenes de compra y crédito.</p>
+                          <p className="text-slate-400 text-sm text-center sm:text-left">Inicia sesión para acceder a tu descuento especial, gestión de órdenes y términos de pago.</p>
                         </div>
                         <div className="flex-shrink-0 flex gap-3 w-full sm:w-auto">
                           <Link href="/admin/login" className="flex-1 sm:flex-none bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-lg font-bold text-center transition-colors shadow-lg text-sm">
