@@ -250,7 +250,7 @@ export default function ProductDetailPage() {
                             </span>
                           </div>
                         )}
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Tu Precio B2B</p>
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Tu Precio de Cliente</p>
                         <div className="text-4xl font-black text-white flex items-baseline gap-2 drop-shadow-md">
                           {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
                           <span className="text-lg font-medium text-slate-400 uppercase">{producto.moneda_venta}</span>
@@ -292,7 +292,7 @@ export default function ProductDetailPage() {
                             </div>
                           </div>
                         )}
-                        <h3 className="text-xl font-bold text-white mb-2">Desbloquea Precios Exclusivos B2B</h3>
+                        <h3 className="text-xl font-bold text-white mb-2">Descuento para Clientes</h3>
                         <p className="text-slate-400 text-sm">Para ver tu precio con descuento, hacer órdenes de compra y solicitar crédito, necesitas iniciar sesión.</p>
                       </div>
                       <div className="flex-shrink-0 w-full sm:w-auto flex flex-col gap-3">

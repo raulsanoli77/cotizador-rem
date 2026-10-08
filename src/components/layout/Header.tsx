@@ -15,6 +15,7 @@ export default function Header() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [titulo, setTitulo] = useState('REM Industrial');
   const [headerBusqueda, setHeaderBusqueda] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     async function fetchBranding() {
@@ -24,7 +25,20 @@ export default function Header() {
         if (data.valor.titulo) setTitulo(data.valor.titulo);
       }
     }
+    
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    }
+
     fetchBranding();
+    checkAuth();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const enlaces = [
@@ -89,12 +103,20 @@ export default function Header() {
               
               <div className="h-6 w-px bg-slate-700 mx-1"></div>
               
-              <Link href="/admin/login" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
-                Iniciar Sesión
-              </Link>
-              <Link href="/registro" className="text-sm font-bold bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded-lg transition-colors">
-                Crear Cuenta
-              </Link>
+              {isAuthenticated ? (
+                <Link href="/admin/productos" className="text-sm font-bold bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg transition-colors">
+                  Panel Admin
+                </Link>
+              ) : (
+                <>
+                  <Link href="/admin/login" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+                    Iniciar Sesión
+                  </Link>
+                  <Link href="/registro" className="text-sm font-bold bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded-lg transition-colors">
+                    Crear Cuenta
+                  </Link>
+                </>
+              )}
             </nav>
 
             <button

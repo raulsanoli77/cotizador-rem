@@ -116,7 +116,7 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
                 </div>
               )}
               <Link href="/admin/login" className="block w-full bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold py-2 rounded-md transition-colors mt-2">
-                Inicia Sesión para Descuento B2B
+                Ver precio de clientes
               </Link>
             </div>
           )}
