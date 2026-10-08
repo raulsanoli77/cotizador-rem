@@ -49,12 +49,22 @@ export default function ProductDetailPage() {
           setMarcaLogoUrl(configData.valor[prodData.marca]);
         }
 
-        // Obtener margen personalizado de la marca (si existe)
+        // Obtener margen personalizado y configuración de cruce
         let margenMarcaUSA: number | undefined;
+        let aplicaCruce: boolean = false;
+
         if (prodData.marca) {
-          const { data: margenData } = await supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle();
-          if (margenData?.valor && margenData.valor[prodData.marca.toUpperCase()]) {
-            margenMarcaUSA = Number(margenData.valor[prodData.marca.toUpperCase()]);
+          const [margenRes, cruceRes] = await Promise.all([
+            supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle(),
+            supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle()
+          ]);
+
+          const marcaKey = prodData.marca.toUpperCase();
+          if (margenRes.data?.valor && margenRes.data.valor[marcaKey]) {
+            margenMarcaUSA = Number(margenRes.data.valor[marcaKey]);
+          }
+          if (cruceRes.data?.valor && cruceRes.data.valor[marcaKey]) {
+            aplicaCruce = Boolean(cruceRes.data.valor[marcaKey]);
           }
         }
 
@@ -65,7 +75,8 @@ export default function ProductDetailPage() {
           prodData.moneda_costo as any, 
           'MXN',
           tipoCambioCache.valor,
-          margenMarcaUSA
+          margenMarcaUSA,
+          aplicaCruce
         );
 
         // Obtener el orden de los campos desde la categoría para ordenar las cajas

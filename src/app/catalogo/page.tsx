@@ -129,19 +129,28 @@ export default function CatalogoPage() {
       const data = allData;
 
       if (data) {
-        // Obtener márgenes por marca desde la configuración
-        const { data: margenesData } = await supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle();
-        const margenesMap: Record<string, number> = margenesData?.valor || {};
+        // Obtener configuración de marcas desde Supabase
+        const [resMargenes, resCruces] = await Promise.all([
+          supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle(),
+          supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle()
+        ]);
+        
+        const margenesMap: Record<string, number> = resMargenes.data?.valor || {};
+        const crucesMap: Record<string, boolean> = resCruces.data?.valor || {};
 
         // Calcular precios de venta
         const productosConPrecio: ProductoConPrecio[] = (data as Producto[]).map((prod) => {
-          const margenPersonalizado = prod.marca ? margenesMap[prod.marca.toUpperCase()] : undefined;
+          const marcaKey = prod.marca ? prod.marca.toUpperCase() : '';
+          const margenPersonalizado = marcaKey ? margenesMap[marcaKey] : undefined;
+          const aplicaCruce = marcaKey ? crucesMap[marcaKey] : false;
+          
           const resultado = calcularPrecioVenta(
             prod.costo_base,
             prod.moneda_costo,
             monedaVenta,
             tipoCambio,
-            margenPersonalizado
+            margenPersonalizado,
+            aplicaCruce
           );
           return {
             ...prod,

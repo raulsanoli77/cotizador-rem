@@ -18,9 +18,10 @@ export interface ResultadoPrecio {
 // Factores de margen (parametrizados para fácil ajuste)
 const FACTORES = {
   RECARGO_IMPORTACION: 1.15, // 15% recargo importación
-  MARGEN_USA: 1.5,           // Factor de utilidad proveedor USA (antes 1.4)
+  MARGEN_USA: 1.5,           // Factor de utilidad proveedor USA
   MARGEN_BASE: 0.7,          // 30% margen (costo / 0.7)
   IVA: 0.16,                 // 16% IVA México
+  CRUCE_ALTO_VOLUMEN: 0.12,  // 12% costo adicional de flete para marcas voluminosas
 };
 
 /**
@@ -55,7 +56,7 @@ export function determinarFormula(
  * Calcula el precio de venta aplicando la fórmula correspondiente.
  *
  * Fórmula 1 (Venta MXN / Proveedor USD):
- *   Precio = Costo_USD × 1.15 × 1.5 × TC_Redondeado_Arriba
+ *   Precio = ((Costo_USD × 1.15 × Margen) + (Costo_USD × 0.12 [Opcional])) × TC_Redondeado_Arriba
  *
  * Fórmula 2 (Venta MXN / Proveedor MXN):
  *   Precio = Costo_MXN / 0.7
@@ -71,7 +72,8 @@ export function calcularPrecioVenta(
   monedaCosto: MonedaCosto,
   monedaVenta: MonedaVenta,
   tipoCambio: number,
-  margenMarcaUSA?: number
+  margenMarcaUSA?: number,
+  aplicaCruceVolumen: boolean = false
 ): ResultadoPrecio {
   // Validaciones
   if (costoBase < 0) throw new Error('El costo base no puede ser negativo');
@@ -92,8 +94,12 @@ export function calcularPrecioVenta(
       const tcAplicado = aplicarRedondeoREM(tipoCambio);
       const conRecargo = costoBase * FACTORES.RECARGO_IMPORTACION;
       const margenAAplicar = margenMarcaUSA !== undefined && margenMarcaUSA !== null ? margenMarcaUSA : FACTORES.MARGEN_USA;
+      
       const conMargen = conRecargo * margenAAplicar;
-      const precioVenta = conMargen * tcAplicado;
+      const costoCruceVolumen = aplicaCruceVolumen ? (costoBase * FACTORES.CRUCE_ALTO_VOLUMEN) : 0;
+      
+      const precioVenta = (conMargen + costoCruceVolumen) * tcAplicado;
+      
       return {
         precioVenta: Math.round(precioVenta * 100) / 100,
         monedaVenta: 'MXN',
@@ -102,6 +108,7 @@ export function calcularPrecioVenta(
           costoBase,
           recargoImportacion: FACTORES.RECARGO_IMPORTACION,
           margenUSA: margenAAplicar,
+          costoCruceVolumen,
           tipoCambioUsado: tcAplicado,
           tipoCambioOriginal: tipoCambio,
         },
