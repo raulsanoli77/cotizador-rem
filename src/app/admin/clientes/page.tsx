@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Loader2, Users, Building, Mail, Phone, Calendar, Edit2, ShieldAlert, ShieldCheck } from 'lucide-react';
-import Modal from '@/components/ui/Modal';
 
 type PerfilCliente = {
   id: string;
@@ -183,61 +182,75 @@ export default function ClientesB2BPage() {
         </div>
       </div>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Administrar Cliente B2B">
-        {clienteSelect && (
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200">
-              <h4 className="font-bold text-slate-900 mb-1">{clienteSelect.empresa}</h4>
-              <p className="text-sm text-slate-600">{clienteSelect.nombre_completo} ({clienteSelect.email})</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Estatus de Aprobación</label>
-              <select
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                value={editEstatus}
-                onChange={(e: any) => setEditEstatus(e.target.value)}
-              >
-                <option value="pendiente">Pendiente (Sin acceso B2B)</option>
-                <option value="aprobado">Aprobado (Acceso B2B activo)</option>
-                <option value="rechazado">Rechazado (Bloqueado)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Términos de Pago</label>
-              <select
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                value={editTerminos}
-                onChange={(e: any) => setEditTerminos(e.target.value)}
-              >
-                <option value="Contado">Contado</option>
-                <option value="Crédito 8 Días">Crédito 8 Días</option>
-                <option value="Crédito 15 Días">Crédito 15 Días</option>
-                <option value="Crédito 30 Días">Crédito 30 Días</option>
-              </select>
-              <p className="text-xs text-slate-500 mt-1">Estas condiciones aparecerán en sus cotizaciones formales.</p>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-8">
-              <button
-                type="button"
+      {modalOpen && clienteSelect && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <h3 className="font-bold text-lg text-slate-900">Administrar Cliente B2B</h3>
+              <button 
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="text-slate-400 hover:text-slate-600 transition-colors"
               >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={guardando}
-                className="px-4 py-2 text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors flex items-center gap-2"
-              >
-                {guardando ? <><Loader2 className="h-4 w-4 animate-spin" /> Guardando...</> : 'Guardar Cambios'}
+                ✕
               </button>
             </div>
-          </form>
-        )}
-      </Modal>
+            
+            <div className="p-6">
+              <form onSubmit={handleSave} className="space-y-4">
+                <div className="bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200">
+                  <h4 className="font-bold text-slate-900 mb-1">{clienteSelect.empresa}</h4>
+                  <p className="text-sm text-slate-600">{clienteSelect.nombre_completo} ({clienteSelect.email})</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Estatus de Aprobación</label>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    value={editEstatus}
+                    onChange={(e: any) => setEditEstatus(e.target.value)}
+                  >
+                    <option value="pendiente">Pendiente (Sin acceso B2B)</option>
+                    <option value="aprobado">Aprobado (Acceso B2B activo)</option>
+                    <option value="rechazado">Rechazado (Bloqueado)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Términos de Pago</label>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    value={editTerminos}
+                    onChange={(e: any) => setEditTerminos(e.target.value)}
+                  >
+                    <option value="Contado">Contado</option>
+                    <option value="Crédito 8 Días">Crédito 8 Días</option>
+                    <option value="Crédito 15 Días">Crédito 15 Días</option>
+                    <option value="Crédito 30 Días">Crédito 30 Días</option>
+                  </select>
+                  <p className="text-xs text-slate-500 mt-1">Estas condiciones aparecerán en sus cotizaciones formales.</p>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-8">
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={guardando}
+                    className="px-4 py-2 text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    {guardando ? <><Loader2 className="h-4 w-4 animate-spin" /> Guardando...</> : 'Guardar Cambios'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
