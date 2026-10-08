@@ -141,7 +141,11 @@ export default function ProductDetailPage() {
   if (!producto) return null;
 
   const handleAdd = () => {
-    agregarItem(producto, cantidad);
+    const productoAgregado = !isB2B && producto.precio_publico 
+      ? { ...producto, precio_venta: producto.precio_publico }
+      : producto;
+      
+    agregarItem(productoAgregado, cantidad);
     setCantidad(1);
     alert('Producto agregado al carrito'); // Opcional: Toast sutil
   };
@@ -282,26 +286,57 @@ export default function ProductDetailPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                      <div>
-                        {producto.precio_publico && (
-                          <div className="mb-4">
-                            <span className="text-sm font-bold text-slate-400 uppercase tracking-wider block mb-1">Precio de Lista</span>
-                            <div className="text-3xl font-black text-slate-200">
-                              {formatearPrecio(producto.precio_publico, producto.moneda_venta)} <span className="text-lg text-slate-500">{producto.moneda_venta}</span>
+                    <div className="flex flex-col gap-6">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                        <div>
+                          {producto.precio_publico && (
+                            <div>
+                              <span className="text-sm font-bold text-slate-400 uppercase tracking-wider block mb-1">Precio de Lista</span>
+                              <div className="text-3xl font-black text-slate-200">
+                                {formatearPrecio(producto.precio_publico, producto.moneda_venta)} <span className="text-lg text-slate-500">{producto.moneda_venta}</span>
+                              </div>
                             </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
+                          <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden w-full sm:w-auto shadow-inner">
+                            <button 
+                              onClick={() => setCantidad(Math.max(1, cantidad - 1))}
+                              className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                            >
+                              <Minus className="h-5 w-5" />
+                            </button>
+                            <span className="w-16 text-center text-xl font-bold text-white">{cantidad}</span>
+                            <button 
+                              onClick={() => setCantidad(cantidad + 1)}
+                              className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                            >
+                              <Plus className="h-5 w-5" />
+                            </button>
                           </div>
-                        )}
-                        <h3 className="text-xl font-bold text-white mb-2">Descuento para Clientes</h3>
-                        <p className="text-slate-400 text-sm">Para ver tu precio con descuento, hacer órdenes de compra y solicitar crédito, necesitas iniciar sesión.</p>
+                          <button
+                            onClick={handleAdd}
+                            className="w-full bg-brand-600 hover:bg-brand-500 text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] hover:shadow-[0_0_25px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2"
+                          >
+                            <ShoppingCart className="h-5 w-5" /> Agregar al carrito
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex-shrink-0 w-full sm:w-auto flex flex-col gap-3">
-                        <Link href="/admin/login" className="w-full bg-brand-600 hover:bg-brand-500 text-white px-8 py-3 rounded-lg font-bold text-center transition-colors shadow-lg">
-                          Iniciar Sesión
-                        </Link>
-                        <Link href="/registro" className="w-full bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-lg font-bold text-center transition-colors">
-                          Solicitar Cuenta
-                        </Link>
+
+                      <div className="bg-slate-900/50 rounded-xl p-5 border border-brand-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-white mb-1 text-center sm:text-left">Descuento para Clientes</h3>
+                          <p className="text-slate-400 text-sm text-center sm:text-left">Inicia sesión para acceder a tu descuento especial, órdenes de compra y crédito.</p>
+                        </div>
+                        <div className="flex-shrink-0 flex gap-3 w-full sm:w-auto">
+                          <Link href="/admin/login" className="flex-1 sm:flex-none bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-lg font-bold text-center transition-colors shadow-lg text-sm">
+                            Iniciar Sesión
+                          </Link>
+                          <Link href="/registro" className="flex-1 sm:flex-none bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg font-bold text-center transition-colors text-sm">
+                            Solicitar Cuenta
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   )}

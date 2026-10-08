@@ -17,9 +17,18 @@ interface ProductCardProps {
 export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: ProductCardProps) {
   const agregarItem = useCartStore((s) => s.agregarItem);
   const [cantidad, setCantidad] = useState(1);
-  
-  const handleAdd = () => {
-    agregarItem(producto, cantidad);
+  const handleAdd = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Si no es B2B, el precio a agregar es el precio_publico
+    const productoAgregado = !isB2B && producto.precio_publico 
+      ? { ...producto, precio_venta: producto.precio_publico }
+      : producto;
+      
+    agregarItem(productoAgregado, cantidad);
     setCantidad(1); // reset after adding
   };
 
@@ -78,35 +87,9 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
                   <span className="text-xs sm:text-sm text-slate-500 font-bold ml-1">{producto.moneda_venta}</span>
                 </div>
               </div>
-              
-              <div className="flex gap-1.5 w-full">
-                <div className="flex items-center justify-between border border-slate-200 rounded-lg bg-slate-50 w-[64px] shrink-0">
-                  <button 
-                    onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-                    className="py-1.5 px-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
-                  >
-                    <Minus className="h-3 w-3" />
-                  </button>
-                  <span className="text-xs font-semibold text-slate-700">{cantidad}</span>
-                  <button 
-                    onClick={() => setCantidad(cantidad + 1)}
-                    className="py-1.5 px-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </button>
-                </div>
-                
-                <button 
-                  onClick={handleAdd}
-                  className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg flex items-center justify-center gap-1 transition-colors active:scale-95 shadow-sm py-1.5 px-1 overflow-hidden"
-                >
-                  <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-                  <span className="text-[11px] font-bold truncate">Agregar</span>
-                </button>
-              </div>
             </>
           ) : (
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center mb-1">
               {producto.precio_publico && (
                 <div className="mb-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Precio de Lista</span>
@@ -115,11 +98,38 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
                   </span>
                 </div>
               )}
-              <Link href="/admin/login" className="block w-full bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold py-2 rounded-md transition-colors mt-2">
+              <Link href="/admin/login" className="block w-full bg-slate-800 hover:bg-slate-900 text-white text-[10px] font-bold py-1.5 rounded transition-colors">
                 Ver precio de clientes
               </Link>
             </div>
           )}
+
+          {/* ADD TO CART CONTROLS (SIEMPRE VISIBLES) */}
+          <div className="flex gap-1.5 w-full mt-auto">
+            <div className="flex items-center justify-between border border-slate-200 rounded-lg bg-slate-50 w-[64px] shrink-0">
+              <button 
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCantidad(Math.max(1, cantidad - 1)); }}
+                className="py-1.5 px-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
+              >
+                <Minus className="h-3 w-3" />
+              </button>
+              <span className="text-xs font-semibold text-slate-700">{cantidad}</span>
+              <button 
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCantidad(cantidad + 1); }}
+                className="py-1.5 px-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+            </div>
+            
+            <button 
+              onClick={handleAdd}
+              className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg flex items-center justify-center gap-1 transition-colors active:scale-95 shadow-sm py-1.5 px-1 overflow-hidden"
+            >
+              <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+              <span className="text-[11px] font-bold truncate">Agregar</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

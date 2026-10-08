@@ -584,6 +584,7 @@ export default function CatalogoPage() {
                   <ProductGrid 
                     productos={productos.slice((paginaActual - 1) * 50, paginaActual * 50)} 
                     marcasLogos={marcasLogos}
+                    isB2B={isB2B}
                   />
                   
                   {renderPagination(false)}
