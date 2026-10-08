@@ -14,6 +14,7 @@ type PerfilCliente = {
   estatus: 'pendiente' | 'aprobado' | 'rechazado';
   terminos_pago: string;
   fecha_registro: string;
+  rol?: string;
 };
 
 import { actualizarEstatusCliente } from './actions';
@@ -31,6 +32,7 @@ export default function ClientesB2BPage() {
   // Form states
   const [editEstatus, setEditEstatus] = useState<'pendiente' | 'aprobado' | 'rechazado'>('pendiente');
   const [editTerminos, setEditTerminos] = useState('Contado');
+  const [editRol, setEditRol] = useState('cliente');
 
   useEffect(() => {
     cargarClientes();
@@ -55,6 +57,7 @@ export default function ClientesB2BPage() {
     setClienteSelect(c);
     setEditEstatus(c.estatus);
     setEditTerminos(c.terminos_pago || 'Contado');
+    setEditRol(c.rol || 'cliente');
     setModalOpen(true);
   };
 
@@ -69,7 +72,8 @@ export default function ClientesB2BPage() {
         clienteSelect.email,
         clienteSelect.nombre_completo,
         editEstatus,
-        editTerminos
+        editTerminos,
+        editRol
       );
       setModalOpen(false);
       cargarClientes();
@@ -162,9 +166,17 @@ export default function ClientesB2BPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {c.estatus === 'pendiente' && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold"><ShieldAlert className="h-3.5 w-3.5"/> Pendiente</span>}
-                      {c.estatus === 'aprobado' && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold"><ShieldCheck className="h-3.5 w-3.5"/> Aprobado</span>}
-                      {c.estatus === 'rechazado' && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold">Rechazado</span>}
+                      <div className="flex flex-col gap-1 items-start">
+                        {c.estatus === 'pendiente' && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-bold"><ShieldAlert className="h-3.5 w-3.5"/> Pendiente</span>}
+                        {c.estatus === 'aprobado' && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold"><ShieldCheck className="h-3.5 w-3.5"/> Aprobado</span>}
+                        {c.estatus === 'rechazado' && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold">Rechazado</span>}
+                        
+                        {c.rol === 'admin' ? (
+                          <span className="inline-flex px-2 py-0.5 rounded bg-purple-100 text-purple-700 text-[10px] font-bold">ADMIN</span>
+                        ) : (
+                          <span className="inline-flex px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px]">CLIENTE</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button 
@@ -212,6 +224,18 @@ export default function ClientesB2BPage() {
                     <option value="pendiente">Pendiente (Sin acceso B2B)</option>
                     <option value="aprobado">Aprobado (Acceso B2B activo)</option>
                     <option value="rechazado">Rechazado (Bloqueado)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Rol en la Plataforma</label>
+                  <select
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    value={editRol}
+                    onChange={(e: any) => setEditRol(e.target.value)}
+                  >
+                    <option value="cliente">Cliente B2B Normal</option>
+                    <option value="admin">Administrador (Acceso Total)</option>
                   </select>
                 </div>
 

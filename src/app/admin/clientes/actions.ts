@@ -8,14 +8,15 @@ export async function actualizarEstatusCliente(
   email: string,
   nombre: string,
   estatus: 'pendiente' | 'aprobado' | 'rechazado',
-  terminos_pago: string
+  terminos_pago: string,
+  rol: string
 ) {
   const supabase = createAdminClient();
 
   // 1. Actualizar base de datos
   const { error } = await supabase
     .from('perfiles_clientes')
-    .update({ estatus, terminos_pago })
+    .update({ estatus, terminos_pago, rol })
     .eq('id', id);
 
   if (error) {
