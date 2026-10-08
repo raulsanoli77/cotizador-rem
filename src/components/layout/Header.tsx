@@ -146,6 +146,16 @@ export default function Header() {
                       Mi Cuenta
                     </span>
                   )}
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      window.location.reload();
+                    }}
+                    className="text-xs text-slate-400 hover:text-white transition-colors"
+                    title="Cerrar Sesión"
+                  >
+                    Salir
+                  </button>
                 </div>
               ) : (
                 <>
