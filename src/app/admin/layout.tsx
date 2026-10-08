@@ -17,12 +17,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session && pathname !== '/admin/login') {
-        router.push('/admin/login');
-      } else if (session && pathname === '/admin/login') {
+      if (!session) {
+        if (pathname !== '/admin/login') {
+          router.push('/admin/login');
+        } else {
+          setAuthenticated(false);
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Check role
+      const { data: perfil } = await supabase
+        .from('perfiles_clientes')
+        .select('rol')
+        .eq('id', session.user.id)
+        .single();
+
+      if (perfil?.rol !== 'admin') {
+        router.push('/catalogo');
+        return;
+      }
+
+      setAuthenticated(true);
+      if (pathname === '/admin/login') {
         router.push('/admin/productos');
-      } else {
-        setAuthenticated(!!session);
       }
       setLoading(false);
     };
@@ -33,8 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (event === 'SIGNED_OUT') {
         router.push('/admin/login');
       } else if (session) {
-        setAuthenticated(true);
-        if (pathname === '/admin/login') router.push('/admin/productos');
+        checkAuth();
       }
     });
 

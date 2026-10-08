@@ -226,8 +226,21 @@ export default function ClientesB2BPage() {
                     <option value="Crédito 8 Días">Crédito 8 Días</option>
                     <option value="Crédito 15 Días">Crédito 15 Días</option>
                     <option value="Crédito 30 Días">Crédito 30 Días</option>
+                    <option value="Crédito 45 Días">Crédito 45 Días</option>
+                    <option value="Crédito 60 Días">Crédito 60 Días</option>
+                    <option value="Crédito 75 Días">Crédito 75 Días</option>
+                    <option value="Crédito 90 Días">Crédito 90 Días</option>
+                    <option value="Crédito 105 Días">Crédito 105 Días</option>
+                    <option value="Crédito 120 Días">Crédito 120 Días</option>
                   </select>
                   <p className="text-xs text-slate-500 mt-1">Estas condiciones aparecerán en sus cotizaciones formales.</p>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100">
+                  <h4 className="font-semibold text-sm text-slate-700 mb-2">Información de Envío / Facturación</h4>
+                  <div className="p-3 bg-blue-50 text-blue-800 text-xs rounded border border-blue-100">
+                    * Espacio reservado para el Módulo 4: Aquí se agregarán los campos de Dirección completa, Ciudad, Estado, Código Postal y paquetería preferida para procesar pedidos.
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 mt-8">

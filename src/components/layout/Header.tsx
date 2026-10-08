@@ -17,6 +17,7 @@ export default function Header() {
   const [headerBusqueda, setHeaderBusqueda] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     async function fetchBranding() {
@@ -34,12 +35,24 @@ export default function Header() {
       if (session) {
         const { data: perfil } = await supabase
           .from('perfiles_clientes')
-          .select('estatus')
+          .select('estatus, rol')
           .eq('id', session.user.id)
           .single();
-        if (perfil && perfil.estatus === 'pendiente') {
-          setIsPending(true);
+          
+        if (perfil) {
+          if (perfil.rol === 'admin') {
+            setIsAdmin(true);
+            setIsPending(false); // Los admins nunca están "en revisión"
+          } else {
+            setIsAdmin(false);
+            if (perfil.estatus === 'pendiente') {
+              setIsPending(true);
+            }
+          }
         }
+      } else {
+        setIsAdmin(false);
+        setIsPending(false);
       }
     }
 
@@ -124,9 +137,15 @@ export default function Header() {
                       Cuenta en Revisión
                     </span>
                   )}
-                  <Link href="/admin/productos" className="text-sm font-bold bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg transition-colors">
-                    Panel Admin
-                  </Link>
+                  {isAdmin ? (
+                    <Link href="/admin/productos" className="text-sm font-bold bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg transition-colors">
+                      Panel Admin
+                    </Link>
+                  ) : (
+                    <span className="text-sm font-semibold text-slate-300">
+                      Mi Cuenta
+                    </span>
+                  )}
                 </div>
               ) : (
                 <>
