@@ -4,9 +4,10 @@ import ProductCard from './ProductCard';
 interface ProductGridProps {
   productos: ProductoConPrecio[];
   marcasLogos?: Record<string, string>;
+  isB2B?: boolean;
 }
 
-export default function ProductGrid({ productos, marcasLogos = {} }: ProductGridProps) {
+export default function ProductGrid({ productos, marcasLogos = {}, isB2B = false }: ProductGridProps) {
   if (productos.length === 0) {
     return (
       <div className="text-center py-16">
@@ -18,7 +19,7 @@ export default function ProductGrid({ productos, marcasLogos = {} }: ProductGrid
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
       {productos.map((producto) => (
-        <ProductCard key={producto.id} producto={producto} marcaLogoUrl={marcasLogos[producto.marca]} />
+        <ProductCard key={producto.id} producto={producto} marcaLogoUrl={marcasLogos[producto.marca]} isB2B={isB2B} />
       ))}
     </div>
   );

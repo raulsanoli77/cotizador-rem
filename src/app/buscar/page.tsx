@@ -129,7 +129,7 @@ export default function BuscarPage() {
     <div className="min-h-screen flex flex-col bg-slate-900">
       <Header />
 
-      <main className="flex-grow pt-16">
+      <main className="flex-grow pt-24">
         {/* Banner Superior */}
         <section className="bg-slate-900 border-b border-slate-800 py-12 px-4">
           <div className="max-w-5xl mx-auto text-center">

@@ -31,8 +31,16 @@ export default function CatalogoPage() {
   const monedaVenta = 'MXN' as const;
   const autoCheckDone = useRef(false);
 
+  const [isB2B, setIsB2B] = useState(false);
+
   // Cargar categorías al montar
   useEffect(() => {
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) setIsB2B(true);
+    }
+    checkSession();
+
     async function cargarCategorias() {
       const { data } = await supabase
         .from('categorias')
@@ -470,7 +478,7 @@ export default function CatalogoPage() {
     return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 pt-20 pb-12">
+      <main className="min-h-screen bg-gray-50 pt-28 pb-12">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Título y búsqueda */}
           <div className="mb-8">

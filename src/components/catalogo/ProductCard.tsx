@@ -11,9 +11,10 @@ import Link from 'next/link';
 interface ProductCardProps {
   producto: ProductoConPrecio;
   marcaLogoUrl?: string;
+  isB2B?: boolean;
 }
 
-export default function ProductCard({ producto, marcaLogoUrl }: ProductCardProps) {
+export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: ProductCardProps) {
   const agregarItem = useCartStore((s) => s.agregarItem);
   const [cantidad, setCantidad] = useState(1);
   
@@ -59,37 +60,47 @@ export default function ProductCard({ producto, marcaLogoUrl }: ProductCardProps
 
         {/* Pie de Tarjeta: Precio Arriba, Controles Abajo */}
         <div className="mt-auto pt-3 border-t border-slate-100 flex flex-col gap-2.5">
-          
-          <div className="text-lg sm:text-xl font-black text-slate-900 leading-none truncate">
-            ${producto.precio_venta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            <span className="text-xs sm:text-sm text-slate-500 font-bold ml-1">{producto.moneda_venta}</span>
-          </div>
-          
-          <div className="flex gap-1.5 w-full">
-            <div className="flex items-center justify-between border border-slate-200 rounded-lg bg-slate-50 w-[64px] shrink-0">
-              <button 
-                onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-                className="py-1.5 px-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
-              >
-                <Minus className="h-3 w-3" />
-              </button>
-              <span className="text-xs font-semibold text-slate-700">{cantidad}</span>
-              <button 
-                onClick={() => setCantidad(cantidad + 1)}
-                className="py-1.5 px-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
-              >
-                <Plus className="h-3 w-3" />
-              </button>
+          {isB2B ? (
+            <>
+              <div className="text-lg sm:text-xl font-black text-slate-900 leading-none truncate">
+                ${producto.precio_venta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="text-xs sm:text-sm text-slate-500 font-bold ml-1">{producto.moneda_venta}</span>
+              </div>
+              
+              <div className="flex gap-1.5 w-full">
+                <div className="flex items-center justify-between border border-slate-200 rounded-lg bg-slate-50 w-[64px] shrink-0">
+                  <button 
+                    onClick={() => setCantidad(Math.max(1, cantidad - 1))}
+                    className="py-1.5 px-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="text-xs font-semibold text-slate-700">{cantidad}</span>
+                  <button 
+                    onClick={() => setCantidad(cantidad + 1)}
+                    className="py-1.5 px-1.5 text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+                
+                <button 
+                  onClick={handleAdd}
+                  className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg flex items-center justify-center gap-1 transition-colors active:scale-95 shadow-sm py-1.5 px-1 overflow-hidden"
+                >
+                  <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+                  <span className="text-[11px] font-bold truncate">Agregar</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+              <p className="text-xs text-slate-500 mb-2 font-medium">Inicia sesión para ver tu precio</p>
+              <Link href="/admin/login" className="block w-full bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold py-2 rounded-md transition-colors">
+                Iniciar Sesión B2B
+              </Link>
             </div>
-            
-            <button 
-              onClick={handleAdd}
-              className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg flex items-center justify-center gap-1 transition-colors active:scale-95 shadow-sm py-1.5 px-1 overflow-hidden"
-            >
-              <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-              <span className="text-[11px] font-bold truncate">Agregar</span>
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </div>

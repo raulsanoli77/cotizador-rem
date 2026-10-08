@@ -25,8 +25,15 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [cantidad, setCantidad] = useState(1);
   const agregarItem = useCartStore((s) => s.agregarItem);
+  const [isB2B, setIsB2B] = useState(false);
 
   useEffect(() => {
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) setIsB2B(true);
+    }
+    checkSession();
+
     async function loadProduct() {
       try {
         setLoading(true);
@@ -116,7 +123,7 @@ export default function ProductDetailPage() {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">
         <Header />
-        <main className="flex-grow flex items-center justify-center pt-16">
+        <main className="flex-grow flex items-center justify-center pt-24">
           <Loader2 className="h-10 w-10 animate-spin text-brand-600" />
         </main>
         <Footer />
@@ -154,7 +161,7 @@ export default function ProductDetailPage() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Header />
 
-      <main className="flex-grow pt-16">
+      <main className="flex-grow pt-24">
         
         {/* Sección Superior: Fondo Oscuro (Dark Industrial) */}
         <section className="bg-slate-900 pt-8 pb-16 lg:pb-24 shadow-inner border-b border-slate-800">
@@ -223,39 +230,56 @@ export default function ProductDetailPage() {
 
                 {/* Módulo de Compra (Caja de Contraste) */}
                 <div className="bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-2xl border border-slate-700 mt-auto">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                    <div>
-                      <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Precio Unitario</p>
-                      <div className="text-4xl font-black text-white flex items-baseline gap-2 drop-shadow-md">
-                        {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
-                        <span className="text-lg font-medium text-slate-400 uppercase">{producto.moneda_venta}</span>
+                  {isB2B ? (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                      <div>
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Precio Unitario</p>
+                        <div className="text-4xl font-black text-white flex items-baseline gap-2 drop-shadow-md">
+                          {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
+                          <span className="text-lg font-medium text-slate-400 uppercase">{producto.moneda_venta}</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
-                      <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden w-full sm:w-auto shadow-inner">
-                        <button 
-                          onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-                          className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                      <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
+                        <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden w-full sm:w-auto shadow-inner">
+                          <button 
+                            onClick={() => setCantidad(Math.max(1, cantidad - 1))}
+                            className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                          >
+                            <Minus className="h-5 w-5" />
+                          </button>
+                          <span className="w-16 text-center text-xl font-bold text-white">{cantidad}</span>
+                          <button 
+                            onClick={() => setCantidad(cantidad + 1)}
+                            className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                          >
+                            <Plus className="h-5 w-5" />
+                          </button>
+                        </div>
+                        <button
+                          onClick={handleAdd}
+                          className="w-full bg-brand-600 hover:bg-brand-500 text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] hover:shadow-[0_0_25px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2"
                         >
-                          <Minus className="h-5 w-5" />
-                        </button>
-                        <span className="w-16 text-center text-xl font-bold text-white">{cantidad}</span>
-                        <button 
-                          onClick={() => setCantidad(cantidad + 1)}
-                          className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                        >
-                          <Plus className="h-5 w-5" />
+                          <ShoppingCart className="h-5 w-5" /> Agregar al carrito
                         </button>
                       </div>
-                      <button
-                        onClick={handleAdd}
-                        className="w-full bg-brand-600 hover:bg-brand-500 text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] hover:shadow-[0_0_25px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2"
-                      >
-                        <ShoppingCart className="h-5 w-5" /> Agregar al carrito
-                      </button>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                      <div>
+                        <h3 className="text-2xl font-bold text-white mb-2">Precios Exclusivos B2B</h3>
+                        <p className="text-slate-400 text-sm">Para ver tu precio con descuento, hacer órdenes de compra y solicitar crédito, necesitas iniciar sesión.</p>
+                      </div>
+                      <div className="flex-shrink-0 w-full sm:w-auto flex flex-col gap-3">
+                        <Link href="/admin/login" className="w-full bg-brand-600 hover:bg-brand-500 text-white px-8 py-3 rounded-lg font-bold text-center transition-colors shadow-lg">
+                          Iniciar Sesión
+                        </Link>
+                        <Link href="/registro" className="w-full bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-lg font-bold text-center transition-colors">
+                          Solicitar Cuenta
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

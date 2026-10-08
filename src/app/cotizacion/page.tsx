@@ -93,7 +93,7 @@ export default function CotizacionPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-50 pt-24 pb-12">
+      <main className="min-h-screen bg-slate-50 pt-32 pb-12">
         <div className="max-w-5xl mx-auto px-4">
           <h1 className="text-3xl font-bold text-slate-900 mb-8 tracking-tight">Checkout Segura</h1>
 

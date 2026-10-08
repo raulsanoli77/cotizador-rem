@@ -20,7 +20,7 @@ export default async function Home() {
   const marcasLogos = marcasData?.valor || {};
 
   return (
-    <div className="min-h-screen flex flex-col pt-16 bg-slate-900">
+    <div className="min-h-screen flex flex-col pt-24 bg-slate-900">
       <Header />
       
       <main className="flex-grow">
@@ -88,7 +88,7 @@ export default async function Home() {
         {/* Features Section (Dark Technical Look) */}
         <section className="py-24 px-4 bg-slate-900">
           <div className="container mx-auto max-w-6xl">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-800 pt-16">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-800 pt-24">
               
               <div className="group p-8 border border-slate-800 bg-slate-800/30 hover:bg-slate-800/60 transition-colors">
                 <Search className="h-10 w-10 text-brand-500 mb-6 group-hover:scale-110 transition-transform" />

@@ -35,7 +35,10 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-slate-900 text-white shadow-lg border-b border-slate-800">
+      <div className="fixed top-0 left-0 right-0 z-50 h-8 bg-brand-700 text-white flex items-center justify-center text-xs sm:text-sm font-medium">
+        ¿Prefieres atención personalizada? Contáctanos: <a href="mailto:ventas3@remindustrial.mx" className="ml-1 hover:underline font-bold">ventas3@remindustrial.mx</a> <span className="mx-2">|</span> 📞 <a href="tel:614815170" className="ml-1 hover:underline font-bold">614 81 51 70</a>
+      </div>
+      <header className="fixed top-8 left-0 right-0 z-40 h-16 bg-slate-900 text-white shadow-lg border-b border-slate-800">
         <div className="max-w-[1400px] mx-auto h-full px-4 flex items-center justify-between gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-bold text-xl flex-shrink-0 bg-white rounded-md px-2 py-1 shadow-sm hover:shadow-md transition-shadow">
@@ -83,6 +86,15 @@ export default function Header() {
                   {e.label}
                 </Link>
               ))}
+              
+              <div className="h-6 w-px bg-slate-700 mx-1"></div>
+              
+              <Link href="/admin/login" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+                Iniciar Sesión
+              </Link>
+              <Link href="/registro" className="text-sm font-bold bg-brand-600 hover:bg-brand-500 text-white px-3 py-1.5 rounded-lg transition-colors">
+                Crear Cuenta
+              </Link>
             </nav>
 
             <button
