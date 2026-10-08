@@ -56,11 +56,30 @@ export default function RegistroB2BPage() {
 
       if (authError) throw authError;
 
+      // Insertar en la tabla perfiles_clientes para el CRM
+      if (authData.user) {
+        const { error: profileError } = await supabase.from('perfiles_clientes').insert({
+          id: authData.user.id,
+          email: formData.email,
+          nombre_completo: formData.nombre_completo,
+          puesto: formData.puesto,
+          empresa: formData.empresa,
+          perfil_empresa: formData.perfil_empresa,
+          telefono: formData.telefono,
+          rfc: formData.rfc,
+          pagina_web: formData.pagina_web,
+          estatus: 'pendiente',
+          terminos_pago: 'Contado'
+        });
+        
+        if (profileError) {
+          console.error('Error al guardar perfil CRM:', profileError);
+          // Opcional: Podrías hacer un rollback o alertar.
+        }
+      }
+
       setSuccess(true);
       window.scrollTo(0, 0);
-
-      // Opcional: Aquí podríamos guardar los datos en una tabla 'perfiles_clientes' 
-      // si la tuviéramos creada, pero ya están en user_metadata del Auth.
 
     } catch (err: any) {
       console.error(err);

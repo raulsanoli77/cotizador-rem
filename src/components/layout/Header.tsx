@@ -16,6 +16,7 @@ export default function Header() {
   const [titulo, setTitulo] = useState('REM Industrial');
   const [headerBusqueda, setHeaderBusqueda] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
     async function fetchBranding() {
@@ -29,6 +30,17 @@ export default function Header() {
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
+      
+      if (session) {
+        const { data: perfil } = await supabase
+          .from('perfiles_clientes')
+          .select('estatus')
+          .eq('id', session.user.id)
+          .single();
+        if (perfil && perfil.estatus === 'pendiente') {
+          setIsPending(true);
+        }
+      }
     }
 
     fetchBranding();
@@ -36,6 +48,8 @@ export default function Header() {
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
+      if (session) checkAuth(); // re-check on change
+      else setIsPending(false);
     });
 
     return () => subscription.unsubscribe();
@@ -104,9 +118,16 @@ export default function Header() {
               <div className="h-6 w-px bg-slate-700 mx-1"></div>
               
               {isAuthenticated ? (
-                <Link href="/admin/productos" className="text-sm font-bold bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg transition-colors">
-                  Panel Admin
-                </Link>
+                <div className="flex items-center gap-3">
+                  {isPending && (
+                    <span className="text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-1 rounded-md">
+                      Cuenta en Revisión
+                    </span>
+                  )}
+                  <Link href="/admin/productos" className="text-sm font-bold bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg transition-colors">
+                    Panel Admin
+                  </Link>
+                </div>
               ) : (
                 <>
                   <Link href="/admin/login" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">

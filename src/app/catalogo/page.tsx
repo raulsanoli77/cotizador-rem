@@ -37,7 +37,19 @@ export default function CatalogoPage() {
   useEffect(() => {
     async function checkSession() {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) setIsB2B(true);
+      if (session) {
+        const { data: perfil } = await supabase
+          .from('perfiles_clientes')
+          .select('estatus')
+          .eq('id', session.user.id)
+          .single();
+        if (perfil?.estatus === 'aprobado') {
+          setIsB2B(true);
+        } else {
+          // Si no está aprobado (ej. pendiente), lo tratamos como público 
+          setIsB2B(false);
+        }
+      }
     }
     checkSession();
 

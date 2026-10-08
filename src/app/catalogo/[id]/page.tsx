@@ -30,7 +30,18 @@ export default function ProductDetailPage() {
   useEffect(() => {
     async function checkSession() {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) setIsB2B(true);
+      if (session) {
+        const { data: perfil } = await supabase
+          .from('perfiles_clientes')
+          .select('estatus')
+          .eq('id', session.user.id)
+          .single();
+        if (perfil?.estatus === 'aprobado') {
+          setIsB2B(true);
+        } else {
+          setIsB2B(false);
+        }
+      }
     }
     checkSession();
 
