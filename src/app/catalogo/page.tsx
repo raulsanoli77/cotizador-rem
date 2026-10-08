@@ -129,13 +129,19 @@ export default function CatalogoPage() {
       const data = allData;
 
       if (data) {
+        // Obtener márgenes por marca desde la configuración
+        const { data: margenesData } = await supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle();
+        const margenesMap: Record<string, number> = margenesData?.valor || {};
+
         // Calcular precios de venta
         const productosConPrecio: ProductoConPrecio[] = (data as Producto[]).map((prod) => {
+          const margenPersonalizado = prod.marca ? margenesMap[prod.marca.toUpperCase()] : undefined;
           const resultado = calcularPrecioVenta(
             prod.costo_base,
             prod.moneda_costo,
             monedaVenta,
-            tipoCambio
+            tipoCambio,
+            margenPersonalizado
           );
           return {
             ...prod,

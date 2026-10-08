@@ -6,6 +6,7 @@ import { Plus, Edit2, Trash2, Image as ImageIcon, Loader2, Award } from 'lucide-
 
 export default function MarcasAdminPage() {
   const [marcas, setMarcas] = useState<Record<string, string>>({});
+  const [margenes, setMargenes] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -14,6 +15,7 @@ export default function MarcasAdminPage() {
   // Formulario
   const [nombreMarca, setNombreMarca] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [margenUsa, setMargenUsa] = useState<number>(1.5);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [marcaOriginal, setMarcaOriginal] = useState('');
 
@@ -23,29 +25,27 @@ export default function MarcasAdminPage() {
 
   const fetchMarcas = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('configuracion')
-      .select('valor')
-      .eq('clave', 'marcas_logos')
-      .single();
+    const [resLogos, resMargenes] = await Promise.all([
+      supabase.from('configuracion').select('valor').eq('clave', 'marcas_logos').maybeSingle(),
+      supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle()
+    ]);
 
-    if (data?.valor) {
-      setMarcas(data.valor);
-    } else {
-      setMarcas({});
-    }
+    setMarcas(resLogos.data?.valor || {});
+    setMargenes(resMargenes.data?.valor || {});
     setLoading(false);
   };
 
-  const handleOpenModal = (marca?: string, url?: string) => {
-    if (marca && url) {
+  const handleOpenModal = (marca?: string, url?: string, margen?: number) => {
+    if (marca) {
       setNombreMarca(marca);
       setMarcaOriginal(marca);
-      setLogoUrl(url);
+      setLogoUrl(url || '');
+      setMargenUsa(margen ?? 1.5);
       setModoEdicion(true);
     } else {
       setNombreMarca('');
       setLogoUrl('');
+      setMargenUsa(1.5);
       setModoEdicion(false);
     }
     setModalOpen(true);
@@ -74,29 +74,38 @@ export default function MarcasAdminPage() {
   };
 
   const handleSave = async () => {
-    if (!nombreMarca.trim() || !logoUrl.trim()) {
-      setMensaje({ texto: 'El nombre y el logo son obligatorios', tipo: 'error' });
+    if (!nombreMarca.trim()) {
+      setMensaje({ texto: 'El nombre de la marca es obligatorio', tipo: 'error' });
       return;
     }
 
     try {
       const nuevasMarcas = { ...marcas };
+      const nuevosMargenes = { ...margenes };
       
       // Si estamos editando y cambió el nombre, eliminamos la anterior
       if (modoEdicion && marcaOriginal && marcaOriginal !== nombreMarca) {
         delete nuevasMarcas[marcaOriginal];
+        delete nuevosMargenes[marcaOriginal];
       }
 
-      nuevasMarcas[nombreMarca.trim().toUpperCase()] = logoUrl.trim();
+      const marcaLimpia = nombreMarca.trim().toUpperCase();
+      if (logoUrl.trim()) {
+        nuevasMarcas[marcaLimpia] = logoUrl.trim();
+      }
+      nuevosMargenes[marcaLimpia] = Number(margenUsa);
 
-      const { error } = await supabase
-        .from('configuracion')
-        .upsert({ clave: 'marcas_logos', valor: nuevasMarcas }, { onConflict: 'clave' });
+      const [errLogos, errMargenes] = await Promise.all([
+        supabase.from('configuracion').upsert({ clave: 'marcas_logos', valor: nuevasMarcas }, { onConflict: 'clave' }),
+        supabase.from('configuracion').upsert({ clave: 'marcas_margenes', valor: nuevosMargenes }, { onConflict: 'clave' })
+      ]);
 
-      if (error) throw error;
+      if (errLogos.error) throw errLogos.error;
+      if (errMargenes.error) throw errMargenes.error;
 
       setMensaje({ texto: 'Marca guardada exitosamente', tipo: 'success' });
       setMarcas(nuevasMarcas);
+      setMargenes(nuevosMargenes);
       setModalOpen(false);
     } catch (error: any) {
       setMensaje({ texto: `Error al guardar: ${error.message}`, tipo: 'error' });
@@ -104,20 +113,25 @@ export default function MarcasAdminPage() {
   };
 
   const handleDelete = async (marca: string) => {
-    if (!confirm(`¿Seguro que deseas eliminar el logo de la marca ${marca}?`)) return;
+    if (!confirm(`¿Seguro que deseas eliminar la configuración de la marca ${marca}?`)) return;
 
     try {
       const nuevasMarcas = { ...marcas };
+      const nuevosMargenes = { ...margenes };
       delete nuevasMarcas[marca];
+      delete nuevosMargenes[marca];
 
-      const { error } = await supabase
-        .from('configuracion')
-        .upsert({ clave: 'marcas_logos', valor: nuevasMarcas }, { onConflict: 'clave' });
+      const [errLogos, errMargenes] = await Promise.all([
+        supabase.from('configuracion').upsert({ clave: 'marcas_logos', valor: nuevasMarcas }, { onConflict: 'clave' }),
+        supabase.from('configuracion').upsert({ clave: 'marcas_margenes', valor: nuevosMargenes }, { onConflict: 'clave' })
+      ]);
 
-      if (error) throw error;
+      if (errLogos.error) throw errLogos.error;
+      if (errMargenes.error) throw errMargenes.error;
 
       setMensaje({ texto: 'Marca eliminada exitosamente', tipo: 'success' });
       setMarcas(nuevasMarcas);
+      setMargenes(nuevosMargenes);
     } catch (error: any) {
       setMensaje({ texto: `Error al eliminar: ${error.message}`, tipo: 'error' });
     }
@@ -131,7 +145,9 @@ export default function MarcasAdminPage() {
     );
   }
 
-  const marcasList = Object.entries(marcas).sort(([a], [b]) => a.localeCompare(b));
+  // Combinar claves únicas de marcas y márgenes
+  const allMarcasKeys = Array.from(new Set([...Object.keys(marcas), ...Object.keys(margenes)]));
+  const marcasList = allMarcasKeys.sort((a, b) => a.localeCompare(b));
 
   return (
     <div>
@@ -165,15 +181,26 @@ export default function MarcasAdminPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {marcasList.map(([marca, url]) => (
+          {marcasList.map((marca) => {
+            const url = marcas[marca];
+            const margen = margenes[marca] ?? 1.5;
+            
+            return (
             <div key={marca} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col group">
-              <div className="h-40 bg-slate-50 flex items-center justify-center p-6 border-b border-slate-100">
-                <img src={url} alt={marca} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+              <div className="h-40 bg-slate-50 flex items-center justify-center p-6 border-b border-slate-100 relative">
+                {url ? (
+                  <img src={url} alt={marca} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+                ) : (
+                  <ImageIcon className="h-12 w-12 text-slate-300" />
+                )}
+                <div className="absolute top-2 right-2 bg-brand-100 text-brand-800 text-xs font-bold px-2 py-1 rounded">
+                  x {margen}
+                </div>
               </div>
               <div className="p-4 flex items-center justify-between bg-white">
                 <span className="font-bold text-slate-900 truncate pr-2">{marca}</span>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleOpenModal(marca, url)} className="p-1.5 text-slate-400 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 rounded">
+                  <button onClick={() => handleOpenModal(marca, url, margen)} className="p-1.5 text-slate-400 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 rounded">
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button onClick={() => handleDelete(marca)} className="p-1.5 text-slate-400 hover:text-red-600 bg-slate-100 hover:bg-red-50 rounded">
@@ -182,7 +209,7 @@ export default function MarcasAdminPage() {
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 
@@ -213,7 +240,20 @@ export default function MarcasAdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Logo de la Marca</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Multiplicador de Margen (Base USD)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  value={margenUsa}
+                  onChange={(e) => setMargenUsa(Number(e.target.value))}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2"
+                />
+                <p className="text-xs text-slate-500 mt-1">Ej. 1.5 es el valor por defecto. 1.6 incrementa el precio.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Logo de la Marca (Opcional si solo quieres cambiar margen)</label>
                 
                 {logoUrl && (
                   <div className="mb-4 h-32 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center p-4">

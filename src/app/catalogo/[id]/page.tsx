@@ -49,13 +49,23 @@ export default function ProductDetailPage() {
           setMarcaLogoUrl(configData.valor[prodData.marca]);
         }
 
+        // Obtener margen personalizado de la marca (si existe)
+        let margenMarcaUSA: number | undefined;
+        if (prodData.marca) {
+          const { data: margenData } = await supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle();
+          if (margenData?.valor && margenData.valor[prodData.marca.toUpperCase()]) {
+            margenMarcaUSA = Number(margenData.valor[prodData.marca.toUpperCase()]);
+          }
+        }
+
         // Calcular precio final
         const tipoCambioCache = await obtenerTipoCambio();
         const resultado = calcularPrecioVenta(
           prodData.costo_base, 
           prodData.moneda_costo as any, 
           'MXN',
-          tipoCambioCache.valor
+          tipoCambioCache.valor,
+          margenMarcaUSA
         );
 
         // Obtener el orden de los campos desde la categoría para ordenar las cajas

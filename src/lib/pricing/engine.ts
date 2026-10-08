@@ -18,7 +18,7 @@ export interface ResultadoPrecio {
 // Factores de margen (parametrizados para fácil ajuste)
 const FACTORES = {
   RECARGO_IMPORTACION: 1.15, // 15% recargo importación
-  MARGEN_USA: 1.4,           // Factor de utilidad proveedor USA (antes 1.5)
+  MARGEN_USA: 1.5,           // Factor de utilidad proveedor USA (antes 1.4)
   MARGEN_BASE: 0.7,          // 30% margen (costo / 0.7)
   IVA: 0.16,                 // 16% IVA México
 };
@@ -70,7 +70,8 @@ export function calcularPrecioVenta(
   costoBase: number,
   monedaCosto: MonedaCosto,
   monedaVenta: MonedaVenta,
-  tipoCambio: number
+  tipoCambio: number,
+  margenMarcaUSA?: number
 ): ResultadoPrecio {
   // Validaciones
   if (costoBase < 0) throw new Error('El costo base no puede ser negativo');
@@ -90,7 +91,8 @@ export function calcularPrecioVenta(
     case 'F1_MX_USA': {
       const tcAplicado = aplicarRedondeoREM(tipoCambio);
       const conRecargo = costoBase * FACTORES.RECARGO_IMPORTACION;
-      const conMargen = conRecargo * FACTORES.MARGEN_USA;
+      const margenAAplicar = margenMarcaUSA !== undefined && margenMarcaUSA !== null ? margenMarcaUSA : FACTORES.MARGEN_USA;
+      const conMargen = conRecargo * margenAAplicar;
       const precioVenta = conMargen * tcAplicado;
       return {
         precioVenta: Math.round(precioVenta * 100) / 100,
@@ -99,7 +101,7 @@ export function calcularPrecioVenta(
         desglose: {
           costoBase,
           recargoImportacion: FACTORES.RECARGO_IMPORTACION,
-          margenUSA: FACTORES.MARGEN_USA,
+          margenUSA: margenAAplicar,
           tipoCambioUsado: tcAplicado,
           tipoCambioOriginal: tipoCambio,
         },
