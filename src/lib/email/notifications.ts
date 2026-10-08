@@ -132,3 +132,61 @@ function generarHTMLNotificacion(params: NotificacionCotizacionParams): string {
   </html>
   `;
 }
+
+/**
+ * Envía un correo al cliente informándole que su cuenta ha sido aprobada.
+ */
+export async function enviarNotificacionAprobacion(
+  destinatario: string,
+  nombre: string,
+  appUrl: string,
+  terminosPago: string
+) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'REM Industrial <onboarding@resend.dev>', // Importante: Configura tu dominio real en Resend
+      to: [destinatario],
+      subject: '¡Tu cuenta B2B en REM Industrial ha sido aprobada!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #0f172a;">¡Hola ${nombre}!</h2>
+          <p>Nos complace informarte que tu cuenta en el <strong>Portal B2B de REM Industrial</strong> ha sido aprobada.</p>
+          
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Tus términos comerciales:</strong> ${terminosPago}</p>
+          </div>
+
+          <p>A partir de este momento puedes iniciar sesión para acceder a tu catálogo con precios especiales y gestionar tus cotizaciones formales.</p>
+          
+          <p><strong>Información de Acceso:</strong></p>
+          <ul>
+            <li><strong>Enlace:</strong> <a href="${appUrl}/admin/login">${appUrl}/admin/login</a></li>
+            <li><strong>Usuario:</strong> ${destinatario}</li>
+            <li><strong>Contraseña:</strong> <em>La que creaste al momento de registrarte</em>.</li>
+          </ul>
+
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="${appUrl}/admin/login" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Iniciar Sesión Ahora
+            </a>
+          </div>
+
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+          <p style="font-size: 12px; color: #666;">
+            *Por motivos de seguridad, nosotros no tenemos acceso a tu contraseña. Si no la recuerdas, podrás usar la opción de "Recuperar Contraseña" en la pantalla de inicio de sesión próximamente.
+          </p>
+        </div>
+      `
+    });
+
+    if (error) {
+      console.error('[Resend Aprobacion] Error:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('[Resend Aprobacion] Exception:', err);
+    return { success: false, error: err.message };
+  }
+}

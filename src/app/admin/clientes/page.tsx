@@ -17,6 +17,8 @@ type PerfilCliente = {
   fecha_registro: string;
 };
 
+import { actualizarEstatusCliente } from './actions';
+
 export default function ClientesB2BPage() {
   const [clientes, setClientes] = useState<PerfilCliente[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,19 +64,18 @@ export default function ClientesB2BPage() {
     if (!clienteSelect) return;
     
     setGuardando(true);
-    const { error } = await supabase
-      .from('perfiles_clientes')
-      .update({
-        estatus: editEstatus,
-        terminos_pago: editTerminos
-      })
-      .eq('id', clienteSelect.id);
-
-    if (error) {
-      alert('Error al actualizar: ' + error.message);
-    } else {
+    try {
+      await actualizarEstatusCliente(
+        clienteSelect.id,
+        clienteSelect.email,
+        clienteSelect.nombre_completo,
+        editEstatus,
+        editTerminos
+      );
       setModalOpen(false);
       cargarClientes();
+    } catch (error: any) {
+      alert('Error al actualizar: ' + error.message);
     }
     setGuardando(false);
   };
