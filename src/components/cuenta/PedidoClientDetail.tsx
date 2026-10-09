@@ -6,7 +6,6 @@ import { ArrowLeft, CheckCircle, Package, Calendar, AlertCircle, MessageSquare }
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import { supabase } from '@/lib/supabase/client';
-import { aprobarPedidoCliente } from '@/app/cuenta/pedidos/[id]/actions';
 
 export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, partidas: any[] }) {
   const router = useRouter();
@@ -14,7 +13,6 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
   const [errorStr, setErrorStr] = useState<string | null>(null);
   
   // Estado local para guardar las decisiones de las alternativas
-  // Por defecto, si hay alternativa_producto_id, pre-seleccionamos 'alternativa'
   const [decisiones, setDecisiones] = useState<Record<string, string>>(() => {
     const initialState: Record<string, string> = {};
     partidas.forEach(p => {
@@ -22,6 +20,17 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
         initialState[p.id] = 'alternativa'; // Default
       } else if (p.decision_cliente) {
         initialState[p.id] = p.decision_cliente;
+      }
+    });
+    return initialState;
+  });
+
+  // Estado para la cantidad deseada de la alternativa
+  const [cantidades, setCantidades] = useState<Record<string, number>>(() => {
+    const initialState: Record<string, number> = {};
+    partidas.forEach(p => {
+      if (p.alternativa_producto_id) {
+        initialState[p.id] = p.alternativa_cantidad || p.cantidad;
       }
     });
     return initialState;
@@ -38,13 +47,40 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
     setDecisiones(prev => ({ ...prev, [partidaId]: decision }));
   };
 
+  const manejarCantidad = (partidaId: string, cantidad: number) => {
+    setCantidades(prev => ({ ...prev, [partidaId]: cantidad }));
+  };
+
   const aprobarPedido = async () => {
     setLoading(true);
     setErrorStr(null);
     try {
-      const result = await aprobarPedidoCliente(pedido.id, decisiones);
-      if (!result.success) throw new Error(result.error);
-      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Debes iniciar sesión para aprobar.');
+
+      // 1. Guardar Estatus de Pedido
+      const { error: errPedido } = await supabase
+        .from('pedidos')
+        .update({ estatus: 'aprobado_por_cliente' })
+        .eq('id', pedido.id)
+        .eq('cliente_id', session.user.id);
+        
+      if (errPedido) throw new Error(errPedido.message);
+
+      // 2. Guardar decisiones por partida
+      for (const [partidaId, decision] of Object.entries(decisiones)) {
+        const { error: errPartida } = await supabase
+          .from('partidas_pedido')
+          .update({ 
+            decision_cliente: decision,
+            alternativa_cantidad: cantidades[partidaId] || null
+          })
+          .eq('id', partidaId)
+          .eq('pedido_id', pedido.id);
+        
+        if (errPartida) throw new Error(errPartida.message);
+      }
+
       router.refresh();
     } catch (e: any) {
       setErrorStr(e.message);
@@ -165,56 +201,86 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
                     </div>
                   </div>
                   
-                  {isEnRevision && (
-                    <div className="mt-4 pt-4 border-t border-orange-200/60">
-                      <p className="text-sm font-semibold text-orange-900 mb-3">Por favor, selecciona qué deseas hacer con esta partida:</p>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
-                        
-                        <label className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border ${decisionActual === 'alternativa' ? 'bg-orange-100 border-orange-400' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
-                          <input 
-                            type="radio" 
-                            name={`decision-${partida.id}`} 
-                            className="mt-0.5" 
-                            checked={decisionActual === 'alternativa'}
-                            onChange={() => manejarDecision(partida.id, 'alternativa')}
-                          />
-                          <div>
-                            <span className="text-sm font-bold text-slate-800 block">Aceptar alternativa</span>
-                            <span className="text-xs text-slate-500">Se surtirá el sustituto mostrado arriba.</span>
-                          </div>
-                        </label>
+                    {isEnRevision && (
+                      <div className="mt-4 pt-4 border-t border-orange-200/60">
+                        <p className="text-sm font-semibold text-orange-900 mb-3">Por favor, selecciona qué deseas hacer con esta partida:</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          
+                          <label className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border ${decisionActual === 'alternativa' ? 'bg-orange-100 border-orange-400' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                            <input 
+                              type="radio" 
+                              name={`decision-${partida.id}`} 
+                              className="mt-0.5" 
+                              checked={decisionActual === 'alternativa'}
+                              onChange={() => manejarDecision(partida.id, 'alternativa')}
+                            />
+                            <div>
+                              <span className="text-sm font-bold text-slate-800 block">Sustituir por alternativa</span>
+                              <span className="text-xs text-slate-500">Se surtirá el sustituto mostrado arriba.</span>
+                            </div>
+                          </label>
 
-                        <label className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border ${decisionActual === 'original' ? 'bg-slate-100 border-slate-400' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
-                          <input 
-                            type="radio" 
-                            name={`decision-${partida.id}`} 
-                            className="mt-0.5"
-                            checked={decisionActual === 'original'}
-                            onChange={() => manejarDecision(partida.id, 'original')}
-                          />
-                          <div>
-                            <span className="text-sm font-bold text-slate-800 block">Conservar original</span>
-                            <span className="text-xs text-slate-500">Acepto el tiempo de entrega del original.</span>
-                          </div>
-                        </label>
+                          <label className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border ${decisionActual === 'ambos' ? 'bg-blue-50 border-blue-400' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                            <input 
+                              type="radio" 
+                              name={`decision-${partida.id}`} 
+                              className="mt-0.5"
+                              checked={decisionActual === 'ambos'}
+                              onChange={() => manejarDecision(partida.id, 'ambos')}
+                            />
+                            <div>
+                              <span className="text-sm font-bold text-slate-800 block">Pedir Ambos</span>
+                              <span className="text-xs text-slate-500">Conservar el original en espera y también pedir la alternativa.</span>
+                            </div>
+                          </label>
 
-                        <label className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border ${decisionActual === 'cancelar' ? 'bg-red-50 border-red-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
-                          <input 
-                            type="radio" 
-                            name={`decision-${partida.id}`} 
-                            className="mt-0.5"
-                            checked={decisionActual === 'cancelar'}
-                            onChange={() => manejarDecision(partida.id, 'cancelar')}
-                          />
-                          <div>
-                            <span className="text-sm font-bold text-red-700 block">Cancelar partida</span>
-                            <span className="text-xs text-red-500">Quitar este artículo de la orden.</span>
-                          </div>
-                        </label>
+                          <label className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border ${decisionActual === 'original' ? 'bg-slate-100 border-slate-400' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                            <input 
+                              type="radio" 
+                              name={`decision-${partida.id}`} 
+                              className="mt-0.5"
+                              checked={decisionActual === 'original'}
+                              onChange={() => manejarDecision(partida.id, 'original')}
+                            />
+                            <div>
+                              <span className="text-sm font-bold text-slate-800 block">Solo original</span>
+                              <span className="text-xs text-slate-500">Acepto el tiempo de entrega y no quiero la alternativa.</span>
+                            </div>
+                          </label>
 
+                          <label className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border ${decisionActual === 'cancelar' ? 'bg-red-50 border-red-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                            <input 
+                              type="radio" 
+                              name={`decision-${partida.id}`} 
+                              className="mt-0.5"
+                              checked={decisionActual === 'cancelar'}
+                              onChange={() => manejarDecision(partida.id, 'cancelar')}
+                            />
+                            <div>
+                              <span className="text-sm font-bold text-red-700 block">Cancelar partida</span>
+                              <span className="text-xs text-red-500">Quitar el artículo de la orden.</span>
+                            </div>
+                          </label>
+
+                        </div>
+
+                        {(decisionActual === 'alternativa' || decisionActual === 'ambos') && (
+                          <div className="mt-4 p-4 bg-white border border-slate-200 rounded-lg flex items-center justify-between gap-4">
+                            <div>
+                              <span className="text-sm font-bold text-slate-800 block">Cantidad a pedir de la alternativa</span>
+                              <span className="text-xs text-slate-500">¿Cuántas piezas de la alternativa requieres?</span>
+                            </div>
+                            <input
+                              type="number"
+                              min="1"
+                              className="w-24 px-3 py-1.5 border border-slate-300 rounded text-center font-bold text-slate-800 focus:outline-none focus:border-orange-500"
+                              value={cantidades[partida.id] || ''}
+                              onChange={(e) => manejarCantidad(partida.id, parseInt(e.target.value) || 1)}
+                            />
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {!isEnRevision && decisionActual && (
                     <div className="mt-4 pt-4 border-t border-orange-200/60 flex items-center gap-2">
