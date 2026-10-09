@@ -408,6 +408,23 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
                   </div>
                 )}
 
+                {partida.decision_cliente && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">Decisión del Cliente:</p>
+                    <p className="text-sm text-blue-800 font-bold">
+                      {partida.decision_cliente === 'alternativa' ? 'Sustituir por Alternativa' : 
+                       partida.decision_cliente === 'ambos' ? 'Pedir Ambos (Original + Alternativa)' :
+                       partida.decision_cliente === 'original' ? 'Solo Conservar Original' : 
+                       'Canceló Partida'}
+                    </p>
+                    {(partida.decision_cliente === 'alternativa' || partida.decision_cliente === 'ambos') && (
+                      <p className="text-sm text-blue-700 mt-1">
+                        <span className="font-semibold">Cantidad de alternativa requerida:</span> {partida.alternativa_cantidad || partida.cantidad} piezas
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Comentarios del Administrador */}
                 <div className="mt-4 border-t border-slate-100 pt-4">
                   <label className="block text-sm font-semibold text-slate-700 mb-1">

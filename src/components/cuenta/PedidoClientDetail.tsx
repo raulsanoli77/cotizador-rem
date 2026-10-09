@@ -270,11 +270,22 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
                     )}
 
                   {!isEnRevision && decisionActual && (
-                    <div className="mt-4 pt-4 border-t border-orange-200/60 flex items-center gap-2">
-                      <span className="text-sm font-bold text-orange-900">Decisión tomada:</span>
-                      <span className="text-sm font-semibold bg-white px-3 py-1 rounded-full text-slate-700 border border-slate-200">
-                        {decisionActual === 'alternativa' ? 'Aceptó Alternativa' : decisionActual === 'original' ? 'Conservar Original' : 'Canceló Partida'}
-                      </span>
+                    <div className="mt-4 pt-4 border-t border-orange-200/60 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-orange-900">Decisión tomada:</span>
+                        <span className="text-sm font-semibold bg-white px-3 py-1 rounded-full text-slate-700 border border-slate-200">
+                          {decisionActual === 'alternativa' ? 'Sustituir por Alternativa' : 
+                           decisionActual === 'ambos' ? 'Pedir Ambos (Original + Alternativa)' :
+                           decisionActual === 'original' ? 'Solo Conservar Original' : 
+                           'Canceló Partida'}
+                        </span>
+                      </div>
+                      {(decisionActual === 'alternativa' || decisionActual === 'ambos') && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-slate-700">Cantidad solicitada de alternativa:</span>
+                          <span className="text-sm text-slate-600">{partida.alternativa_cantidad || partida.cantidad} piezas</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
