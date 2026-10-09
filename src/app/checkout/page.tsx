@@ -138,7 +138,7 @@ export default function CheckoutB2BPage() {
       setErrorStr('Debes proporcionar un Número de PO o seleccionar Orden Verbal.');
       return;
     }
-    if (!calle || !numExterior || !ciudad || !estado || !codigoPostal) {
+    if (!calle || !numExterior || !colonia || !ciudad || !estado || !codigoPostal) {
       setErrorStr('Los campos obligatorios de la dirección de envío deben estar completos.');
       return;
     }
@@ -409,9 +409,10 @@ export default function CheckoutB2BPage() {
                     </div>
                     
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Colonia / Localidad (Opcional)</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Colonia / Localidad *</label>
                       <input 
                         type="text" 
+                        required
                         value={colonia}
                         list="sugerencias-colonia"
                         onChange={(e) => setColonia(e.target.value)}
