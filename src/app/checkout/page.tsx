@@ -104,7 +104,7 @@ export default function CheckoutB2BPage() {
       // Subir PDF si existe
       if (archivoPo) {
         const fileExt = archivoPo.name.split('.').pop();
-        const fileName = \`\${cliente.id}/\${Date.now()}-PO.\${fileExt}\`;
+        const fileName = `${cliente.id}/${Date.now()}-PO.${fileExt}`;
         const { error: uploadError, data: uploadData } = await supabase.storage
           .from('ordenes_compra')
           .upload(fileName, archivoPo);
@@ -369,7 +369,7 @@ export default function CheckoutB2BPage() {
                     <div key={item.producto.id} className="flex justify-between items-start gap-4 text-sm border-b border-slate-800 pb-4">
                       <div>
                         <p className="font-bold text-slate-100">{item.producto.numero_parte}</p>
-                        <p className="text-xs text-slate-400 line-clamp-1">{item.producto.descripcion}</p>
+                        <p className="text-xs text-slate-400 line-clamp-1">{formatearDescripcionProducto(item.producto)}</p>
                         <p className="text-xs text-brand-400 mt-1">Cant: {item.cantidad}</p>
                       </div>
                       <p className="font-semibold shrink-0">
