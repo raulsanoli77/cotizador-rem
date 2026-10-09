@@ -1,23 +1,22 @@
 'use server';
 
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
-export async function aprobarPedidoCliente(
+export async function aprobarPedidoAdmin(
   pedidoId: string, 
-  decisiones: Record<string, string> // partidaId -> decision ('alternativa' | 'original' | 'cancelar')
+  clienteId: string,
+  decisiones: Record<string, string>,
+  cantidades: Record<string, number>
 ) {
-  const supabase = createServerClient();
+  const supabase = createAdminClient();
   
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('No autorizado');
-
     // 1. Guardar Estatus de Pedido
     const { error: errPedido } = await supabase
       .from('pedidos')
       .update({ estatus: 'aprobado_por_cliente' })
       .eq('id', pedidoId)
-      .eq('cliente_id', session.user.id);
+      .eq('cliente_id', clienteId);
       
     if (errPedido) throw new Error(errPedido.message);
 
@@ -25,7 +24,10 @@ export async function aprobarPedidoCliente(
     for (const [partidaId, decision] of Object.entries(decisiones)) {
       const { error: errPartida } = await supabase
         .from('partidas_pedido')
-        .update({ decision_cliente: decision })
+        .update({ 
+          decision_cliente: decision,
+          alternativa_cantidad: cantidades[partidaId] || null
+        })
         .eq('id', partidaId)
         .eq('pedido_id', pedidoId);
       

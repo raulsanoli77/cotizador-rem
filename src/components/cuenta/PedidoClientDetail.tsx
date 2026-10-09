@@ -6,6 +6,7 @@ import { ArrowLeft, CheckCircle, Package, Calendar, AlertCircle, MessageSquare }
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import { supabase } from '@/lib/supabase/client';
+import { aprobarPedidoAdmin } from '@/app/cuenta/pedidos/[id]/actions';
 
 export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, partidas: any[] }) {
   const router = useRouter();
@@ -58,28 +59,15 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Debes iniciar sesión para aprobar.');
 
-      // 1. Guardar Estatus de Pedido
-      const { error: errPedido } = await supabase
-        .from('pedidos')
-        .update({ estatus: 'aprobado_por_cliente' })
-        .eq('id', pedido.id)
-        .eq('cliente_id', session.user.id);
-        
-      if (errPedido) throw new Error(errPedido.message);
+      const result = await aprobarPedidoAdmin(
+        pedido.id,
+        session.user.id,
+        decisiones,
+        cantidades
+      );
 
-      // 2. Guardar decisiones por partida
-      for (const [partidaId, decision] of Object.entries(decisiones)) {
-        const { error: errPartida } = await supabase
-          .from('partidas_pedido')
-          .update({ 
-            decision_cliente: decision,
-            alternativa_cantidad: cantidades[partidaId] || null
-          })
-          .eq('id', partidaId)
-          .eq('pedido_id', pedido.id);
-        
-        if (errPartida) throw new Error(errPartida.message);
-      }
+      if (!result.success) throw new Error(result.error);
+      
       window.location.reload();
     } catch (e: any) {
       setErrorStr(e.message);
