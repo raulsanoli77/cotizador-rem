@@ -1,25 +1,44 @@
-import { createServerClient } from '@/lib/supabase/server';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
-import { PackageSearch, ArrowRight, Clock, AlertTriangle, CheckCircle, Package } from 'lucide-react';
+import { PackageSearch, ArrowRight, Clock, AlertTriangle, CheckCircle, Package, Loader2 } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+export default function ClientPedidosPage() {
+  const [pedidos, setPedidos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function ClientPedidosPage() {
-  const supabase = createServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  useEffect(() => {
+    const fetchPedidos = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setLoading(false);
+        return;
+      }
 
-  if (!session) return null;
+      const { data, error: err } = await supabase
+        .from('pedidos')
+        .select('*')
+        .eq('cliente_id', session.user.id)
+        .order('fecha_creacion', { ascending: false });
 
-  const { data: pedidos, error } = await supabase
-    .from('pedidos')
-    .select('*')
-    .eq('cliente_id', session.user.id)
-    .order('fecha_creacion', { ascending: false });
+      if (err) {
+        setError(err.message);
+      } else {
+        setPedidos(data || []);
+      }
+      setLoading(false);
+    };
 
-  if (error) {
-    return <div className="text-red-500">Error cargando pedidos: {error.message}</div>;
-  }
+    fetchPedidos();
+  }, []);
+
+  if (loading) return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
+  if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
 
   const getEstatusInfo = (estatus: string) => {
     switch (estatus) {
@@ -40,7 +59,7 @@ export default async function ClientPedidosPage() {
         Historial de Pedidos
       </h1>
 
-      {(!pedidos || pedidos.length === 0) ? (
+      {pedidos.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-slate-500 mb-4">Aún no tienes pedidos registrados.</p>
           <Link href="/catalogo" className="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-colors">
@@ -55,7 +74,6 @@ export default async function ClientPedidosPage() {
             
             return (
               <div key={pedido.id} className="border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-                
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-bold text-lg text-slate-800">
@@ -81,7 +99,6 @@ export default async function ClientPedidosPage() {
                   {pedido.estatus === 'en_revision' ? 'Revisar Sugerencias' : 'Ver Detalles'}
                   <ArrowRight className="w-4 h-4" />
                 </Link>
-
               </div>
             );
           })}

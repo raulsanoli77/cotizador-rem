@@ -1,32 +1,57 @@
-import { redirect } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase/server';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 import Link from 'next/link';
-import { Package, User } from 'lucide-react';
+import { Package, Loader2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
-export const dynamic = 'force-dynamic';
+export default function CuentaLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [perfil, setPerfil] = useState<any>(null);
 
-export default async function CuentaLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        router.push('/admin/login?returnTo=/cuenta/pedidos');
+        return;
+      }
 
-  if (!session) {
-    redirect('/admin/login?returnTo=/cuenta/pedidos');
+      const { data } = await supabase
+        .from('perfiles_clientes')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+        
+      setPerfil(data);
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+        </main>
+        <Footer />
+      </div>
+    );
   }
-
-  const { data: perfil } = await supabase
-    .from('perfiles_clientes')
-    .select('*')
-    .eq('id', session.user.id)
-    .single();
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Header />
       
       <main className="flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full pt-28 pb-12 px-4 sm:px-6 lg:px-8 gap-8">
-        {/* Sidebar del Cliente */}
         <aside className="w-full md:w-64 shrink-0">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <h2 className="font-bold text-slate-800 text-lg mb-1">{perfil?.nombre_completo || 'Mi Cuenta'}</h2>
@@ -37,12 +62,10 @@ export default async function CuentaLayout({ children }: { children: React.React
                 <Package className="w-5 h-5" />
                 Mis Pedidos
               </Link>
-              {/* Espacio para futuras pantallas del cliente */}
             </nav>
           </div>
         </aside>
 
-        {/* Contenido Principal */}
         <div className="flex-1">
           {children}
         </div>
