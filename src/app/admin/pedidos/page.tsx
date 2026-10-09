@@ -19,7 +19,7 @@ export default async function AdminPedidosPage() {
         email
       )
     `)
-    .order('created_at', { ascending: false });
+    .order('fecha_creacion', { ascending: false });
 
   if (error) {
     return (
@@ -97,7 +97,7 @@ export default async function AdminPedidosPage() {
                       <div className="text-slate-500 text-xs">{pedido.perfil?.email}</div>
                     </td>
                     <td className="px-6 py-4 text-slate-600">
-                      {new Date(pedido.created_at).toLocaleDateString('es-MX', {
+                      {new Date(pedido.fecha_creacion).toLocaleDateString('es-MX', {
                         day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
                       })}
                     </td>

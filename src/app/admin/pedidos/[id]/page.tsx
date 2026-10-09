@@ -25,8 +25,7 @@ export default async function AdminPedidoPage({ params }: { params: { id: string
   const { data: partidas, error: errPartidas } = await supabase
     .from('partidas_pedido')
     .select('*')
-    .eq('pedido_id', params.id)
-    .order('created_at', { ascending: true });
+    .eq('pedido_id', params.id);
 
   // (Opcional) Obtener información actual de los productos del catálogo por si se necesita
   // const productIds = partidas?.map((p: any) => p.producto_id).filter(Boolean) || [];

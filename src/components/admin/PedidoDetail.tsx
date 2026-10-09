@@ -73,7 +73,7 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
             Pedido: {pedido.id.split('-')[0]}
           </h1>
           <p className="text-slate-500">
-            {new Date(pedido.created_at).toLocaleString()}
+            {new Date(pedido.fecha_creacion).toLocaleString()}
           </p>
         </div>
       </div>
