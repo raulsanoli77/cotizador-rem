@@ -142,9 +142,9 @@ export default function Header() {
                       Panel Admin
                     </Link>
                   ) : (
-                    <span className="text-sm font-semibold text-slate-300">
+                    <Link href="/cuenta/pedidos" className="text-sm font-semibold text-slate-300 hover:text-white transition-colors">
                       Mi Cuenta
-                    </span>
+                    </Link>
                   )}
                   <button
                     onClick={async () => {
