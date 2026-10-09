@@ -31,12 +31,15 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Link href="/" className="flex justify-center items-center gap-2 mb-6">
-          <Wrench className="h-8 w-8 text-brand-600" />
-          <span className="text-2xl font-bold text-slate-900">REM Industrial</span>
+        <Link href="/" className="flex justify-center items-center mb-6">
+          <img 
+            src="/logo-rem.png" 
+            alt="REM Industrial" 
+            className="h-24 object-contain" 
+          />
         </Link>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Panel de Administración
+          Iniciar Sesión
         </h2>
       </div>
 
