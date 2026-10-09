@@ -80,8 +80,7 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
         
         if (errPartida) throw new Error(errPartida.message);
       }
-
-      router.refresh();
+      window.location.reload();
     } catch (e: any) {
       setErrorStr(e.message);
       setLoading(false);
