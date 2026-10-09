@@ -17,7 +17,7 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
   const [successStr, setSuccessStr] = useState<string | null>(null);
 
   // Estado para el buscador de alternativas por partida
-  const [searchStates, setSearchStates] = useState<Record<string, { loading: boolean, error: string | null, query: string, show: boolean }>>({});
+  const [searchStates, setSearchStates] = useState<Record<string, { loading: boolean, error: string | null, query: string, show: boolean, tempProducto?: any }>>({});
 
   const handlePropChange = (id: string, prop: string, value: any) => {
     setPartidasState(prev => prev.map(p => p.id === id ? { ...p, [prop]: value } : p));
@@ -53,27 +53,88 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
         .select('*')
         .ilike('numero_parte', query)
         .eq('activo', true)
-        .single(); // Esperamos encontrar 1 exacto
+        .single();
 
       if (error || !producto) {
         throw new Error('Producto no encontrado en el catálogo');
       }
 
-      // Llenamos la partida con la data de la alternativa
-      setPartidasState(prev => prev.map(p => p.id === partidaId ? { 
-        ...p, 
-        alternativa_producto_id: producto.id,
-        alternativa_numero_parte: producto.numero_parte,
-        alternativa_marca: producto.marca,
-        alternativa_descripcion: formatearDescripcionProducto(producto),
-        alternativa_precio: producto.precio_venta // Asume que precio_venta ya es su precio correcto de lista
-      } : p));
+      // Fetch configs and exchange rate
+      const [resMargenes, resCruces, resTC] = await Promise.all([
+        supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle(),
+        supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle(),
+        fetch('/api/exchange-rate').then(res => res.json()).catch(() => ({ valor: 20.0 }))
+      ]);
 
-      setSearchStates(prev => ({ ...prev, [partidaId]: { ...prev[partidaId], loading: false, error: null } }));
+      const marcaKey = producto.marca ? producto.marca.toUpperCase() : '';
+      const margenPersonalizado = marcaKey && resMargenes.data?.valor ? resMargenes.data.valor[marcaKey] : undefined;
+      const aplicaCruce = marcaKey && resCruces.data?.valor ? resCruces.data.valor[marcaKey] : false;
+      const tipoCambio = resTC.valor || 20.0;
+
+      const { calcularPrecioVenta } = await import('@/lib/pricing/engine');
+      
+      const resultado = calcularPrecioVenta(
+        producto.costo_base,
+        producto.moneda_costo,
+        pedido.moneda || 'MXN',
+        tipoCambio,
+        margenPersonalizado,
+        aplicaCruce
+      );
+
+      let precioFinal = resultado.precioVenta;
+      const descuentoCliente = pedido.perfil?.descuento_porcentaje || 0;
+      if (descuentoCliente > 0) {
+         precioFinal = precioFinal * (1 - (descuentoCliente / 100));
+      }
+
+      // Guardamos la alternativa PERO no la asignamos como "confirmada" todavía
+      // Guardaremos temporalmente el producto buscado en el estado visual
+      setSearchStates(prev => ({ 
+        ...prev, 
+        [partidaId]: { 
+          ...prev[partidaId], 
+          loading: false, 
+          error: null,
+          tempProducto: {
+            id: producto.id,
+            numero_parte: producto.numero_parte,
+            marca: producto.marca,
+            descripcion: formatearDescripcionProducto(producto),
+            precio: precioFinal
+          }
+        } 
+      }));
 
     } catch (e: any) {
-      setSearchStates(prev => ({ ...prev, [partidaId]: { ...prev[partidaId], loading: false, error: e.message } }));
+      setSearchStates(prev => ({ ...prev, [partidaId]: { ...prev[partidaId], loading: false, error: e.message, tempProducto: null } }));
     }
+  };
+
+  const confirmarAlternativa = (partidaId: string, productoTemp: any) => {
+    setPartidasState(prev => prev.map(p => p.id === partidaId ? { 
+      ...p, 
+      alternativa_producto_id: productoTemp.id,
+      alternativa_numero_parte: productoTemp.numero_parte,
+      alternativa_marca: productoTemp.marca,
+      alternativa_descripcion: productoTemp.descripcion,
+      alternativa_precio: productoTemp.precio
+    } : p));
+  };
+
+  const quitarAlternativa = (partidaId: string) => {
+    setPartidasState(prev => prev.map(p => p.id === partidaId ? { 
+      ...p, 
+      alternativa_producto_id: null,
+      alternativa_numero_parte: null,
+      alternativa_marca: null,
+      alternativa_descripcion: null,
+      alternativa_precio: null
+    } : p));
+    setSearchStates(prev => ({
+      ...prev,
+      [partidaId]: { ...prev[partidaId], tempProducto: null }
+    }));
   };
 
   const guardarCambios = async () => {
@@ -307,16 +368,48 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
                       </p>
                     )}
 
+                    {searchState.tempProducto && !partida.alternativa_producto_id && (
+                      <div className="bg-white p-3 rounded-lg border border-orange-200 shadow-sm mb-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <div>
+                            <p className="font-bold text-slate-800 text-sm">{searchState.tempProducto.numero_parte} <span className="text-xs text-slate-500 font-normal ml-1">({searchState.tempProducto.marca})</span></p>
+                            <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{searchState.tempProducto.descripcion}</p>
+                          </div>
+                          <div className="text-right ml-4 shrink-0">
+                            <p className="text-xs text-slate-400">Precio Unitario (Cliente)</p>
+                            <p className="font-bold text-orange-600 text-sm">{formatearPrecio(searchState.tempProducto.precio, pedido.moneda)}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => confirmarAlternativa(partida.id, searchState.tempProducto)}
+                          className="w-full px-3 py-2 bg-orange-100 hover:bg-orange-200 text-orange-800 rounded-lg text-sm font-bold flex justify-center items-center gap-2 transition-colors"
+                        >
+                          <CheckCircle className="w-4 h-4"/> Confirmar esta alternativa
+                        </button>
+                      </div>
+                    )}
+
                     {partida.alternativa_producto_id && (
-                      <div className="bg-white p-3 rounded-lg border border-orange-200 shadow-sm flex justify-between items-center">
-                        <div>
-                          <p className="font-bold text-slate-800 text-sm">{partida.alternativa_numero_parte} <span className="text-xs text-slate-500 font-normal ml-1">({partida.alternativa_marca})</span></p>
-                          <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{partida.alternativa_descripcion}</p>
+                      <div className="bg-white p-3 rounded-lg border border-orange-400 shadow-sm relative">
+                        <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3"/> Seleccionada
                         </div>
-                        <div className="text-right ml-4 shrink-0">
-                          <p className="text-xs text-slate-400">Precio Unitario</p>
-                          <p className="font-bold text-orange-600 text-sm">{formatearPrecio(partida.alternativa_precio || 0, pedido.moneda)}</p>
+                        <div className="flex justify-between items-center">
+                          <div className="pr-16">
+                            <p className="font-bold text-slate-800 text-sm">{partida.alternativa_numero_parte} <span className="text-xs text-slate-500 font-normal ml-1">({partida.alternativa_marca})</span></p>
+                            <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{partida.alternativa_descripcion}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs text-slate-400">Precio Unitario (Cliente)</p>
+                            <p className="font-bold text-orange-600 text-sm">{formatearPrecio(partida.alternativa_precio || 0, pedido.moneda)}</p>
+                          </div>
                         </div>
+                        <button 
+                          onClick={() => quitarAlternativa(partida.id)}
+                          className="mt-2 text-xs text-red-500 hover:text-red-700 font-medium underline"
+                        >
+                          Remover alternativa
+                        </button>
                       </div>
                     )}
                   </div>
