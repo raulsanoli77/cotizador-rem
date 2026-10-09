@@ -4,7 +4,8 @@ import PedidoDetailAdmin from '@/components/admin/PedidoDetail';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminPedidoPage({ params }: { params: { id: string } }) {
+export default async function AdminPedidoPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const supabase = createAdminClient();
 
   // Obtener Pedido
@@ -14,18 +15,24 @@ export default async function AdminPedidoPage({ params }: { params: { id: string
       *,
       perfil:perfiles_clientes(empresa, nombre_completo, email, telefono)
     `)
-    .eq('id', params.id)
+    .eq('id', resolvedParams.id)
     .single();
 
   if (errPedido || !pedido) {
-    return notFound();
+    return (
+      <div className="p-8 text-red-500">
+        <h1>Error al cargar el pedido</h1>
+        <pre>{JSON.stringify(errPedido, null, 2)}</pre>
+        <p>Params ID: {resolvedParams.id}</p>
+      </div>
+    );
   }
 
   // Obtener Partidas
   const { data: partidas, error: errPartidas } = await supabase
     .from('partidas_pedido')
     .select('*')
-    .eq('pedido_id', params.id);
+    .eq('pedido_id', resolvedParams.id);
 
   // (Opcional) Obtener información actual de los productos del catálogo por si se necesita
   // const productIds = partidas?.map((p: any) => p.producto_id).filter(Boolean) || [];
