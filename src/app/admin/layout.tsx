@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { LayoutDashboard, Package, UploadCloud, Users, Settings, LogOut, Loader2, Tags, Award, Menu, ChevronLeft, ImageIcon, Globe, FileText } from 'lucide-react';
+import { LayoutDashboard, Package, UploadCloud, Users, Settings, LogOut, Loader2, Tags, Award, Menu, ChevronLeft, ImageIcon, Globe, FileText, ShoppingCart } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -103,6 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Marcas', icon: Award, href: '/admin/marcas' },
     { name: 'Carga Masiva', icon: UploadCloud, href: '/admin/carga-masiva' },
     { name: 'Clientes B2B', icon: Users, href: '/admin/clientes' },
+    { name: 'Pedidos B2B', icon: ShoppingCart, href: '/admin/pedidos' },
     { name: 'Cotizaciones Rápidas', icon: FileText, href: '/admin/leads' },
     { name: 'Imágenes', icon: ImageIcon, href: '/admin/productos/imagenes' },
     { name: 'Configuración', icon: Settings, href: '/admin/config' },
