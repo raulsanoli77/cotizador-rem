@@ -17,7 +17,14 @@ export async function actualizarEstatusCliente(
   colonia: string,
   ciudad: string,
   estado: string,
-  codigo_postal: string
+  codigo_postal: string,
+  nombre_completo: string,
+  puesto: string,
+  empresa: string,
+  perfil_empresa: string,
+  telefono: string,
+  rfc: string,
+  pagina_web: string
 ) {
   const supabase = createAdminClient();
 
@@ -35,7 +42,14 @@ export async function actualizarEstatusCliente(
       colonia,
       ciudad,
       estado,
-      codigo_postal
+      codigo_postal,
+      nombre_completo,
+      puesto,
+      empresa,
+      perfil_empresa,
+      telefono,
+      rfc,
+      pagina_web
     })
     .eq('id', id);
 

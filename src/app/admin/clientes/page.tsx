@@ -23,6 +23,9 @@ type PerfilCliente = {
   estado?: string;
   codigo_postal?: string;
   descuento_porcentaje?: number;
+  puesto?: string;
+  perfil_empresa?: string;
+  pagina_web?: string;
 };
 
 import { actualizarEstatusCliente } from './actions';
@@ -51,6 +54,15 @@ export default function ClientesB2BPage() {
   const [editCiudad, setEditCiudad] = useState('');
   const [editEstado, setEditEstado] = useState('');
   const [editCP, setEditCP] = useState('');
+
+  // Info base de registro
+  const [editNombreCompleto, setEditNombreCompleto] = useState('');
+  const [editPuesto, setEditPuesto] = useState('');
+  const [editEmpresa, setEditEmpresa] = useState('');
+  const [editPerfilEmpresa, setEditPerfilEmpresa] = useState('');
+  const [editTelefono, setEditTelefono] = useState('');
+  const [editRfc, setEditRfc] = useState('');
+  const [editPaginaWeb, setEditPaginaWeb] = useState('');
 
   useEffect(() => {
     cargarClientes();
@@ -84,6 +96,13 @@ export default function ClientesB2BPage() {
     setEditCiudad(c.ciudad || '');
     setEditEstado(c.estado || '');
     setEditCP(c.codigo_postal || '');
+    setEditNombreCompleto(c.nombre_completo || '');
+    setEditPuesto(c.puesto || '');
+    setEditEmpresa(c.empresa || '');
+    setEditPerfilEmpresa(c.perfil_empresa || '');
+    setEditTelefono(c.telefono || '');
+    setEditRfc(c.rfc || '');
+    setEditPaginaWeb(c.pagina_web || '');
     setModalOpen(true);
   };
 
@@ -96,7 +115,7 @@ export default function ClientesB2BPage() {
       await actualizarEstatusCliente(
         clienteSelect.id,
         clienteSelect.email,
-        clienteSelect.nombre_completo,
+        editNombreCompleto,
         editEstatus,
         editTerminos,
         editRol,
@@ -107,7 +126,14 @@ export default function ClientesB2BPage() {
         editColonia,
         editCiudad,
         editEstado,
-        editCP
+        editCP,
+        editNombreCompleto,
+        editPuesto,
+        editEmpresa,
+        editPerfilEmpresa,
+        editTelefono,
+        editRfc,
+        editPaginaWeb
       );
       setModalOpen(false);
       cargarClientes();
@@ -244,8 +270,43 @@ export default function ClientesB2BPage() {
             <div className="p-6">
               <form onSubmit={handleSave} className="space-y-4">
                 <div className="bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200">
-                  <h4 className="font-bold text-slate-900 mb-1">{clienteSelect.empresa}</h4>
-                  <p className="text-sm text-slate-600">{clienteSelect.nombre_completo} ({clienteSelect.email})</p>
+                  <h4 className="font-semibold text-sm text-slate-700 mb-4 border-b border-slate-200 pb-2">Información Principal</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo</label>
+                      <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" value={editNombreCompleto} onChange={(e) => setEditNombreCompleto(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Empresa</label>
+                      <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" value={editEmpresa} onChange={(e) => setEditEmpresa(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">RFC</label>
+                      <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" value={editRfc} onChange={(e) => setEditRfc(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Puesto</label>
+                      <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" value={editPuesto} onChange={(e) => setEditPuesto(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Teléfono</label>
+                      <input type="text" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" value={editTelefono} onChange={(e) => setEditTelefono(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Perfil de Empresa</label>
+                      <select className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" value={editPerfilEmpresa} onChange={(e) => setEditPerfilEmpresa(e.target.value)}>
+                        <option value="Usuario Final">Usuario Final</option>
+                        <option value="Integrador / Revendedor">Integrador / Revendedor</option>
+                        <option value="Fabricante">Fabricante</option>
+                        <option value="Estudiante / Educativo">Estudiante / Educativo</option>
+                        <option value="Gobierno">Gobierno</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Email (Acceso)</label>
+                      <input type="email" className="w-full border border-slate-300 bg-slate-100 text-slate-500 rounded-lg px-3 py-1.5 text-sm" value={clienteSelect.email} disabled />
+                    </div>
+                  </div>
                 </div>
 
                 <div>
