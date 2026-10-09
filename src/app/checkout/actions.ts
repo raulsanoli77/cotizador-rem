@@ -18,6 +18,7 @@ export async function crearPedidoB2B({
   total,
   moneda,
   partidas,
+  guardar_direccion,
 }: {
   cliente_id: string;
   numero_po?: string;
@@ -42,8 +43,19 @@ export async function crearPedidoB2B({
     precio_unitario: number;
     importe: number;
   }>;
+  guardar_direccion?: boolean;
 }) {
   const supabase = createAdminClient();
+
+  // 0. (Opcional) Guardar dirección en el perfil si el cliente lo solicitó
+  if (guardar_direccion) {
+    await supabase.from('perfiles_clientes').update({
+      direccion_envio,
+      ciudad,
+      estado,
+      codigo_postal,
+    }).eq('id', cliente_id);
+  }
 
   // 1. Crear el Pedido
   const { data: pedido, error: errorPedido } = await supabase

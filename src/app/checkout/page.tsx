@@ -33,6 +33,9 @@ export default function CheckoutB2BPage() {
   const [paqueteria, setPaqueteria] = useState('');
   const [notas, setNotas] = useState('');
   
+  const [guardarDireccion, setGuardarDireccion] = useState(true);
+  const [usarDireccionGuardada, setUsarDireccionGuardada] = useState(false);
+  
   const [esPoVerbal, setEsPoVerbal] = useState(false);
   const [numeroPo, setNumeroPo] = useState('');
   const [archivoPo, setArchivoPo] = useState<File | null>(null);
@@ -67,10 +70,14 @@ export default function CheckoutB2BPage() {
       setPerfil(perfilData);
       
       // Precargar datos si existen
-      if (perfilData.direccion_envio) setDireccion(perfilData.direccion_envio);
-      if (perfilData.ciudad) setCiudad(perfilData.ciudad);
-      if (perfilData.estado) setEstado(perfilData.estado);
-      if (perfilData.codigo_postal) setCodigoPostal(perfilData.codigo_postal);
+      if (perfilData.direccion_envio && perfilData.ciudad && perfilData.estado && perfilData.codigo_postal) {
+        setDireccion(perfilData.direccion_envio);
+        setCiudad(perfilData.ciudad);
+        setEstado(perfilData.estado);
+        setCodigoPostal(perfilData.codigo_postal);
+        setUsarDireccionGuardada(true);
+        setGuardarDireccion(false);
+      }
 
       setLoading(false);
     }
@@ -144,6 +151,7 @@ export default function CheckoutB2BPage() {
         total,
         moneda,
         partidas,
+        guardar_direccion: guardarDireccion,
       });
 
       setCompletado(true);
@@ -292,68 +300,105 @@ export default function CheckoutB2BPage() {
                   <h2 className="text-xl font-bold text-slate-800">Dirección de Envío</h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Calle y Número *</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={direccion}
-                      onChange={(e) => setDireccion(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                    />
+                {usarDireccionGuardada ? (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                    <p className="text-sm font-semibold text-slate-500 mb-2 uppercase tracking-wider">Dirección Predeterminada</p>
+                    <p className="font-medium text-slate-900 mb-1">{direccion}</p>
+                    <p className="text-slate-600 mb-4">{ciudad}, {estado}. CP {codigoPostal}</p>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setUsarDireccionGuardada(false);
+                        setDireccion('');
+                        setCiudad('');
+                        setEstado('');
+                        setCodigoPostal('');
+                        setGuardarDireccion(true);
+                      }}
+                      className="text-sm text-brand-600 hover:text-brand-700 font-bold hover:underline"
+                    >
+                      Ingresar una dirección diferente
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Ciudad / Municipio *</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={ciudad}
-                      onChange={(e) => setCiudad(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                    />
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Calle y Número *</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={direccion}
+                        onChange={(e) => setDireccion(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Ciudad / Municipio *</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={ciudad}
+                        onChange={(e) => setCiudad(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Estado *</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={estado}
+                        onChange={(e) => setEstado(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Código Postal *</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={codigoPostal}
+                        onChange={(e) => setCodigoPostal(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Paquetería Preferida (Opcional)</label>
+                      <input 
+                        type="text" 
+                        value={paqueteria}
+                        onChange={(e) => setPaqueteria(e.target.value)}
+                        placeholder="Ej. Paquetexpress, DHL, Ocurre..."
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Notas de Entrega (Opcional)</label>
+                      <textarea 
+                        rows={2}
+                        value={notas}
+                        onChange={(e) => setNotas(e.target.value)}
+                        placeholder="Horarios, referencias o instrucciones especiales..."
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 resize-none"
+                      />
+                    </div>
+                    
+                    <div className="sm:col-span-2 pt-2 border-t border-slate-100 mt-2">
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="checkbox" 
+                          id="guardarDir"
+                          checked={guardarDireccion}
+                          onChange={(e) => setGuardarDireccion(e.target.checked)}
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500 border-gray-300"
+                        />
+                        <label htmlFor="guardarDir" className="font-medium text-slate-700 cursor-pointer">
+                          Guardar esta dirección en mi perfil para futuras compras
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Estado *</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={estado}
-                      onChange={(e) => setEstado(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Código Postal *</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={codigoPostal}
-                      onChange={(e) => setCodigoPostal(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Paquetería Preferida (Opcional)</label>
-                    <input 
-                      type="text" 
-                      value={paqueteria}
-                      onChange={(e) => setPaqueteria(e.target.value)}
-                      placeholder="Ej. Paquetexpress, DHL, Ocurre..."
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Notas de Entrega (Opcional)</label>
-                    <textarea 
-                      rows={2}
-                      value={notas}
-                      onChange={(e) => setNotas(e.target.value)}
-                      placeholder="Horarios, referencias o instrucciones especiales..."
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 resize-none"
-                    />
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
