@@ -17,8 +17,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      
+      const isPublicRoute = 
+        pathname === '/admin/login' || 
+        pathname === '/admin/recuperar-password' || 
+        pathname === '/admin/actualizar-password';
+
       if (!session) {
-        if (pathname !== '/admin/login') {
+        if (!isPublicRoute) {
           router.push('/admin/login');
         } else {
           setAuthenticated(false);
@@ -34,15 +40,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .eq('id', session.user.id)
         .single();
 
+      // Permitir si es ruta publica, para poder recuperar password sin importar el rol actual
+      if (isPublicRoute) {
+        setAuthenticated(true);
+        if (pathname === '/admin/login' && perfil?.rol === 'admin') {
+          router.push('/admin/productos');
+        } else if (pathname === '/admin/login') {
+          router.push('/catalogo');
+        }
+        setLoading(false);
+        return;
+      }
+
       if (perfil?.rol !== 'admin') {
         router.push('/catalogo');
         return;
       }
 
       setAuthenticated(true);
-      if (pathname === '/admin/login') {
-        router.push('/admin/productos');
-      }
       setLoading(false);
     };
 
@@ -71,7 +86,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  if (!authenticated && pathname === '/admin/login') {
+  const isPublicRoute = 
+    pathname === '/admin/login' || 
+    pathname === '/admin/recuperar-password' || 
+    pathname === '/admin/actualizar-password';
+
+  if ((!authenticated || isPublicRoute) && isPublicRoute) {
     return <>{children}</>;
   }
 

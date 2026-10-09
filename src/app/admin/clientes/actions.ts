@@ -1,7 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { enviarNotificacionAprobacion } from '@/lib/email/notifications';
+import { enviarNotificacionAprobacion, enviarNotificacionRechazo } from '@/lib/email/notifications';
 
 export async function actualizarEstatusCliente(
   id: string,
@@ -23,14 +23,19 @@ export async function actualizarEstatusCliente(
     throw new Error(error.message);
   }
 
-  // 2. Si es 'aprobado', enviar correo
+  // 2. Enviar correo dependiendo del nuevo estatus
   if (estatus === 'aprobado') {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tu-sitio.com';
     try {
       await enviarNotificacionAprobacion(email, nombre, appUrl, terminos_pago);
     } catch (emailError) {
       console.error('Error al enviar correo de aprobación:', emailError);
-      // No fallamos toda la transacción por el correo, pero lo loggeamos
+    }
+  } else if (estatus === 'rechazado') {
+    try {
+      await enviarNotificacionRechazo(email, nombre);
+    } catch (emailError) {
+      console.error('Error al enviar correo de rechazo:', emailError);
     }
   }
 

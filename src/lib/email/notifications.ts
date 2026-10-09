@@ -190,3 +190,40 @@ export async function enviarNotificacionAprobacion(
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Envía un correo al cliente informándole que su solicitud ha sido rechazada.
+ */
+export async function enviarNotificacionRechazo(
+  destinatario: string,
+  nombre: string
+) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'REM Industrial <onboarding@resend.dev>', // Importante: Configura tu dominio real en Resend
+      to: [destinatario],
+      subject: 'Actualización sobre tu solicitud de cuenta en REM Industrial',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #0f172a;">Hola ${nombre},</h2>
+          <p>Gracias por tu interés en registrarte en el Portal B2B de REM Industrial.</p>
+          <p>Después de revisar tu solicitud, lamentamos informarte que en este momento <strong>no ha sido posible aprobar tu cuenta B2B</strong>.</p>
+          <p>Si consideras que esto es un error o deseas proveer información adicional sobre tu empresa, por favor responde a este correo o contáctanos directamente a nuestro departamento de ventas.</p>
+          <p>Agradecemos tu comprensión.</p>
+          <br/>
+          <p>Atentamente,<br/><strong>El equipo de REM Industrial</strong></p>
+        </div>
+      `
+    });
+
+    if (error) {
+      console.error('[Resend Rechazo] Error:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('[Resend Rechazo] Exception:', err);
+    return { success: false, error: err.message };
+  }
+}

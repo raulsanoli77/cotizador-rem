@@ -75,6 +75,11 @@ export default function LoginPage() {
                   placeholder="••••••••"
                 />
               </div>
+              <div className="mt-2 text-right">
+                <Link href="/admin/recuperar-password" className="text-sm text-brand-600 hover:text-brand-500 font-medium">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
             </div>
 
             {error && (
