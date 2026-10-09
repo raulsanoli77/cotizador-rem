@@ -130,7 +130,8 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
       alternativa_numero_parte: null,
       alternativa_marca: null,
       alternativa_descripcion: null,
-      alternativa_precio: null
+      alternativa_precio: null,
+      alternativa_motivo: null
     } : p));
     setSearchStates(prev => ({
       ...prev,
@@ -375,19 +376,30 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
                         <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                           <CheckCircle className="w-3 h-3"/> Seleccionada
                         </div>
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-start mb-3 mt-1">
                           <div className="pr-16">
                             <p className="font-bold text-slate-800 text-sm">{partida.alternativa_numero_parte} <span className="text-xs text-slate-500 font-normal ml-1">({partida.alternativa_marca})</span></p>
                             <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{partida.alternativa_descripcion}</p>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-xs text-slate-400">Precio Unitario (Cliente)</p>
+                            <p className="text-xs text-slate-400">Precio (C/U)</p>
                             <p className="font-bold text-orange-600 text-sm">{formatearPrecio(partida.alternativa_precio || 0, pedido.moneda)}</p>
                           </div>
                         </div>
+
+                        <div className="border-t border-orange-100 pt-3">
+                          <label className="block text-xs font-semibold text-orange-900 mb-1">Motivo / Mensaje para el cliente:</label>
+                          <input 
+                            type="text"
+                            value={partida.alternativa_motivo || 'No hay stock del original. Te sugerimos esta alternativa:'}
+                            onChange={(e) => setPartidasState(prev => prev.map(p => p.id === partida.id ? { ...p, alternativa_motivo: e.target.value } : p))}
+                            className="w-full text-sm bg-orange-50/50 border border-orange-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-400"
+                          />
+                        </div>
+
                         <button 
                           onClick={() => quitarAlternativa(partida.id)}
-                          className="mt-2 text-xs text-red-500 hover:text-red-700 font-medium underline"
+                          className="mt-3 text-xs text-red-500 hover:text-red-700 font-medium underline"
                         >
                           Remover alternativa
                         </button>

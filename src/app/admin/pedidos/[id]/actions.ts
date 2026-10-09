@@ -31,6 +31,7 @@ export async function actualizarPedido(
           alternativa_marca: p.alternativa_marca,
           alternativa_descripcion: p.alternativa_descripcion,
           alternativa_precio: p.alternativa_precio,
+          alternativa_motivo: p.alternativa_motivo,
           comentario_admin: p.comentario_admin
         })
         .eq('id', p.id);

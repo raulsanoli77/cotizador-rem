@@ -15,6 +15,14 @@ type PerfilCliente = {
   terminos_pago: string;
   fecha_registro: string;
   rol?: string;
+  calle?: string;
+  num_exterior?: string;
+  num_interior?: string;
+  colonia?: string;
+  ciudad?: string;
+  estado?: string;
+  codigo_postal?: string;
+  descuento_porcentaje?: number;
 };
 
 import { actualizarEstatusCliente } from './actions';
@@ -33,6 +41,16 @@ export default function ClientesB2BPage() {
   const [editEstatus, setEditEstatus] = useState<'pendiente' | 'aprobado' | 'rechazado'>('pendiente');
   const [editTerminos, setEditTerminos] = useState('Contado');
   const [editRol, setEditRol] = useState('cliente');
+  
+  // Módulo 4 y 5: Campos extra
+  const [editDescuento, setEditDescuento] = useState(0);
+  const [editCalle, setEditCalle] = useState('');
+  const [editNumExt, setEditNumExt] = useState('');
+  const [editNumInt, setEditNumInt] = useState('');
+  const [editColonia, setEditColonia] = useState('');
+  const [editCiudad, setEditCiudad] = useState('');
+  const [editEstado, setEditEstado] = useState('');
+  const [editCP, setEditCP] = useState('');
 
   useEffect(() => {
     cargarClientes();
@@ -58,6 +76,14 @@ export default function ClientesB2BPage() {
     setEditEstatus(c.estatus);
     setEditTerminos(c.terminos_pago || 'Contado');
     setEditRol(c.rol || 'cliente');
+    setEditDescuento(c.descuento_porcentaje || 0);
+    setEditCalle(c.calle || '');
+    setEditNumExt(c.num_exterior || '');
+    setEditNumInt(c.num_interior || '');
+    setEditColonia(c.colonia || '');
+    setEditCiudad(c.ciudad || '');
+    setEditEstado(c.estado || '');
+    setEditCP(c.codigo_postal || '');
     setModalOpen(true);
   };
 
@@ -73,7 +99,15 @@ export default function ClientesB2BPage() {
         clienteSelect.nombre_completo,
         editEstatus,
         editTerminos,
-        editRol
+        editRol,
+        editDescuento,
+        editCalle,
+        editNumExt,
+        editNumInt,
+        editColonia,
+        editCiudad,
+        editEstado,
+        editCP
       );
       setModalOpen(false);
       cargarClientes();
@@ -260,10 +294,91 @@ export default function ClientesB2BPage() {
                   <p className="text-xs text-slate-500 mt-1">Estas condiciones aparecerán en sus cotizaciones formales.</p>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Descuento Permanente (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    value={editDescuento}
+                    onChange={(e: any) => setEditDescuento(parseFloat(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Este descuento se aplicará a todas sus cotizaciones (Base 100 = Sin Descuento).</p>
+                </div>
+
                 <div className="pt-4 border-t border-slate-100">
-                  <h4 className="font-semibold text-sm text-slate-700 mb-2">Información de Envío / Facturación</h4>
-                  <div className="p-3 bg-blue-50 text-blue-800 text-xs rounded border border-blue-100">
-                    * Espacio reservado para el Módulo 4: Aquí se agregarán los campos de Dirección completa, Ciudad, Estado, Código Postal y paquetería preferida para procesar pedidos.
+                  <h4 className="font-semibold text-sm text-slate-700 mb-4">Información de Envío / Facturación</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Calle</label>
+                      <input
+                        type="text"
+                        className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        value={editCalle}
+                        onChange={(e: any) => setEditCalle(e.target.value)}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Num Exterior</label>
+                      <input
+                        type="text"
+                        className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        value={editNumExt}
+                        onChange={(e: any) => setEditNumExt(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Num Interior (Opcional)</label>
+                      <input
+                        type="text"
+                        className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        value={editNumInt}
+                        onChange={(e: any) => setEditNumInt(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Colonia</label>
+                      <input
+                        type="text"
+                        className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        value={editColonia}
+                        onChange={(e: any) => setEditColonia(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Código Postal</label>
+                      <input
+                        type="text"
+                        className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        value={editCP}
+                        onChange={(e: any) => setEditCP(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Ciudad</label>
+                      <input
+                        type="text"
+                        className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        value={editCiudad}
+                        onChange={(e: any) => setEditCiudad(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Estado</label>
+                      <input
+                        type="text"
+                        className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        value={editEstado}
+                        onChange={(e: any) => setEditEstado(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 

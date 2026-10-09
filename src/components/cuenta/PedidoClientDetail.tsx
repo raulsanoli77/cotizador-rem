@@ -2,16 +2,31 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
 import { ArrowLeft, CheckCircle, Package, Calendar, AlertCircle, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
+import { supabase } from '@/lib/supabase/client';
+import { aprobarPedidoCliente } from '@/app/cuenta/pedidos/[id]/actions';
 
 export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, partidas: any[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errorStr, setErrorStr] = useState<string | null>(null);
   
+  // Estado local para guardar las decisiones de las alternativas
+  // Por defecto, si hay alternativa_producto_id, pre-seleccionamos 'alternativa'
+  const [decisiones, setDecisiones] = useState<Record<string, string>>(() => {
+    const initialState: Record<string, string> = {};
+    partidas.forEach(p => {
+      if (p.alternativa_producto_id && !p.decision_cliente) {
+        initialState[p.id] = 'alternativa'; // Default
+      } else if (p.decision_cliente) {
+        initialState[p.id] = p.decision_cliente;
+      }
+    });
+    return initialState;
+  });
+
   const isEnRevision = pedido.estatus === 'en_revision';
 
   const getPdfUrl = (path: string) => {
@@ -19,16 +34,16 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
     return data.publicUrl;
   };
 
+  const manejarDecision = (partidaId: string, decision: string) => {
+    setDecisiones(prev => ({ ...prev, [partidaId]: decision }));
+  };
+
   const aprobarPedido = async () => {
     setLoading(true);
     setErrorStr(null);
     try {
-      const { error } = await supabase
-        .from('pedidos')
-        .update({ estatus: 'aprobado_por_cliente' })
-        .eq('id', pedido.id);
-      
-      if (error) throw new Error(error.message);
+      const result = await aprobarPedidoCliente(pedido.id, decisiones);
+      if (!result.success) throw new Error(result.error);
       
       router.refresh();
     } catch (e: any) {
@@ -70,7 +85,7 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
             <div>
               <h3 className="font-bold text-orange-900 text-lg">Tu pedido requiere revisión</h3>
               <p className="text-orange-800 text-sm mt-1">
-                Hemos asignado tiempos de entrega a tus artículos. En caso de no contar con existencia de algún producto, te hemos sugerido una alternativa. Por favor, revisa cada artículo y aprueba tu orden para que podamos procesarla.
+                Hemos asignado tiempos de entrega a tus artículos. En caso de no contar con existencia de algún producto, te hemos sugerido una alternativa. Por favor, revisa cada artículo, <strong>selecciona tu preferencia en las alternativas</strong>, y aprueba tu orden para que podamos procesarla.
               </p>
             </div>
           </div>
@@ -78,85 +93,144 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
       )}
 
       <div className="space-y-4">
-        {partidas.map((partida) => (
-          <div key={partida.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-hidden relative">
-            <div className="flex flex-col sm:flex-row justify-between items-start mb-4 gap-4">
-              <div className="flex items-start gap-4 flex-1">
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <Package className="w-6 h-6 text-slate-400" />
+        {partidas.map((partida) => {
+          const tieneAlternativa = !!partida.alternativa_producto_id;
+          const decisionActual = decisiones[partida.id] || partida.decision_cliente;
+          
+          return (
+            <div key={partida.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-hidden relative">
+              <div className="flex flex-col sm:flex-row justify-between items-start mb-4 gap-4">
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <Package className="w-6 h-6 text-slate-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-lg">{partida.numero_parte}</h3>
+                    <p className="text-sm text-slate-500">{partida.marca}</p>
+                    <p className="text-xs text-slate-400 mt-1">{partida.descripcion}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-800 text-lg">{partida.numero_parte}</h3>
-                  <p className="text-sm text-slate-500">{partida.marca}</p>
-                  <p className="text-xs text-slate-400 mt-1">{partida.descripcion}</p>
-                </div>
-              </div>
-              <div className="text-left sm:text-right shrink-0">
-                <p className="font-bold text-xl text-slate-800">
-                  {formatearPrecio(partida.importe, pedido.moneda)}
-                </p>
-                <p className="text-sm text-slate-500">
-                  {partida.cantidad} pzs x {formatearPrecio(partida.precio_unitario, pedido.moneda)}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-100">
-              {/* ETA */}
-              <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4">
-                <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  Tiempo Estimado de Entrega
-                </h4>
-                <p className="text-sm font-medium text-slate-700">
-                  {partida.tiempo_entrega ? partida.tiempo_entrega : 'Pendiente de confirmación'}
-                </p>
-              </div>
-
-              {/* Comentarios */}
-              {partida.comentario_admin && (
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    Notas de REM
-                  </h4>
-                  <p className="text-sm text-slate-700 italic">
-                    "{partida.comentario_admin}"
+                <div className="text-left sm:text-right shrink-0">
+                  <p className={`font-bold text-xl ${decisionActual === 'cancelar' ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
+                    {formatearPrecio(partida.importe, pedido.moneda)}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {partida.cantidad} pzs x {formatearPrecio(partida.precio_unitario, pedido.moneda)}
                   </p>
                 </div>
-              )}
-            </div>
-
-            {/* Alternativa */}
-            {partida.alternativa_producto_id && (
-              <div className="mt-4 bg-orange-50 border-2 border-orange-200 rounded-xl p-5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 bg-orange-200 text-orange-800 text-[10px] font-bold px-3 py-1 rounded-bl-xl">
-                  ARTÍCULO SUSTITUTO
-                </div>
-                <h4 className="text-sm font-bold text-orange-900 mb-3 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  No hay stock del original. Te sugerimos esta alternativa:
-                </h4>
-                
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-lg shadow-sm border border-orange-100 gap-4">
-                  <div>
-                    <p className="font-bold text-slate-800 text-base">{partida.alternativa_numero_parte} <span className="text-xs font-normal text-slate-500 ml-1">({partida.alternativa_marca})</span></p>
-                    <p className="text-xs text-slate-500 mt-1">{partida.alternativa_descripcion}</p>
-                  </div>
-                  <div className="text-left sm:text-right shrink-0 bg-orange-50 px-4 py-2 rounded-lg">
-                    <p className="text-xs font-bold text-orange-500 uppercase">Precio Unitario</p>
-                    <p className="font-bold text-orange-700 text-lg">{formatearPrecio(partida.alternativa_precio, pedido.moneda)}</p>
-                  </div>
-                </div>
-                
-                <p className="text-xs text-orange-700 mt-3 font-medium">
-                  * Al aprobar este pedido, estás aceptando que reemplacemos el artículo original por esta alternativa mostrada.
-                </p>
               </div>
-            )}
-            
-          </div>
-        ))}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-100">
+                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4">
+                  <h4 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    Tiempo Estimado de Entrega
+                  </h4>
+                  <p className="text-sm font-medium text-slate-700">
+                    {partida.tiempo_entrega ? partida.tiempo_entrega : 'Pendiente de confirmación'}
+                  </p>
+                </div>
+
+                {partida.comentario_admin && (
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Notas de REM
+                    </h4>
+                    <p className="text-sm text-slate-700 italic">
+                      "{partida.comentario_admin}"
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {tieneAlternativa && (
+                <div className="mt-4 bg-orange-50 border-2 border-orange-200 rounded-xl p-5 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-orange-200 text-orange-800 text-[10px] font-bold px-3 py-1 rounded-bl-xl">
+                    ARTÍCULO SUSTITUTO
+                  </div>
+                  <h4 className="text-sm font-bold text-orange-900 mb-3 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {partida.alternativa_motivo || 'No hay stock del original. Te sugerimos esta alternativa:'}
+                  </h4>
+                  
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-lg shadow-sm border border-orange-100 gap-4">
+                    <div>
+                      <p className="font-bold text-slate-800 text-base">{partida.alternativa_numero_parte} <span className="text-xs font-normal text-slate-500 ml-1">({partida.alternativa_marca})</span></p>
+                      <p className="text-xs text-slate-500 mt-1">{partida.alternativa_descripcion}</p>
+                    </div>
+                    <div className="text-left sm:text-right shrink-0 bg-orange-50 px-4 py-2 rounded-lg">
+                      <p className="text-xs font-bold text-orange-500 uppercase">Precio Unitario</p>
+                      <p className="font-bold text-orange-700 text-lg">{formatearPrecio(partida.alternativa_precio, pedido.moneda)}</p>
+                    </div>
+                  </div>
+                  
+                  {isEnRevision && (
+                    <div className="mt-4 pt-4 border-t border-orange-200/60">
+                      <p className="text-sm font-semibold text-orange-900 mb-3">Por favor, selecciona qué deseas hacer con esta partida:</p>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
+                        
+                        <label className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border ${decisionActual === 'alternativa' ? 'bg-orange-100 border-orange-400' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                          <input 
+                            type="radio" 
+                            name={`decision-${partida.id}`} 
+                            className="mt-0.5" 
+                            checked={decisionActual === 'alternativa'}
+                            onChange={() => manejarDecision(partida.id, 'alternativa')}
+                          />
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Aceptar alternativa</span>
+                            <span className="text-xs text-slate-500">Se surtirá el sustituto mostrado arriba.</span>
+                          </div>
+                        </label>
+
+                        <label className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border ${decisionActual === 'original' ? 'bg-slate-100 border-slate-400' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                          <input 
+                            type="radio" 
+                            name={`decision-${partida.id}`} 
+                            className="mt-0.5"
+                            checked={decisionActual === 'original'}
+                            onChange={() => manejarDecision(partida.id, 'original')}
+                          />
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 block">Conservar original</span>
+                            <span className="text-xs text-slate-500">Acepto el tiempo de entrega del original.</span>
+                          </div>
+                        </label>
+
+                        <label className={`flex items-start gap-2 cursor-pointer p-3 rounded-lg border ${decisionActual === 'cancelar' ? 'bg-red-50 border-red-300' : 'bg-white border-slate-200 hover:bg-slate-50'}`}>
+                          <input 
+                            type="radio" 
+                            name={`decision-${partida.id}`} 
+                            className="mt-0.5"
+                            checked={decisionActual === 'cancelar'}
+                            onChange={() => manejarDecision(partida.id, 'cancelar')}
+                          />
+                          <div>
+                            <span className="text-sm font-bold text-red-700 block">Cancelar partida</span>
+                            <span className="text-xs text-red-500">Quitar este artículo de la orden.</span>
+                          </div>
+                        </label>
+
+                      </div>
+                    </div>
+                  )}
+
+                  {!isEnRevision && decisionActual && (
+                    <div className="mt-4 pt-4 border-t border-orange-200/60 flex items-center gap-2">
+                      <span className="text-sm font-bold text-orange-900">Decisión tomada:</span>
+                      <span className="text-sm font-semibold bg-white px-3 py-1 rounded-full text-slate-700 border border-slate-200">
+                        {decisionActual === 'alternativa' ? 'Aceptó Alternativa' : decisionActual === 'original' ? 'Conservar Original' : 'Canceló Partida'}
+                      </span>
+                    </div>
+                  )}
+
+                </div>
+              )}
+              
+            </div>
+          );
+        })}
       </div>
 
       {isEnRevision && (
