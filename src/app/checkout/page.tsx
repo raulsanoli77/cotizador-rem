@@ -36,6 +36,8 @@ export default function CheckoutB2BPage() {
   const [fleteUrgente, setFleteUrgente] = useState(false);
   const [notas, setNotas] = useState('');
   
+  const [sugerenciasLugares, setSugerenciasLugares] = useState<string[]>([]);
+
   const [guardarDireccion, setGuardarDireccion] = useState(true);
   const [usarDireccionGuardada, setUsarDireccionGuardada] = useState(false);
   
@@ -101,12 +103,26 @@ export default function CheckoutB2BPage() {
           const data = await res.json();
           if (data.places && data.places.length > 0) {
             setEstado(data.places[0].state);
-            setCiudad(data.places[0]['place name']); // Usual en Zippopotam MX
+            
+            // Extraer todos los lugares (colonias) sugeridos
+            const lugares = data.places.map((p: any) => p['place name']);
+            setSugerenciasLugares(lugares);
+            
+            // Si solo hay una opción, la ponemos directo en colonia
+            if (lugares.length === 1) {
+              setColonia(lugares[0]);
+            } else {
+              setColonia(''); // Para que desplieguen y elijan
+            }
+            // Zippopotam a veces mezcla ciudad con colonia, lo dejamos en blanco si son varias opciones
+            // para que el usuario escriba su ciudad correcta.
           }
         }
       } catch (err) {
         // Ignoramos silenciosamente si la API falla
       }
+    } else {
+      setSugerenciasLugares([]);
     }
   };
 
@@ -381,9 +397,15 @@ export default function CheckoutB2BPage() {
                         type="text" 
                         required
                         value={ciudad}
+                        list="sugerencias-ciudad"
                         onChange={(e) => setCiudad(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                       />
+                      <datalist id="sugerencias-ciudad">
+                        {sugerenciasLugares.map((lugar, i) => (
+                          <option key={`muni-${i}`} value={lugar} />
+                        ))}
+                      </datalist>
                     </div>
                     
                     <div className="sm:col-span-2">
@@ -391,9 +413,15 @@ export default function CheckoutB2BPage() {
                       <input 
                         type="text" 
                         value={colonia}
+                        list="sugerencias-colonia"
                         onChange={(e) => setColonia(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                       />
+                      <datalist id="sugerencias-colonia">
+                        {sugerenciasLugares.map((lugar, i) => (
+                          <option key={`col-${i}`} value={lugar} />
+                        ))}
+                      </datalist>
                     </div>
 
                     <div className="sm:col-span-2">
