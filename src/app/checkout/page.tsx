@@ -1,0 +1,428 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
+import { useCartStore } from '@/stores/cart-store';
+import { formatearPrecio } from '@/lib/pricing/engine';
+import { Loader2, ShieldCheck, MapPin, Building, Upload, FileText, CheckCircle, ArrowLeft } from 'lucide-react';
+import Header from '@/components/layout/Header';
+import Link from 'next/link';
+import { crearPedidoB2B } from './actions';
+import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
+
+export default function CheckoutB2BPage() {
+  const router = useRouter();
+  const items = useCartStore((s) => s.items);
+  const obtenerSubtotal = useCartStore((s) => s.obtenerSubtotal);
+  const limpiarCarrito = useCartStore((s) => s.limpiarCarrito);
+  
+  const [loading, setLoading] = useState(true);
+  const [procesando, setProcesando] = useState(false);
+  const [completado, setCompletado] = useState(false);
+  const [errorStr, setErrorStr] = useState<string | null>(null);
+  
+  const [cliente, setCliente] = useState<any>(null);
+  const [perfil, setPerfil] = useState<any>(null);
+
+  // Form State
+  const [direccion, setDireccion] = useState('');
+  const [ciudad, setCiudad] = useState('');
+  const [estado, setEstado] = useState('');
+  const [codigoPostal, setCodigoPostal] = useState('');
+  const [paqueteria, setPaqueteria] = useState('');
+  const [notas, setNotas] = useState('');
+  
+  const [esPoVerbal, setEsPoVerbal] = useState(false);
+  const [numeroPo, setNumeroPo] = useState('');
+  const [archivoPo, setArchivoPo] = useState<File | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    async function initCheckout() {
+      if (items.length === 0) {
+        setLoading(false);
+        return; // Sin items, se mostrará el empty state
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/admin/login'); // O redirigir a /cotizacion
+        return;
+      }
+
+      const { data: perfilData } = await supabase
+        .from('perfiles_clientes')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!perfilData || perfilData.estatus !== 'aprobado') {
+        router.push('/cotizacion'); // Redirigir al flujo de "lead" (cotización PDF simple)
+        return;
+      }
+
+      setCliente(session.user);
+      setPerfil(perfilData);
+      
+      // Precargar datos si existen
+      if (perfilData.direccion_envio) setDireccion(perfilData.direccion_envio);
+      if (perfilData.ciudad) setCiudad(perfilData.ciudad);
+      if (perfilData.estado) setEstado(perfilData.estado);
+      if (perfilData.codigo_postal) setCodigoPostal(perfilData.codigo_postal);
+
+      setLoading(false);
+    }
+
+    initCheckout();
+  }, [items.length, router]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setArchivoPo(e.target.files[0]);
+    }
+  };
+
+  const procesarPedido = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!esPoVerbal && !numeroPo) {
+      setErrorStr('Debes proporcionar un Número de PO o seleccionar Orden Verbal.');
+      return;
+    }
+    if (!direccion || !ciudad || !estado || !codigoPostal) {
+      setErrorStr('La dirección de envío completa es obligatoria.');
+      return;
+    }
+
+    setProcesando(true);
+    setErrorStr(null);
+
+    try {
+      let poUrl = '';
+
+      // Subir PDF si existe
+      if (archivoPo) {
+        const fileExt = archivoPo.name.split('.').pop();
+        const fileName = \`\${cliente.id}/\${Date.now()}-PO.\${fileExt}\`;
+        const { error: uploadError, data: uploadData } = await supabase.storage
+          .from('ordenes_compra')
+          .upload(fileName, archivoPo);
+        
+        if (uploadError) throw new Error('Error al subir el archivo PO: ' + uploadError.message);
+        poUrl = uploadData.path;
+      }
+
+      const subtotal = obtenerSubtotal();
+      const iva = subtotal * 0.16;
+      const total = subtotal + iva;
+      const moneda = items[0]?.producto.moneda_venta || 'USD';
+
+      const partidas = items.map(item => ({
+        producto_id: item.producto.id,
+        numero_parte: item.producto.numero_parte,
+        marca: item.producto.marca,
+        descripcion: formatearDescripcionProducto(item.producto),
+        cantidad: item.cantidad,
+        precio_unitario: item.producto.precio_venta,
+        importe: item.producto.precio_venta * item.cantidad,
+      }));
+
+      await crearPedidoB2B({
+        cliente_id: cliente.id,
+        numero_po: esPoVerbal ? 'VERBAL' : numeroPo,
+        es_po_verbal: esPoVerbal,
+        po_url: poUrl,
+        direccion_envio: direccion,
+        ciudad,
+        estado,
+        codigo_postal: codigoPostal,
+        paqueteria,
+        notas_cliente: notas,
+        subtotal,
+        iva,
+        total,
+        moneda,
+        partidas,
+      });
+
+      setCompletado(true);
+      limpiarCarrito();
+    } catch (err: any) {
+      setErrorStr(err.message);
+    } finally {
+      setProcesando(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 pt-32 pb-12 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+      </div>
+    );
+  }
+
+  if (completado) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-slate-50 pt-32 pb-12 flex items-center justify-center">
+          <div className="bg-white p-10 rounded-2xl shadow-xl max-w-lg w-full text-center border border-slate-100">
+            <CheckCircle className="h-20 w-20 text-emerald-500 mx-auto mb-6" />
+            <h1 className="text-3xl font-bold text-slate-900 mb-4">¡Pedido Recibido!</h1>
+            <p className="text-slate-600 mb-8 leading-relaxed">
+              Tu Orden de Compra ha sido procesada con éxito y enviada a nuestro equipo para su surtido. Recibirás confirmaciones sobre el envío a tu correo.
+            </p>
+            <Link 
+              href="/catalogo"
+              className="inline-block bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-8 rounded-xl transition-colors shadow-lg shadow-brand-600/20"
+            >
+              Volver al Catálogo
+            </Link>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-slate-50 pt-32 pb-12">
+          <div className="max-w-5xl mx-auto px-4 text-center">
+            <h1 className="text-3xl font-bold text-slate-900 mb-8">Checkout</h1>
+            <p className="text-slate-500 mb-8">Tu carrito está vacío.</p>
+            <Link href="/catalogo" className="text-brand-600 font-bold hover:underline">Ir al catálogo</Link>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Header />
+      <main className="min-h-screen bg-slate-50 pt-32 pb-12">
+        <div className="max-w-6xl mx-auto px-4">
+          
+          <div className="flex items-center gap-4 mb-8">
+            <Link href="/catalogo" className="p-2 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-400 hover:text-brand-600 transition-colors">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Checkout B2B</h1>
+              <p className="text-slate-500">Completa tu orden de compra formal</p>
+            </div>
+          </div>
+
+          <form onSubmit={procesarPedido} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* Formulario (Left Column) */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Sección: Orden de Compra */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-brand-50 p-2.5 rounded-lg text-brand-600">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-800">Orden de Compra (PO)</h2>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <input 
+                      type="checkbox" 
+                      id="poVerbal"
+                      checked={esPoVerbal}
+                      onChange={(e) => setEsPoVerbal(e.target.checked)}
+                      className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500 border-gray-300"
+                    />
+                    <label htmlFor="poVerbal" className="font-medium text-slate-700 cursor-pointer">
+                      Es una Orden Verbal (Sin documento formal)
+                    </label>
+                  </div>
+
+                  {!esPoVerbal && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1">Número de PO *</label>
+                        <input 
+                          type="text" 
+                          required={!esPoVerbal}
+                          value={numeroPo}
+                          onChange={(e) => setNumeroPo(e.target.value)}
+                          placeholder="Ej. PO-2023-001"
+                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1">Adjuntar PDF (Opcional)</label>
+                        <div 
+                          className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Upload className="h-6 w-6 text-slate-400 mx-auto mb-2" />
+                          <p className="text-sm text-slate-600 font-medium">
+                            {archivoPo ? archivoPo.name : 'Haz clic para seleccionar o arrastra tu archivo PDF'}
+                          </p>
+                          <input 
+                            type="file" 
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            className="hidden"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Sección: Dirección de Envío */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-brand-50 p-2.5 rounded-lg text-brand-600">
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-800">Dirección de Envío</h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Calle y Número *</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={direccion}
+                      onChange={(e) => setDireccion(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Ciudad / Municipio *</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={ciudad}
+                      onChange={(e) => setCiudad(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Estado *</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={estado}
+                      onChange={(e) => setEstado(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Código Postal *</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={codigoPostal}
+                      onChange={(e) => setCodigoPostal(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Paquetería Preferida (Opcional)</label>
+                    <input 
+                      type="text" 
+                      value={paqueteria}
+                      onChange={(e) => setPaqueteria(e.target.value)}
+                      placeholder="Ej. Paquetexpress, DHL, Ocurre..."
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Notas de Entrega (Opcional)</label>
+                    <textarea 
+                      rows={2}
+                      value={notas}
+                      onChange={(e) => setNotas(e.target.value)}
+                      placeholder="Horarios, referencias o instrucciones especiales..."
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Resumen (Right Column) */}
+            <div className="lg:col-span-5">
+              <div className="bg-slate-900 rounded-2xl shadow-xl p-6 sm:p-8 text-white sticky top-28">
+                <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <ShieldCheck className="h-6 w-6 text-brand-400" /> Resumen del Pedido
+                </h2>
+                
+                <div className="space-y-4 mb-6 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                  {items.map(item => (
+                    <div key={item.producto.id} className="flex justify-between items-start gap-4 text-sm border-b border-slate-800 pb-4">
+                      <div>
+                        <p className="font-bold text-slate-100">{item.producto.numero_parte}</p>
+                        <p className="text-xs text-slate-400 line-clamp-1">{item.producto.descripcion}</p>
+                        <p className="text-xs text-brand-400 mt-1">Cant: {item.cantidad}</p>
+                      </div>
+                      <p className="font-semibold shrink-0">
+                        {formatearPrecio(item.producto.precio_venta * item.cantidad, item.producto.moneda_venta)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-3 pt-4 border-t border-slate-800 text-sm">
+                  <div className="flex justify-between text-slate-300">
+                    <span>Subtotal</span>
+                    <span>{formatearPrecio(obtenerSubtotal(), items[0]?.producto.moneda_venta || 'USD')}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-300">
+                    <span>IVA (16%)</span>
+                    <span>{formatearPrecio(obtenerSubtotal() * 0.16, items[0]?.producto.moneda_venta || 'USD')}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold text-white pt-3 border-t border-slate-800">
+                    <span>Total a Pagar</span>
+                    <span className="text-brand-400">{formatearPrecio(obtenerSubtotal() * 1.16, items[0]?.producto.moneda_venta || 'USD')}</span>
+                  </div>
+                </div>
+
+                {perfil?.terminos_pago && (
+                  <div className="mt-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                    <p className="text-xs text-slate-400 font-medium mb-1">Condiciones Comerciales Aplicadas:</p>
+                    <p className="text-sm font-bold text-brand-300">{perfil.terminos_pago}</p>
+                  </div>
+                )}
+
+                {errorStr && (
+                  <div className="mt-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 text-center font-medium">
+                    {errorStr}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={procesando}
+                  className="w-full mt-8 bg-brand-500 hover:bg-brand-600 text-white py-4 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none"
+                >
+                  {procesando ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Confirmar y Procesar Pedido'}
+                </button>
+                <p className="text-[10px] text-slate-500 text-center mt-4">
+                  Al confirmar, generaremos la orden oficial en el sistema. Los tiempos de entrega serán confirmados vía correo.
+                </p>
+              </div>
+            </div>
+
+          </form>
+        </div>
+      </main>
+    </>
+  );
+}

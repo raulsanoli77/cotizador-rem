@@ -1,15 +1,31 @@
 'use client';
 
-import { Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { X, ShoppingCart, ArrowRight } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
+import { supabase } from '@/lib/supabase/client';
 import { formatearPrecio } from '@/lib/pricing/engine';
 
 export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const items = useCartStore((s) => s.items);
   const obtenerSubtotal = useCartStore((s) => s.obtenerSubtotal);
   const removerItem = useCartStore((s) => s.removerItem);
+
+  const [b2bStatus, setB2BStatus] = useState(false);
+
+  useEffect(() => {
+    async function check() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data } = await supabase.from('perfiles_clientes').select('estatus').eq('id', session.user.id).single();
+        if (data?.estatus === 'aprobado') {
+          setB2BStatus(true);
+        }
+      }
+    }
+    if (isOpen) check();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -77,13 +93,24 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 {formatearPrecio(obtenerSubtotal(), items[0]?.producto.moneda_venta || 'USD')}
               </span>
             </div>
-            <Link 
-              href="/cotizacion" 
-              onClick={onClose}
-              className="w-full bg-brand-600 hover:bg-brand-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
-            >
-              Proceder a Cotización Formal <ArrowRight className="h-4 w-4" />
-            </Link>
+            
+            {b2bStatus ? (
+              <Link 
+                href="/checkout" 
+                onClick={onClose}
+                className="w-full bg-brand-600 hover:bg-brand-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
+              >
+                Procesar Pedido Formal <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Link 
+                href="/cotizacion" 
+                onClick={onClose}
+                className="w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20"
+              >
+                Generar PDF de Cotización <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
           </div>
         )}
       </div>
