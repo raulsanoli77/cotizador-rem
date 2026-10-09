@@ -7,11 +7,14 @@ export async function crearPedidoB2B({
   numero_po,
   es_po_verbal,
   po_url,
-  direccion_envio,
+  calle,
+  num_exterior,
+  num_interior,
+  colonia,
   ciudad,
   estado,
   codigo_postal,
-  paqueteria,
+  flete_urgente,
   notas_cliente,
   subtotal,
   iva,
@@ -24,11 +27,14 @@ export async function crearPedidoB2B({
   numero_po?: string;
   es_po_verbal: boolean;
   po_url?: string;
-  direccion_envio: string;
+  calle: string;
+  num_exterior: string;
+  num_interior?: string;
+  colonia: string;
   ciudad: string;
   estado: string;
   codigo_postal: string;
-  paqueteria?: string;
+  flete_urgente: boolean;
   notas_cliente?: string;
   subtotal: number;
   iva: number;
@@ -50,7 +56,10 @@ export async function crearPedidoB2B({
   // 0. (Opcional) Guardar dirección en el perfil si el cliente lo solicitó
   if (guardar_direccion) {
     await supabase.from('perfiles_clientes').update({
-      direccion_envio,
+      calle,
+      num_exterior,
+      num_interior,
+      colonia,
       ciudad,
       estado,
       codigo_postal,
@@ -65,11 +74,14 @@ export async function crearPedidoB2B({
       numero_po,
       es_po_verbal,
       po_url,
-      direccion_envio,
+      calle,
+      num_exterior,
+      num_interior,
+      colonia,
       ciudad,
       estado,
       codigo_postal,
-      paqueteria,
+      flete_urgente,
       notas_cliente,
       subtotal,
       iva,

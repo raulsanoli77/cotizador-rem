@@ -26,11 +26,14 @@ export default function CheckoutB2BPage() {
   const [perfil, setPerfil] = useState<any>(null);
 
   // Form State
-  const [direccion, setDireccion] = useState('');
+  const [calle, setCalle] = useState('');
+  const [numExterior, setNumExterior] = useState('');
+  const [numInterior, setNumInterior] = useState('');
+  const [colonia, setColonia] = useState('');
   const [ciudad, setCiudad] = useState('');
   const [estado, setEstado] = useState('');
   const [codigoPostal, setCodigoPostal] = useState('');
-  const [paqueteria, setPaqueteria] = useState('');
+  const [fleteUrgente, setFleteUrgente] = useState(false);
   const [notas, setNotas] = useState('');
   
   const [guardarDireccion, setGuardarDireccion] = useState(true);
@@ -46,12 +49,12 @@ export default function CheckoutB2BPage() {
     async function initCheckout() {
       if (items.length === 0) {
         setLoading(false);
-        return; // Sin items, se mostrará el empty state
+        return;
       }
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.push('/admin/login'); // O redirigir a /cotizacion
+        router.push('/admin/login');
         return;
       }
 
@@ -62,7 +65,7 @@ export default function CheckoutB2BPage() {
         .single();
 
       if (!perfilData || perfilData.estatus !== 'aprobado') {
-        router.push('/cotizacion'); // Redirigir al flujo de "lead" (cotización PDF simple)
+        router.push('/cotizacion');
         return;
       }
 
@@ -70,8 +73,11 @@ export default function CheckoutB2BPage() {
       setPerfil(perfilData);
       
       // Precargar datos si existen
-      if (perfilData.direccion_envio && perfilData.ciudad && perfilData.estado && perfilData.codigo_postal) {
-        setDireccion(perfilData.direccion_envio);
+      if (perfilData.calle && perfilData.num_exterior && perfilData.ciudad && perfilData.estado && perfilData.codigo_postal) {
+        setCalle(perfilData.calle);
+        setNumExterior(perfilData.num_exterior);
+        setNumInterior(perfilData.num_interior || '');
+        setColonia(perfilData.colonia || '');
         setCiudad(perfilData.ciudad);
         setEstado(perfilData.estado);
         setCodigoPostal(perfilData.codigo_postal);
@@ -85,6 +91,25 @@ export default function CheckoutB2BPage() {
     initCheckout();
   }, [items.length, router]);
 
+  const handleCPChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.trim();
+    setCodigoPostal(val);
+    if (val.length === 5) {
+      try {
+        const res = await fetch(`https://api.zippopotam.us/mx/${val}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.places && data.places.length > 0) {
+            setEstado(data.places[0].state);
+            setCiudad(data.places[0]['place name']); // Usual en Zippopotam MX
+          }
+        }
+      } catch (err) {
+        // Ignoramos silenciosamente si la API falla
+      }
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setArchivoPo(e.target.files[0]);
@@ -97,8 +122,8 @@ export default function CheckoutB2BPage() {
       setErrorStr('Debes proporcionar un Número de PO o seleccionar Orden Verbal.');
       return;
     }
-    if (!direccion || !ciudad || !estado || !codigoPostal) {
-      setErrorStr('La dirección de envío completa es obligatoria.');
+    if (!calle || !numExterior || !ciudad || !estado || !codigoPostal) {
+      setErrorStr('Los campos obligatorios de la dirección de envío deben estar completos.');
       return;
     }
 
@@ -108,7 +133,6 @@ export default function CheckoutB2BPage() {
     try {
       let poUrl = '';
 
-      // Subir PDF si existe
       if (archivoPo) {
         const fileExt = archivoPo.name.split('.').pop();
         const fileName = `${cliente.id}/${Date.now()}-PO.${fileExt}`;
@@ -140,11 +164,14 @@ export default function CheckoutB2BPage() {
         numero_po: esPoVerbal ? 'VERBAL' : numeroPo,
         es_po_verbal: esPoVerbal,
         po_url: poUrl,
-        direccion_envio: direccion,
+        calle,
+        num_exterior: numExterior,
+        num_interior: numInterior,
+        colonia,
         ciudad,
         estado,
         codigo_postal: codigoPostal,
-        paqueteria,
+        flete_urgente: fleteUrgente,
         notas_cliente: notas,
         subtotal,
         iva,
@@ -303,13 +330,16 @@ export default function CheckoutB2BPage() {
                 {usarDireccionGuardada ? (
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
                     <p className="text-sm font-semibold text-slate-500 mb-2 uppercase tracking-wider">Dirección Predeterminada</p>
-                    <p className="font-medium text-slate-900 mb-1">{direccion}</p>
-                    <p className="text-slate-600 mb-4">{ciudad}, {estado}. CP {codigoPostal}</p>
+                    <p className="font-medium text-slate-900 mb-1">{calle} {numExterior} {numInterior ? `Int. ${numInterior}` : ''}</p>
+                    <p className="text-slate-600 mb-4">{colonia ? `${colonia}, ` : ''}{ciudad}, {estado}. CP {codigoPostal}</p>
                     <button 
                       type="button" 
                       onClick={() => {
                         setUsarDireccionGuardada(false);
-                        setDireccion('');
+                        setCalle('');
+                        setNumExterior('');
+                        setNumInterior('');
+                        setColonia('');
                         setCiudad('');
                         setEstado('');
                         setCodigoPostal('');
@@ -323,12 +353,25 @@ export default function CheckoutB2BPage() {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Calle y Número *</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Código Postal *</label>
                       <input 
                         type="text" 
                         required
-                        value={direccion}
-                        onChange={(e) => setDireccion(e.target.value)}
+                        value={codigoPostal}
+                        onChange={handleCPChange}
+                        placeholder="Ej. 31100"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-medium"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1">Al teclear los 5 dígitos buscaremos tu Estado y Ciudad.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Estado *</label>
+                      <input 
+                        type="text" 
+                        required
+                        value={estado}
+                        onChange={(e) => setEstado(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                       />
                     </div>
@@ -342,36 +385,51 @@ export default function CheckoutB2BPage() {
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Estado *</label>
+                    
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Colonia / Localidad (Opcional)</label>
+                      <input 
+                        type="text" 
+                        value={colonia}
+                        onChange={(e) => setColonia(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">Calle *</label>
                       <input 
                         type="text" 
                         required
-                        value={estado}
-                        onChange={(e) => setEstado(e.target.value)}
+                        value={calle}
+                        onChange={(e) => setCalle(e.target.value)}
+                        placeholder="Av. Principal, Blvd..."
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                       />
                     </div>
+
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Código Postal *</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">No. Exterior *</label>
                       <input 
                         type="text" 
                         required
-                        value={codigoPostal}
-                        onChange={(e) => setCodigoPostal(e.target.value)}
+                        value={numExterior}
+                        onChange={(e) => setNumExterior(e.target.value)}
+                        placeholder="Ej. 123, S/N"
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Paquetería Preferida (Opcional)</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1">No. Interior (Opcional)</label>
                       <input 
                         type="text" 
-                        value={paqueteria}
-                        onChange={(e) => setPaqueteria(e.target.value)}
-                        placeholder="Ej. Paquetexpress, DHL, Ocurre..."
+                        value={numInterior}
+                        onChange={(e) => setNumInterior(e.target.value)}
+                        placeholder="Nave 3, Local B..."
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                       />
                     </div>
+
                     <div className="sm:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-1">Notas de Entrega (Opcional)</label>
                       <textarea 
@@ -383,7 +441,26 @@ export default function CheckoutB2BPage() {
                       />
                     </div>
                     
-                    <div className="sm:col-span-2 pt-2 border-t border-slate-100 mt-2">
+                    {/* Checkbox Urgente */}
+                    <div className="sm:col-span-2 pt-4 border-t border-slate-100 mt-2">
+                      <div className="flex items-start gap-3 bg-brand-50 p-4 rounded-xl border border-brand-100">
+                        <input 
+                          type="checkbox" 
+                          id="fleteUrg"
+                          checked={fleteUrgente}
+                          onChange={(e) => setFleteUrgente(e.target.checked)}
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500 border-gray-300 mt-0.5"
+                        />
+                        <label htmlFor="fleteUrg" className="font-medium text-slate-800 cursor-pointer">
+                          ⚡ Necesito flete URGENTE (Cotizar envío prioritario)
+                          <p className="text-xs text-slate-500 font-normal mt-1">
+                            Calcularemos la tarifa del envío más rápido disponible para tus productos.
+                          </p>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="sm:col-span-2 pt-2">
                       <div className="flex items-center gap-3">
                         <input 
                           type="checkbox" 
