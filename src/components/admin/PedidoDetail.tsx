@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { ArrowLeft, Save, CheckCircle, Package, Calendar, Search } from 'lucide-react';
+import { ArrowLeft, Save, CheckCircle, Package, Calendar, Search, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
+import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
 
 export default function PedidoDetailAdmin({ pedido, partidas, productosOriginales }: { pedido: any, partidas: any[], productosOriginales: any[] }) {
   const router = useRouter();
@@ -15,12 +16,64 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
   const [errorStr, setErrorStr] = useState<string | null>(null);
   const [successStr, setSuccessStr] = useState<string | null>(null);
 
-  const handleEtaChange = (id: string, value: string) => {
-    setPartidasState(prev => prev.map(p => p.id === id ? { ...p, tiempo_entrega: value } : p));
+  // Estado para el buscador de alternativas por partida
+  const [searchStates, setSearchStates] = useState<Record<string, { loading: boolean, error: string | null, query: string, show: boolean }>>({});
+
+  const handlePropChange = (id: string, prop: string, value: any) => {
+    setPartidasState(prev => prev.map(p => p.id === id ? { ...p, [prop]: value } : p));
   };
 
-  const handleAlternativaChange = (id: string, prop: string, value: string) => {
-    setPartidasState(prev => prev.map(p => p.id === id ? { ...p, [prop]: value } : p));
+  const toggleSugerirAlternativa = (id: string, show: boolean) => {
+    setSearchStates(prev => ({
+      ...prev,
+      [id]: { ...prev[id], show, query: prev[id]?.query || '', error: null, loading: false }
+    }));
+    // Si la oculta, limpiamos los datos de la alternativa
+    if (!show) {
+      setPartidasState(prev => prev.map(p => p.id === id ? { 
+        ...p, 
+        alternativa_producto_id: null, 
+        alternativa_numero_parte: null, 
+        alternativa_marca: null, 
+        alternativa_descripcion: null,
+        alternativa_precio: null
+      } : p));
+    }
+  };
+
+  const buscarAlternativa = async (partidaId: string) => {
+    const query = searchStates[partidaId]?.query?.trim();
+    if (!query) return;
+
+    setSearchStates(prev => ({ ...prev, [partidaId]: { ...prev[partidaId], loading: true, error: null } }));
+
+    try {
+      const { data: producto, error } = await supabase
+        .from('productos')
+        .select('*')
+        .ilike('numero_parte', query)
+        .eq('activo', true)
+        .single(); // Esperamos encontrar 1 exacto
+
+      if (error || !producto) {
+        throw new Error('Producto no encontrado en el catálogo');
+      }
+
+      // Llenamos la partida con la data de la alternativa
+      setPartidasState(prev => prev.map(p => p.id === partidaId ? { 
+        ...p, 
+        alternativa_producto_id: producto.id,
+        alternativa_numero_parte: producto.numero_parte,
+        alternativa_marca: producto.marca,
+        alternativa_descripcion: formatearDescripcionProducto(producto),
+        alternativa_precio: producto.precio_venta // Asume que precio_venta ya es su precio correcto de lista
+      } : p));
+
+      setSearchStates(prev => ({ ...prev, [partidaId]: { ...prev[partidaId], loading: false, error: null } }));
+
+    } catch (e: any) {
+      setSearchStates(prev => ({ ...prev, [partidaId]: { ...prev[partidaId], loading: false, error: e.message } }));
+    }
   };
 
   const guardarCambios = async () => {
@@ -29,7 +82,6 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
     setSuccessStr(null);
     
     try {
-      // Guardar estatus del pedido
       const { error: errPedido } = await supabase
         .from('pedidos')
         .update({ estatus })
@@ -37,14 +89,17 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
       
       if (errPedido) throw new Error(errPedido.message);
 
-      // Guardar partidas
       for (const p of partidasState) {
         const { error: errPartida } = await supabase
           .from('partidas_pedido')
           .update({
             tiempo_entrega: p.tiempo_entrega,
+            alternativa_producto_id: p.alternativa_producto_id,
             alternativa_numero_parte: p.alternativa_numero_parte,
             alternativa_marca: p.alternativa_marca,
+            alternativa_descripcion: p.alternativa_descripcion,
+            alternativa_precio: p.alternativa_precio,
+            comentario_admin: p.comentario_admin
           })
           .eq('id', p.id);
         
@@ -60,10 +115,14 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
     }
   };
 
+  const getPdfUrl = (path: string) => {
+    const { data } = supabase.storage.from('ordenes_compra').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       
-      {/* Encabezado y Navegación */}
       <div className="flex items-center gap-4">
         <Link href="/admin/pedidos" className="p-2 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-400 hover:text-brand-600 transition-colors">
           <ArrowLeft className="h-5 w-5" />
@@ -95,10 +154,10 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
                 <p className="font-bold">{pedido.es_po_verbal ? 'ORDEN VERBAL' : pedido.numero_po}</p>
                 {pedido.po_url && (
                   <a 
-                    href={`https://npxxixkypcxykbltijtj.supabase.co/storage/v1/object/public/ordenes_compra/${pedido.po_url}`}
+                    href={getPdfUrl(pedido.po_url)}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-brand-600 hover:underline text-xs"
+                    className="text-brand-600 hover:underline text-xs font-semibold"
                   >
                     Ver PDF Adjunto
                   </a>
@@ -164,70 +223,122 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
 
         {/* Columna Derecha: Partidas */}
         <div className="lg:col-span-2 space-y-4">
-          {partidasState.map((partida, idx) => (
-            <div key={partida.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-start gap-4">
-                  <div className="bg-slate-100 p-3 rounded-xl">
-                    <Package className="w-6 h-6 text-slate-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-lg">{partida.numero_parte}</h3>
-                    <p className="text-sm text-slate-500">{partida.marca}</p>
-                    <p className="text-xs text-slate-400 mt-1 line-clamp-2">{partida.descripcion}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-xl text-brand-600">
-                    {formatearPrecio(partida.importe, pedido.moneda)}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {partida.cantidad} pzs x {formatearPrecio(partida.precio_unitario, pedido.moneda)}
-                  </p>
-                </div>
-              </div>
+          {partidasState.map((partida, idx) => {
+            const isAltChecked = searchStates[partida.id]?.show || !!partida.alternativa_producto_id;
+            const searchState = searchStates[partida.id] || { query: '', loading: false, error: null };
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                {/* ETA */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                    <Calendar className="w-4 h-4 text-brand-500" /> Tiempo de Entrega (ETA)
+            return (
+              <div key={partida.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-slate-100 p-3 rounded-xl">
+                      <Package className="w-6 h-6 text-slate-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-lg">{partida.numero_parte}</h3>
+                      <p className="text-sm text-slate-500">{partida.marca}</p>
+                      <p className="text-xs text-slate-400 mt-1 line-clamp-2">{partida.descripcion}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-xl text-brand-600">
+                      {formatearPrecio(partida.importe, pedido.moneda)}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {partida.cantidad} pzs x {formatearPrecio(partida.precio_unitario, pedido.moneda)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                  {/* ETA */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                      <Calendar className="w-4 h-4 text-brand-500" /> Tiempo de Entrega (ETA)
+                    </label>
+                    <input 
+                      type="text"
+                      value={partida.tiempo_entrega || ''}
+                      onChange={(e) => handlePropChange(partida.id, 'tiempo_entrega', e.target.value)}
+                      placeholder="Ej. 3 a 5 días hábiles"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-brand-500 text-sm"
+                    />
+                  </div>
+
+                  {/* Alternativa Toggle */}
+                  <div className="flex flex-col justify-center">
+                    <label className="flex items-center gap-2 cursor-pointer mt-5">
+                      <input 
+                        type="checkbox"
+                        checked={isAltChecked}
+                        onChange={(e) => toggleSugerirAlternativa(partida.id, e.target.checked)}
+                        className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500"
+                      />
+                      <span className="text-sm font-semibold text-slate-700">Sugerir Alternativa de Catálogo</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Panel de Alternativa */}
+                {isAltChecked && (
+                  <div className="mt-4 p-4 bg-orange-50 border border-orange-100 rounded-xl">
+                    <div className="flex gap-2 mb-3">
+                      <input 
+                        type="text"
+                        placeholder="Buscar Número de Parte..."
+                        value={searchState.query}
+                        onChange={(e) => setSearchStates(prev => ({ ...prev, [partida.id]: { ...prev[partida.id], query: e.target.value } }))}
+                        className="flex-1 px-3 py-2 rounded-lg border border-slate-300 focus:ring-orange-500 text-sm"
+                        onKeyDown={(e) => e.key === 'Enter' && buscarAlternativa(partida.id)}
+                      />
+                      <button 
+                        onClick={() => buscarAlternativa(partida.id)}
+                        disabled={searchState.loading || !searchState.query}
+                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {searchState.loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Search className="w-4 h-4"/>}
+                        Buscar
+                      </button>
+                    </div>
+
+                    {searchState.error && (
+                      <p className="text-red-500 text-xs flex items-center gap-1 mb-2">
+                        <AlertCircle className="w-3 h-3"/> {searchState.error}
+                      </p>
+                    )}
+
+                    {partida.alternativa_producto_id && (
+                      <div className="bg-white p-3 rounded-lg border border-orange-200 shadow-sm flex justify-between items-center">
+                        <div>
+                          <p className="font-bold text-slate-800 text-sm">{partida.alternativa_numero_parte} <span className="text-xs text-slate-500 font-normal ml-1">({partida.alternativa_marca})</span></p>
+                          <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{partida.alternativa_descripcion}</p>
+                        </div>
+                        <div className="text-right ml-4 shrink-0">
+                          <p className="text-xs text-slate-400">Precio Unitario</p>
+                          <p className="font-bold text-orange-600 text-sm">{formatearPrecio(partida.alternativa_precio || 0, pedido.moneda)}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Comentarios del Administrador */}
+                <div className="mt-4 border-t border-slate-100 pt-4">
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">
+                    Comentarios para el cliente (Opcional)
                   </label>
-                  <input 
-                    type="text"
-                    value={partida.tiempo_entrega || ''}
-                    onChange={(e) => handleEtaChange(partida.id, e.target.value)}
-                    placeholder="Ej. 3 a 5 días hábiles"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-brand-500 text-sm"
+                  <textarea 
+                    rows={2}
+                    value={partida.comentario_admin || ''}
+                    onChange={(e) => handlePropChange(partida.id, 'comentario_admin', e.target.value)}
+                    placeholder="Escribe alguna nota, razón de la alternativa o detalle extra sobre este producto..."
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-brand-500 text-sm resize-none"
                   />
                 </div>
 
-                {/* Alternativa */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1">
-                    <Search className="w-4 h-4 text-orange-500" /> Sugerir Alternativa
-                  </label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text"
-                      value={partida.alternativa_numero_parte || ''}
-                      onChange={(e) => handleAlternativaChange(partida.id, 'alternativa_numero_parte', e.target.value)}
-                      placeholder="Num Parte Alt."
-                      className="w-1/2 px-3 py-2 rounded-lg border border-slate-300 focus:ring-brand-500 text-sm"
-                    />
-                    <input 
-                      type="text"
-                      value={partida.alternativa_marca || ''}
-                      onChange={(e) => handleAlternativaChange(partida.id, 'alternativa_marca', e.target.value)}
-                      placeholder="Marca"
-                      className="w-1/2 px-3 py-2 rounded-lg border border-slate-300 focus:ring-brand-500 text-sm"
-                    />
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1">Llenar solo si no hay stock del original.</p>
-                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
