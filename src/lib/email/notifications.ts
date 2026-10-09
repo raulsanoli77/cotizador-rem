@@ -227,3 +227,48 @@ export async function enviarNotificacionRechazo(
     return { success: false, error: err.message };
   }
 }
+
+
+export async function enviarCorreoRevisionCliente(email: string, nombre: string, pedidoId: string, baseURL: string) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'REM Industrial <onboarding@resend.dev>',
+      to: [email],
+      subject: `Tiempos de entrega asignados - Pedido ${pedidoId.split('-')[0]}`,
+      html: `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"></head>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937;">
+        <div style="background: #0f172a; padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 20px;">REM Industrial</h1>
+        </div>
+        <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #f97316; margin-top: 0;">Tu pedido requiere revisión</h2>
+          <p>Hola <strong>${nombre}</strong>,</p>
+          <p>Hemos revisado tu orden <strong>${pedidoId.split('-')[0]}</strong> y le hemos asignado los tiempos de entrega (ETA).</p>
+          <p>En caso de no contar con existencia de algún producto original, nuestro equipo te ha sugerido una alternativa de catálogo equivalente.</p>
+          <p>Por favor, entra a tu portal para revisar estos detalles y aprobar tu orden para que podamos procesarla inmediatamente.</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${baseURL}/cuenta/pedidos/${pedidoId}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+              Revisar y Aprobar Orden
+            </a>
+          </div>
+
+          <p style="color: #64748b; font-size: 13px; margin-top: 30px;">
+            Si tienes alguna duda, puedes contactar a tu asesor de ventas respondiendo a este correo.
+          </p>
+        </div>
+      </body>
+      </html>
+      `
+    });
+    
+    if (error) console.error('[Email] Error al enviar correo de revisión:', error);
+    return { success: !error };
+  } catch (error) {
+    console.error('[Email] Error inesperado:', error);
+    return { success: false };
+  }
+}

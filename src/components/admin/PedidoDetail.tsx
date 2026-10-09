@@ -7,6 +7,7 @@ import { ArrowLeft, Save, CheckCircle, Package, Calendar, Search, Loader2, Alert
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
+import { actualizarPedido } from '@/app/admin/pedidos/[id]/actions';
 
 export default function PedidoDetailAdmin({ pedido, partidas, productosOriginales }: { pedido: any, partidas: any[], productosOriginales: any[] }) {
   const router = useRouter();
@@ -143,31 +144,11 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
     setSuccessStr(null);
     
     try {
-      const { error: errPedido } = await supabase
-        .from('pedidos')
-        .update({ estatus })
-        .eq('id', pedido.id);
+      const result = await actualizarPedido(pedido.id, estatus, pedido.estatus, partidasState);
       
-      if (errPedido) throw new Error(errPedido.message);
+      if (!result.success) throw new Error(result.error);
 
-      for (const p of partidasState) {
-        const { error: errPartida } = await supabase
-          .from('partidas_pedido')
-          .update({
-            tiempo_entrega: p.tiempo_entrega,
-            alternativa_producto_id: p.alternativa_producto_id,
-            alternativa_numero_parte: p.alternativa_numero_parte,
-            alternativa_marca: p.alternativa_marca,
-            alternativa_descripcion: p.alternativa_descripcion,
-            alternativa_precio: p.alternativa_precio,
-            comentario_admin: p.comentario_admin
-          })
-          .eq('id', p.id);
-        
-        if (errPartida) throw new Error(errPartida.message);
-      }
-
-      setSuccessStr('Cambios guardados correctamente.');
+      setSuccessStr('Cambios guardados correctamente. Si marcaste "En Revisión", se envió un correo al cliente.');
       router.refresh();
     } catch (e: any) {
       setErrorStr(e.message);
