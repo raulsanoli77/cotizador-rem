@@ -14,8 +14,8 @@ export default async function AdminPedidosPage() {
     .select(`
       *,
       perfil:perfiles_clientes(
-        razon_social,
-        nombre_contacto,
+        empresa,
+        nombre_completo,
         email
       )
     `)
@@ -93,7 +93,7 @@ export default async function AdminPedidosPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-800">{pedido.perfil?.razon_social || 'Cliente'}</div>
+                      <div className="font-semibold text-slate-800">{pedido.perfil?.empresa || 'Cliente'}</div>
                       <div className="text-slate-500 text-xs">{pedido.perfil?.email}</div>
                     </td>
                     <td className="px-6 py-4 text-slate-600">

@@ -12,7 +12,7 @@ export default async function AdminPedidoPage({ params }: { params: { id: string
     .from('pedidos')
     .select(`
       *,
-      perfil:perfiles_clientes(razon_social, nombre_contacto, email, telefono)
+      perfil:perfiles_clientes(empresa, nombre_completo, email, telefono)
     `)
     .eq('id', params.id)
     .single();

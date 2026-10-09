@@ -87,7 +87,7 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
             <div className="space-y-3 text-sm">
               <div>
                 <p className="text-slate-500">Cliente</p>
-                <p className="font-semibold">{pedido.perfil?.razon_social || 'Desconocido'}</p>
+                <p className="font-semibold">{pedido.perfil?.empresa || 'Desconocido'}</p>
                 <p className="text-slate-600">{pedido.perfil?.email}</p>
               </div>
               <div>
