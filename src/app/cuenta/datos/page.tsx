@@ -75,21 +75,20 @@ export default function MisDatosPage() {
     if (val.length === 5) {
       setLoadingCP(true);
       try {
-        const res = await fetch(`https://api.zippopotam.us/mx/${val}`);
+        const res = await fetch(`/api/sepomex?cp=${val}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.places && data.places.length > 0) {
-            const estadoDetectado = data.places[0].state || '';
-            const ciudadDetectada = data.places[0]['place name'] || '';
+          if (data.estado) {
             setForm(prev => ({
               ...prev,
-              estado: estadoDetectado,
-              ciudad: prev.ciudad ? prev.ciudad : ciudadDetectada
+              estado: data.estado,
+              ciudad: data.ciudad || data.municipio || prev.ciudad,
+              colonia: data.colonias && data.colonias.length === 1 ? data.colonias[0] : prev.colonia
             }));
           }
         }
       } catch (err) {
-        // Ignorar error API
+        // En caso de falla, el usuario puede teclear manualmente
       } finally {
         setLoadingCP(false);
       }

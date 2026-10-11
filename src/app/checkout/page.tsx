@@ -96,25 +96,22 @@ export default function CheckoutB2BPage() {
     if (val.length === 5) {
       setLoadingCP(true);
       try {
-        const res = await fetch(`https://api.zippopotam.us/mx/${val}`);
+        const res = await fetch(`/api/sepomex?cp=${val}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.places && data.places.length > 0) {
-            setEstado(data.places[0].state || '');
-            
-            const lugares = data.places.map((p: any) => p['place name']);
-            setSugerenciasLugares(lugares);
-            
-            if (lugares.length === 1) {
-              setColonia(lugares[0]);
-              setCiudad(lugares[0]);
-            } else if (data.places[0]['place name']) {
-              setCiudad(data.places[0]['place name']);
+          if (data.estado) {
+            setEstado(data.estado);
+            setCiudad(data.ciudad || data.municipio || '');
+            if (data.colonias && data.colonias.length > 0) {
+              setSugerenciasLugares(data.colonias);
+              if (data.colonias.length === 1) {
+                setColonia(data.colonias[0]);
+              }
             }
           }
         }
       } catch (err) {
-        // Ignorar error de API
+        // En caso de falla, el usuario puede teclear manualmente
       } finally {
         setLoadingCP(false);
       }
