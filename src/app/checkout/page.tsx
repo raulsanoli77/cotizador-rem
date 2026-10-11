@@ -182,7 +182,7 @@ export default function CheckoutB2BPage() {
       const iva = subtotal * 0.16;
       const total = subtotal + iva;
       const moneda = items[0]?.producto.moneda_venta || 'USD';
-      const folio = `COT-${Date.now().toString().slice(-6)}`;
+      const folio = `${Date.now().toString().slice(-6)}`;
 
       const partidas = items.map(item => ({
         producto_id: item.producto.id,

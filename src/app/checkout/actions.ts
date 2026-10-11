@@ -67,7 +67,7 @@ export async function crearPedidoB2B({
     }).eq('id', cliente_id);
   }
 
-  const folioGenerado = numero_po || `COT-${Date.now().toString().slice(-6)}`;
+  const folioGenerado = numero_po ? numero_po.replace(/^COT-/i, '') : `${Date.now().toString().slice(-6)}`;
 
   // 1. Crear el Pedido / Cotización Formal
   const { data: pedido, error: errorPedido } = await supabase

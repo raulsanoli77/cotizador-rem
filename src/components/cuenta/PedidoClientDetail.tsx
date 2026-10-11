@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 
 export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, partidas: any[] }) {
+  const folioLimpio = (pedido.numero_po || pedido.id.slice(0, 8)).replace(/^COT-/i, '');
   const whatsAppMessage = encodeURIComponent(
-    `Hola REM Industrial, me gustaría dar seguimiento a mi cotización ${pedido.numero_po || `#${pedido.id.slice(0, 8)}`}.`
+    `Hola REM Industrial, me gustaría dar seguimiento a mi solicitud de cotización folio ${folioLimpio}.`
   );
 
   return (
@@ -19,10 +20,17 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
-              Cotización: {pedido.numero_po || `#${pedido.id.slice(0, 8)}`}
-            </h1>
-            <p className="text-sm text-slate-600 font-medium">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+                Solicitud de Cotización: #{folioLimpio}
+              </h1>
+              {pedido.cotizacion_bind && (
+                <span className="px-3 py-1 bg-indigo-50 border-2 border-indigo-200 text-indigo-800 text-xs font-bold rounded-lg shadow-sm">
+                  🏢 Cotización Formal Bind ERP: #{pedido.cotizacion_bind}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-slate-600 font-medium mt-1">
               Fecha de solicitud: {new Date(pedido.fecha_creacion).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
             </p>
           </div>

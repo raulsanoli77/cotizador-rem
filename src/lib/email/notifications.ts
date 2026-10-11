@@ -38,7 +38,7 @@ export async function enviarNotificacionVentas(
     const { data, error } = await resend.emails.send({
       from: 'REM Industrial <onboarding@resend.dev>',
       to: [destinatario],
-      subject: `Nueva Solicitud de Cotización - ${params.folio} | ${params.lead.empresa}`,
+      subject: `Nueva Solicitud de Cotización - #${params.folio.replace(/^COT-/i, '')} | ${params.lead.empresa}`,
       html: generarHTMLNotificacion(params),
     });
 
@@ -59,6 +59,9 @@ export async function enviarNotificacionVentas(
 }
 
 function generarHTMLNotificacion(params: NotificacionCotizacionParams): string {
+  const folioLimpio = params.folio.replace(/^COT-/i, '');
+  const mensajeWA = `Hola ${params.lead.nombre_completo}, te contacto de REM Industrial sobre tu solicitud de cotización folio ${folioLimpio}`;
+
   const filasPartidas = params.partidas
     .map(
       (p, i) => `
@@ -87,7 +90,7 @@ function generarHTMLNotificacion(params: NotificacionCotizacionParams): string {
     <div style="background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0;">
       <table style="width: 100%; margin-bottom: 16px;">
         <tr>
-          <td style="font-size: 13px;"><strong>Folio:</strong> ${params.folio}</td>
+          <td style="font-size: 13px;"><strong>Folio Solicitud:</strong> #${folioLimpio}</td>
           <td style="font-size: 13px; text-align: right;"><strong>Fecha:</strong> ${params.fecha}</td>
         </tr>
       </table>
@@ -101,7 +104,7 @@ function generarHTMLNotificacion(params: NotificacionCotizacionParams): string {
         ${params.lead.direccion ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Envío a:</strong> ${params.lead.direccion}</p>` : ''}
         ${params.lead.telefono ? `
         <div style="margin-top: 10px;">
-          <a href="https://wa.me/52${params.lead.telefono.replace(/\D/g, '')}?text=Hola%20${encodeURIComponent(params.lead.nombre_completo)},%20te%20contacto%20de%20REM%20Industrial%20sobre%20tu%20cotizaci%C3%B3n%20${encodeURIComponent(params.folio)}" style="display: inline-block; background: #16a34a; color: white; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
+          <a href="https://wa.me/52${params.lead.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensajeWA)}" style="display: inline-block; background: #16a34a; color: white; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
             💬 Contactar por WhatsApp al Cliente
           </a>
         </div>` : ''}

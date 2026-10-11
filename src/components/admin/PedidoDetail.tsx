@@ -12,10 +12,14 @@ import { actualizarPedido } from '@/app/admin/pedidos/[id]/actions';
 export default function PedidoDetailAdmin({ pedido, partidas, productosOriginales }: { pedido: any, partidas: any[], productosOriginales: any[] }) {
   const router = useRouter();
   const [estatus, setEstatus] = useState(pedido.estatus);
+  const [cotizacionBind, setCotizacionBind] = useState(pedido.cotizacion_bind || '');
   const [loading, setLoading] = useState(false);
   const [partidasState, setPartidasState] = useState(partidas);
   const [errorStr, setErrorStr] = useState<string | null>(null);
   const [successStr, setSuccessStr] = useState<string | null>(null);
+
+  const folioLimpio = (pedido.numero_po || pedido.id.slice(0, 8)).replace(/^COT-/i, '');
+  const clienteNombre = pedido.perfil?.nombre_completo || 'Cliente';
 
   // Estado para el buscador de alternativas por partida
   const [searchStates, setSearchStates] = useState<Record<string, { loading: boolean, error: string | null, query: string, show: boolean, tempProducto?: any }>>({});
@@ -145,7 +149,7 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
     setSuccessStr(null);
     
     try {
-      const result = await actualizarPedido(pedido.id, estatus, pedido.estatus, partidasState);
+      const result = await actualizarPedido(pedido.id, estatus, pedido.estatus, partidasState, cotizacionBind);
       
       if (!result.success) throw new Error(result.error);
 
@@ -172,7 +176,7 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            Pedido: {pedido.id.split('-')[0]}
+            Solicitud de Cotización: #{folioLimpio}
           </h1>
           <p className="text-slate-500">
             {new Date(pedido.fecha_creacion).toLocaleString()}
@@ -198,7 +202,7 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
                 <div className="pt-2 border-t border-slate-100">
                   <p className="text-slate-500 text-xs mb-1">Teléfono Directo</p>
                   <a 
-                    href={`https://wa.me/52${pedido.perfil.telefono.replace(/\D/g, '')}?text=Hola,%20te%20contacto%20de%20REM%20Industrial%20sobre%20tu%20cotizaci%C3%B3n%20${encodeURIComponent(pedido.numero_po || '')}`}
+                    href={`https://wa.me/52${pedido.perfil.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${clienteNombre}, te contacto de REM Industrial sobre tu solicitud de cotización folio ${folioLimpio}`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors"
@@ -209,8 +213,18 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
               )}
 
               <div className="pt-2 border-t border-slate-100">
-                <p className="text-slate-500 text-xs">Folio Cotización</p>
-                <p className="font-bold text-brand-600">{pedido.numero_po || `#${pedido.id.slice(0, 8)}`}</p>
+                <p className="text-slate-500 text-xs">Folio Solicitud Web</p>
+                <p className="font-bold text-brand-600 text-base">#{folioLimpio}</p>
+                {cotizacionBind ? (
+                  <div className="mt-2 p-2 bg-indigo-50 border border-indigo-200 rounded-lg">
+                    <p className="text-[11px] font-semibold text-indigo-700 uppercase tracking-wide">Cotización Formal Bind ERP</p>
+                    <p className="font-extrabold text-indigo-900 text-sm">#{cotizacionBind}</p>
+                  </div>
+                ) : (
+                  <div className="mt-2 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    <p className="text-[11px] text-slate-500 font-medium">Cotización Bind ERP: <span className="italic">Pendiente de asociar</span></p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -255,6 +269,22 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
             <p className="text-xs text-slate-500 mt-2">
               Cambia el estatus para llevar el seguimiento comercial de este cliente.
             </p>
+
+            <div className="mt-4 pt-4 border-t border-slate-200">
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                No. Cotización Formal Bind ERP
+              </label>
+              <p className="text-xs text-slate-500 mb-2">
+                Ingresa el folio o número generado en Bind ERP para asociarlo con esta solicitud:
+              </p>
+              <input 
+                type="text"
+                value={cotizacionBind}
+                onChange={(e) => setCotizacionBind(e.target.value)}
+                placeholder="Ej. 12450 ó COT-12450"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-brand-500 focus:border-brand-500 text-sm font-semibold text-slate-800"
+              />
+            </div>
 
             <button
               onClick={guardarCambios}

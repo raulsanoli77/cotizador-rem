@@ -7,15 +7,21 @@ export async function actualizarPedido(
   pedidoId: string, 
   estatusNuevo: string, 
   estatusAnterior: string, 
-  partidas: any[]
+  partidas: any[],
+  cotizacionBind?: string
 ) {
   const supabase = createServerClient();
   
   try {
-    // 1. Guardar Estatus
+    // 1. Guardar Estatus y Cotización Bind ERP
+    const updateData: Record<string, any> = { estatus: estatusNuevo };
+    if (cotizacionBind !== undefined) {
+      updateData.cotizacion_bind = cotizacionBind.trim() || null;
+    }
+
     const { error: errPedido } = await supabase
       .from('pedidos')
-      .update({ estatus: estatusNuevo })
+      .update(updateData)
       .eq('id', pedidoId);
       
     if (errPedido) throw new Error(errPedido.message);

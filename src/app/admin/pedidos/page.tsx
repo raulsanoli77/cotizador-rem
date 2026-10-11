@@ -67,7 +67,7 @@ export default async function AdminPedidosPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
               <tr>
-                <th className="px-6 py-4">Folio Cotización</th>
+                <th className="px-6 py-4">Folio / Bind ERP</th>
                 <th className="px-6 py-4">Cliente</th>
                 <th className="px-6 py-4">Destino (Flete)</th>
                 <th className="px-6 py-4">Fecha</th>
@@ -84,31 +84,44 @@ export default async function AdminPedidosPage() {
                   </td>
                 </tr>
               ) : (
-                pedidos?.map((pedido) => (
-                  <tr key={pedido.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900">{pedido.numero_po || `#${pedido.id.slice(0, 8)}`}</div>
-                      <div className="text-xs text-slate-500 truncate w-32" title={pedido.id}>{pedido.id.split('-')[0]}...</div>
-                      {pedido.flete_urgente && (
-                        <div className="mt-1 inline-block px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded font-bold">
-                          ⚡ FLETE URGENTE
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-800">{pedido.perfil?.empresa || 'Cliente'}</div>
-                      <div className="text-slate-500 text-xs">{pedido.perfil?.nombre_completo}</div>
-                      {pedido.perfil?.telefono && (
-                        <a 
-                          href={`https://wa.me/52${pedido.perfil.telefono.replace(/\D/g, '')}`} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="text-emerald-600 hover:text-emerald-700 font-bold text-xs block mt-0.5"
-                        >
-                          💬 {pedido.perfil.telefono}
-                        </a>
-                      )}
-                    </td>
+                pedidos?.map((pedido) => {
+                  const folioLimpio = (pedido.numero_po || pedido.id.slice(0, 8)).replace(/^COT-/i, '');
+                  const clienteNombre = pedido.perfil?.nombre_completo || 'Cliente';
+                  const msgWhatsApp = `Hola ${clienteNombre}, te contacto de REM Industrial sobre tu solicitud de cotización folio ${folioLimpio}`;
+
+                  return (
+                    <tr key={pedido.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-slate-900">Solicitud: #{folioLimpio}</div>
+                        {pedido.cotizacion_bind ? (
+                          <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] rounded font-bold">
+                            🏢 Bind: #{pedido.cotizacion_bind}
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-slate-400 italic">Sin asociar a Bind</div>
+                        )}
+                        {pedido.flete_urgente && (
+                          <div className="mt-1">
+                            <span className="inline-block px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded font-bold">
+                              ⚡ FLETE URGENTE
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-800">{pedido.perfil?.empresa || 'Cliente'}</div>
+                        <div className="text-slate-500 text-xs">{pedido.perfil?.nombre_completo}</div>
+                        {pedido.perfil?.telefono && (
+                          <a 
+                            href={`https://wa.me/52${pedido.perfil.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(msgWhatsApp)}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-emerald-600 hover:text-emerald-700 font-bold text-xs block mt-0.5"
+                          >
+                            💬 {pedido.perfil.telefono}
+                          </a>
+                        )}
+                      </td>
                     <td className="px-6 py-4 text-slate-700 text-xs">
                       <span className="font-semibold block">{pedido.ciudad}, {pedido.estado}</span>
                       <span className="text-slate-500">CP {pedido.codigo_postal}</span>
@@ -135,7 +148,8 @@ export default async function AdminPedidosPage() {
                       </Link>
                     </td>
                   </tr>
-                ))
+                );
+              })
               )}
             </tbody>
           </table>
