@@ -16,7 +16,8 @@ export default async function AdminPedidosPage() {
       perfil:perfiles_clientes(
         empresa,
         nombre_completo,
-        email
+        email,
+        telefono
       )
     `)
     .order('fecha_creacion', { ascending: false });
@@ -24,7 +25,7 @@ export default async function AdminPedidosPage() {
   if (error) {
     return (
       <div className="p-8">
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl">Error al cargar pedidos: {error.message}</div>
+        <div className="bg-red-50 text-red-600 p-4 rounded-xl">Error al cargar cotizaciones: {error.message}</div>
       </div>
     );
   }
@@ -32,17 +33,18 @@ export default async function AdminPedidosPage() {
   const getStatusBadge = (estatus: string) => {
     switch (estatus) {
       case 'nuevo':
-        return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> Nuevo</span>;
+        return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> Nueva Solicitud</span>;
       case 'en_revision':
-        return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold flex items-center gap-1"><Clock className="w-3 h-3"/> En Revisión</span>;
+        return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold flex items-center gap-1"><Clock className="w-3 h-3"/> En Atención</span>;
       case 'aprobado_por_cliente':
-        return <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Aprobado (Cliente)</span>;
+      case 'aprobado':
+        return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Confirmada</span>;
       case 'procesando':
-        return <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">Procesando</span>;
+        return <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">En Surtido</span>;
       case 'enviado':
-        return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Enviado</span>;
+        return <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Enviado</span>;
       case 'cancelado':
-        return <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold flex items-center gap-1"><XCircle className="w-3 h-3"/> Cancelado</span>;
+        return <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold flex items-center gap-1"><XCircle className="w-3 h-3"/> Cancelada</span>;
       default:
         return <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">{estatus}</span>;
     }
@@ -54,9 +56,9 @@ export default async function AdminPedidosPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <ShoppingCart className="h-6 w-6 text-brand-600" />
-            Pedidos B2B
+            Cotizaciones B2B
           </h1>
-          <p className="text-slate-500 mt-1">Administra y asigna fechas de entrega a las pre-órdenes de clientes</p>
+          <p className="text-slate-500 mt-1">Historial de solicitudes de cotización formal enviadas por clientes registrados</p>
         </div>
       </div>
 
@@ -65,8 +67,9 @@ export default async function AdminPedidosPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
               <tr>
-                <th className="px-6 py-4">ID Pedido / PO</th>
+                <th className="px-6 py-4">Folio Cotización</th>
                 <th className="px-6 py-4">Cliente</th>
+                <th className="px-6 py-4">Destino (Flete)</th>
                 <th className="px-6 py-4">Fecha</th>
                 <th className="px-6 py-4 text-right">Total</th>
                 <th className="px-6 py-4 text-center">Estatus</th>
@@ -76,29 +79,43 @@ export default async function AdminPedidosPage() {
             <tbody className="divide-y divide-slate-100">
               {pedidos?.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                    No hay pedidos registrados.
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                    No hay cotizaciones registradas.
                   </td>
                 </tr>
               ) : (
                 pedidos?.map((pedido) => (
                   <tr key={pedido.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900">{pedido.numero_po || 'Orden Verbal'}</div>
+                      <div className="font-bold text-slate-900">{pedido.numero_po || `#${pedido.id.slice(0, 8)}`}</div>
                       <div className="text-xs text-slate-500 truncate w-32" title={pedido.id}>{pedido.id.split('-')[0]}...</div>
                       {pedido.flete_urgente && (
-                        <div className="mt-1 inline-block px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] rounded font-bold">
-                          ⚡ URGENTE
+                        <div className="mt-1 inline-block px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded font-bold">
+                          ⚡ FLETE URGENTE
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-semibold text-slate-800">{pedido.perfil?.empresa || 'Cliente'}</div>
-                      <div className="text-slate-500 text-xs">{pedido.perfil?.email}</div>
+                      <div className="text-slate-500 text-xs">{pedido.perfil?.nombre_completo}</div>
+                      {pedido.perfil?.telefono && (
+                        <a 
+                          href={`https://wa.me/52${pedido.perfil.telefono.replace(/\D/g, '')}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-emerald-600 hover:text-emerald-700 font-bold text-xs block mt-0.5"
+                        >
+                          💬 {pedido.perfil.telefono}
+                        </a>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-slate-700 text-xs">
+                      <span className="font-semibold block">{pedido.ciudad}, {pedido.estado}</span>
+                      <span className="text-slate-500">CP {pedido.codigo_postal}</span>
                     </td>
                     <td className="px-6 py-4 text-slate-600">
                       {new Date(pedido.fecha_creacion).toLocaleDateString('es-MX', {
-                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                        day: '2-digit', month: 'short', year: 'numeric'
                       })}
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-slate-900">

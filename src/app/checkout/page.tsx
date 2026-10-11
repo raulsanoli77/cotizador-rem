@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useCartStore } from '@/stores/cart-store';
 import { formatearPrecio } from '@/lib/pricing/engine';
-import { Loader2, ShieldCheck, MapPin, Building, Upload, FileText, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, ShieldCheck, MapPin, CheckCircle, ArrowLeft, Send } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Link from 'next/link';
 import { crearPedidoB2B } from './actions';
@@ -20,6 +20,7 @@ export default function CheckoutB2BPage() {
   const [loading, setLoading] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const [completado, setCompletado] = useState(false);
+  const [folioGenerado, setFolioGenerado] = useState('');
   const [errorStr, setErrorStr] = useState<string | null>(null);
   
   const [cliente, setCliente] = useState<any>(null);
@@ -37,15 +38,11 @@ export default function CheckoutB2BPage() {
   const [notas, setNotas] = useState('');
   
   const [sugerenciasLugares, setSugerenciasLugares] = useState<string[]>([]);
+  const [loadingCP, setLoadingCP] = useState(false);
 
-  const [guardarDireccion, setGuardarDireccion] = useState(true);
+  const [guardarDireccion, setGuardarDireccion] = useState(false);
   const [usarDireccionGuardada, setUsarDireccionGuardada] = useState(false);
-  
-  const [esPoVerbal, setEsPoVerbal] = useState(false);
-  const [numeroPo, setNumeroPo] = useState('');
-  const [archivoPo, setArchivoPo] = useState<File | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [tieneUbicacionGuardada, setTieneUbicacionGuardada] = useState(false);
 
   useEffect(() => {
     async function initCheckout() {
@@ -74,17 +71,17 @@ export default function CheckoutB2BPage() {
       setCliente(session.user);
       setPerfil(perfilData);
       
-      // Precargar datos si existen
-      if (perfilData.calle && perfilData.num_exterior && perfilData.ciudad && perfilData.estado && perfilData.codigo_postal) {
-        setCalle(perfilData.calle);
-        setNumExterior(perfilData.num_exterior);
+      // Si tiene al menos código postal guardado en su perfil
+      if (perfilData.codigo_postal) {
+        setCalle(perfilData.calle || '');
+        setNumExterior(perfilData.num_exterior || '');
         setNumInterior(perfilData.num_interior || '');
         setColonia(perfilData.colonia || '');
-        setCiudad(perfilData.ciudad);
-        setEstado(perfilData.estado);
+        setCiudad(perfilData.ciudad || '');
+        setEstado(perfilData.estado || '');
         setCodigoPostal(perfilData.codigo_postal);
         setUsarDireccionGuardada(true);
-        setGuardarDireccion(false);
+        setTieneUbicacionGuardada(true);
       }
 
       setLoading(false);
@@ -97,49 +94,39 @@ export default function CheckoutB2BPage() {
     const val = e.target.value.trim();
     setCodigoPostal(val);
     if (val.length === 5) {
+      setLoadingCP(true);
       try {
         const res = await fetch(`https://api.zippopotam.us/mx/${val}`);
         if (res.ok) {
           const data = await res.json();
           if (data.places && data.places.length > 0) {
-            setEstado(data.places[0].state);
+            setEstado(data.places[0].state || '');
             
-            // Extraer todos los lugares (colonias) sugeridos
             const lugares = data.places.map((p: any) => p['place name']);
             setSugerenciasLugares(lugares);
             
-            // Si solo hay una opción, la ponemos directo en colonia
             if (lugares.length === 1) {
               setColonia(lugares[0]);
-            } else {
-              setColonia(''); // Para que desplieguen y elijan
+              setCiudad(lugares[0]);
+            } else if (data.places[0]['place name']) {
+              setCiudad(data.places[0]['place name']);
             }
-            // Zippopotam a veces mezcla ciudad con colonia, lo dejamos en blanco si son varias opciones
-            // para que el usuario escriba su ciudad correcta.
           }
         }
       } catch (err) {
-        // Ignoramos silenciosamente si la API falla
+        // Ignorar error de API
+      } finally {
+        setLoadingCP(false);
       }
     } else {
       setSugerenciasLugares([]);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setArchivoPo(e.target.files[0]);
-    }
-  };
-
-  const procesarPedido = async (e: React.FormEvent) => {
+  const procesarCotizacion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!esPoVerbal && !numeroPo) {
-      setErrorStr('Debes proporcionar un Número de PO o seleccionar Orden Verbal.');
-      return;
-    }
-    if (!calle || !numExterior || !colonia || !ciudad || !estado || !codigoPostal) {
-      setErrorStr('Los campos obligatorios de la dirección de envío deben estar completos.');
+    if (!codigoPostal || !ciudad || !estado) {
+      setErrorStr('El Código Postal, Ciudad y Estado son obligatorios para calcular el flete.');
       return;
     }
 
@@ -147,23 +134,11 @@ export default function CheckoutB2BPage() {
     setErrorStr(null);
 
     try {
-      let poUrl = '';
-
-      if (archivoPo) {
-        const fileExt = archivoPo.name.split('.').pop();
-        const fileName = `${cliente.id}/${Date.now()}-PO.${fileExt}`;
-        const { error: uploadError, data: uploadData } = await supabase.storage
-          .from('ordenes_compra')
-          .upload(fileName, archivoPo);
-        
-        if (uploadError) throw new Error('Error al subir el archivo PO: ' + uploadError.message);
-        poUrl = uploadData.path;
-      }
-
       const subtotal = obtenerSubtotal();
       const iva = subtotal * 0.16;
       const total = subtotal + iva;
       const moneda = items[0]?.producto.moneda_venta || 'USD';
+      const folio = `COT-${Date.now().toString().slice(-6)}`;
 
       const partidas = items.map(item => ({
         producto_id: item.producto.id,
@@ -177,9 +152,8 @@ export default function CheckoutB2BPage() {
 
       await crearPedidoB2B({
         cliente_id: cliente.id,
-        numero_po: esPoVerbal ? 'VERBAL' : numeroPo,
-        es_po_verbal: esPoVerbal,
-        po_url: poUrl,
+        numero_po: folio,
+        es_po_verbal: false,
         calle,
         num_exterior: numExterior,
         num_interior: numInterior,
@@ -197,6 +171,7 @@ export default function CheckoutB2BPage() {
         guardar_direccion: guardarDireccion,
       });
 
+      setFolioGenerado(folio);
       setCompletado(true);
       limpiarCarrito();
     } catch (err: any) {
@@ -221,16 +196,25 @@ export default function CheckoutB2BPage() {
         <main className="min-h-screen bg-slate-50 pt-32 pb-12 flex items-center justify-center">
           <div className="bg-white p-10 rounded-2xl shadow-xl max-w-lg w-full text-center border border-slate-100">
             <CheckCircle className="h-20 w-20 text-emerald-500 mx-auto mb-6" />
-            <h1 className="text-3xl font-bold text-slate-900 mb-4">¡Pedido Recibido!</h1>
-            <p className="text-slate-600 mb-8 leading-relaxed">
-              Tu Orden de Compra ha sido procesada con éxito y enviada a nuestro equipo para su surtido. Recibirás confirmaciones sobre el envío a tu correo.
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">¡Cotización Registrada!</h1>
+            <p className="text-sm font-semibold text-brand-600 mb-4 tracking-wider uppercase">Folio: {folioGenerado}</p>
+            <p className="text-slate-600 mb-8 leading-relaxed text-sm">
+              Tu solicitud de cotización formal ha sido enviada con éxito. Nuestro equipo de ventas revisará tiempos de entrega y el mejor costo de flete según tu código postal para ponerse en contacto contigo a la brevedad.
             </p>
-            <Link 
-              href="/catalogo"
-              className="inline-block bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-8 rounded-xl transition-colors shadow-lg shadow-brand-600/20"
-            >
-              Volver al Catálogo
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link 
+                href="/cuenta/pedidos"
+                className="bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-brand-600/20 text-sm"
+              >
+                Ver Mis Cotizaciones
+              </Link>
+              <Link 
+                href="/catalogo"
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-xl transition-colors text-sm"
+              >
+                Volver al Catálogo
+              </Link>
+            </div>
           </div>
         </main>
       </>
@@ -243,8 +227,8 @@ export default function CheckoutB2BPage() {
         <Header />
         <main className="min-h-screen bg-slate-50 pt-32 pb-12">
           <div className="max-w-5xl mx-auto px-4 text-center">
-            <h1 className="text-3xl font-bold text-slate-900 mb-8">Checkout</h1>
-            <p className="text-slate-500 mb-8">Tu carrito está vacío.</p>
+            <h1 className="text-3xl font-bold text-slate-900 mb-8">Cotizador</h1>
+            <p className="text-slate-500 mb-8">Tu carrito de cotización está vacío.</p>
             <Link href="/catalogo" className="text-brand-600 font-bold hover:underline">Ir al catálogo</Link>
           </div>
         </main>
@@ -263,93 +247,52 @@ export default function CheckoutB2BPage() {
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Checkout B2B</h1>
-              <p className="text-slate-500">Completa tu orden de compra formal</p>
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Solicitud de Cotización Formal</h1>
+              <p className="text-slate-500 text-sm">Confirma los datos de entrega para calcular costos y tiempos de flete.</p>
             </div>
           </div>
 
-          <form onSubmit={procesarPedido} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <form onSubmit={procesarCotizacion} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             {/* Formulario (Left Column) */}
             <div className="lg:col-span-7 space-y-6">
               
-              {/* Sección: Orden de Compra */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-brand-50 p-2.5 rounded-lg text-brand-600">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <h2 className="text-xl font-bold text-slate-800">Orden de Compra (PO)</h2>
-                </div>
-
-                <div className="space-y-5">
-                  <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <input 
-                      type="checkbox" 
-                      id="poVerbal"
-                      checked={esPoVerbal}
-                      onChange={(e) => setEsPoVerbal(e.target.checked)}
-                      className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500 border-gray-300"
-                    />
-                    <label htmlFor="poVerbal" className="font-medium text-slate-700 cursor-pointer">
-                      Es una Orden Verbal (Sin documento formal)
-                    </label>
-                  </div>
-
-                  {!esPoVerbal && (
-                    <>
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">Número de PO *</label>
-                        <input 
-                          type="text" 
-                          required={!esPoVerbal}
-                          value={numeroPo}
-                          onChange={(e) => setNumeroPo(e.target.value)}
-                          placeholder="Ej. PO-2023-001"
-                          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 bg-white"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">Adjuntar PDF (Opcional)</label>
-                        <div 
-                          className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          <Upload className="h-6 w-6 text-slate-400 mx-auto mb-2" />
-                          <p className="text-sm text-slate-600 font-medium">
-                            {archivoPo ? archivoPo.name : 'Haz clic para seleccionar o arrastra tu archivo PDF'}
-                          </p>
-                          <input 
-                            type="file" 
-                            accept=".pdf,.png,.jpg,.jpeg"
-                            className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Sección: Dirección de Envío */}
+              {/* Sección: Ubicación de Envío / Destino del Flete */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="bg-brand-50 p-2.5 rounded-lg text-brand-600">
                     <MapPin className="h-5 w-5" />
                   </div>
-                  <h2 className="text-xl font-bold text-slate-800">Dirección de Envío</h2>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800">Destino de Entrega (Para Flete)</h2>
+                    <p className="text-xs text-slate-500">El Código Postal es indispensable para calcular el costo de paquetería.</p>
+                  </div>
                 </div>
 
-                {usarDireccionGuardada ? (
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
-                    <p className="text-sm font-semibold text-slate-500 mb-2 uppercase tracking-wider">Dirección Predeterminada</p>
-                    <p className="font-medium text-slate-900 mb-1">{calle} {numExterior} {numInterior ? `Int. ${numInterior}` : ''}</p>
-                    <p className="text-slate-600 mb-4">{colonia ? `${colonia}, ` : ''}{ciudad}, {estado}. CP {codigoPostal}</p>
-                    <button 
-                      type="button" 
+                {tieneUbicacionGuardada && (
+                  <div className="space-y-3 mb-6">
+                    <label 
+                      onClick={() => setUsarDireccionGuardada(true)}
+                      className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                        usarDireccionGuardada ? 'bg-brand-50/50 border-brand-500 ring-1 ring-brand-500' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <input 
+                        type="radio" 
+                        name="opcionUbicacion" 
+                        checked={usarDireccionGuardada} 
+                        onChange={() => setUsarDireccionGuardada(true)} 
+                        className="mt-1 text-brand-600"
+                      />
+                      <div>
+                        <span className="text-sm font-bold text-slate-900 block">Usar mi ubicación registrada</span>
+                        <span className="text-xs text-slate-600 block mt-0.5">
+                          {calle ? `${calle} ${numExterior || ''}, ` : ''}{colonia ? `Col. ${colonia}, ` : ''}{ciudad}, {estado}. CP {codigoPostal}
+                        </span>
+                      </div>
+                    </label>
+
+                    <label 
                       onClick={() => {
                         setUsarDireccionGuardada(false);
                         setCalle('');
@@ -359,64 +302,86 @@ export default function CheckoutB2BPage() {
                         setCiudad('');
                         setEstado('');
                         setCodigoPostal('');
-                        setGuardarDireccion(true);
                       }}
-                      className="text-sm text-brand-600 hover:text-brand-700 font-bold hover:underline"
+                      className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                        !usarDireccionGuardada ? 'bg-brand-50/50 border-brand-500 ring-1 ring-brand-500' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                      }`}
                     >
-                      Ingresar una dirección diferente
-                    </button>
+                      <input 
+                        type="radio" 
+                        name="opcionUbicacion" 
+                        checked={!usarDireccionGuardada} 
+                        onChange={() => {
+                          setUsarDireccionGuardada(false);
+                          setCalle('');
+                          setNumExterior('');
+                          setNumInterior('');
+                          setColonia('');
+                          setCiudad('');
+                          setEstado('');
+                          setCodigoPostal('');
+                        }} 
+                        className="mt-1 text-brand-600"
+                      />
+                      <div>
+                        <span className="text-sm font-bold text-slate-900 block">Cotizar para otra ubicación / obra</span>
+                        <span className="text-xs text-slate-500 block mt-0.5">
+                          Ingresa un Código Postal diferente para esta cotización específica.
+                        </span>
+                      </div>
+                    </label>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                )}
+
+                {(!tieneUbicacionGuardada || !usarDireccionGuardada) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Código Postal *</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Código Postal (5 dígitos) *</label>
                       <input 
                         type="text" 
                         required
+                        maxLength={5}
                         value={codigoPostal}
                         onChange={handleCPChange}
-                        placeholder="Ej. 31100"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-medium"
+                        placeholder="Ej. 31124"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-semibold tracking-wide"
                       />
-                      <p className="text-[10px] text-slate-400 mt-1">Al teclear los 5 dígitos buscaremos tu Estado y Ciudad.</p>
+                      {loadingCP && <span className="text-[11px] text-brand-600 mt-1 block">Detectando ubicación...</span>}
+                      <p className="text-[11px] text-slate-400 mt-1">Al ingresar tu C.P. detectaremos tu Estado y Ciudad automáticamente.</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Estado *</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Estado *</label>
                       <input 
                         type="text" 
                         required
                         value={estado}
                         onChange={(e) => setEstado(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
+                        placeholder="Ej. Chihuahua"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Ciudad / Municipio *</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Ciudad o Municipio *</label>
                       <input 
                         type="text" 
                         required
                         value={ciudad}
-                        list="sugerencias-ciudad"
                         onChange={(e) => setCiudad(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
+                        placeholder="Ej. Chihuahua"
                       />
-                      <datalist id="sugerencias-ciudad">
-                        {sugerenciasLugares.map((lugar, i) => (
-                          <option key={`muni-${i}`} value={lugar} />
-                        ))}
-                      </datalist>
                     </div>
                     
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Colonia / Localidad *</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Colonia <span className="text-slate-400 font-normal">(Opcional)</span></label>
                       <input 
                         type="text" 
-                        required
                         value={colonia}
                         list="sugerencias-colonia"
                         onChange={(e) => setColonia(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
+                        placeholder="Ej. Lomas del Santuario"
                       />
                       <datalist id="sugerencias-colonia">
                         {sugerenciasLugares.map((lugar, i) => (
@@ -425,86 +390,77 @@ export default function CheckoutB2BPage() {
                       </datalist>
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Calle *</label>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Calle <span className="text-slate-400 font-normal">(Opcional)</span></label>
                       <input 
                         type="text" 
-                        required
                         value={calle}
                         onChange={(e) => setCalle(e.target.value)}
-                        placeholder="Av. Principal, Blvd..."
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        placeholder="Av. Industrial..."
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">No. Exterior *</label>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">No. Exterior <span className="text-slate-400 font-normal">(Opcional)</span></label>
                       <input 
                         type="text" 
-                        required
                         value={numExterior}
                         onChange={(e) => setNumExterior(e.target.value)}
-                        placeholder="Ej. 123, S/N"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                        placeholder="Ej. 1234"
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">No. Interior (Opcional)</label>
-                      <input 
-                        type="text" 
-                        value={numInterior}
-                        onChange={(e) => setNumInterior(e.target.value)}
-                        placeholder="Nave 3, Local B..."
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Notas de Entrega (Opcional)</label>
-                      <textarea 
-                        rows={2}
-                        value={notas}
-                        onChange={(e) => setNotas(e.target.value)}
-                        placeholder="Horarios, referencias o instrucciones especiales..."
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 resize-none"
-                      />
-                    </div>
-                    
-                    {/* Checkbox Urgente */}
-                    <div className="sm:col-span-2 pt-4 border-t border-slate-100 mt-2">
-                      <div className="flex items-start gap-3 bg-brand-50 p-4 rounded-xl border border-brand-100">
-                        <input 
-                          type="checkbox" 
-                          id="fleteUrg"
-                          checked={fleteUrgente}
-                          onChange={(e) => setFleteUrgente(e.target.checked)}
-                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500 border-gray-300 mt-0.5"
-                        />
-                        <label htmlFor="fleteUrg" className="font-medium text-slate-800 cursor-pointer">
-                          ⚡ Necesito flete URGENTE (Cotizar envío prioritario)
-                          <p className="text-xs text-slate-500 font-normal mt-1">
-                            Calcularemos la tarifa del envío más rápido disponible para tus productos.
-                          </p>
-                        </label>
-                      </div>
                     </div>
 
                     <div className="sm:col-span-2 pt-2">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <input 
                           type="checkbox" 
                           id="guardarDir"
                           checked={guardarDireccion}
                           onChange={(e) => setGuardarDireccion(e.target.checked)}
-                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500 border-gray-300"
+                          className="h-4 w-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300"
                         />
-                        <label htmlFor="guardarDir" className="font-medium text-slate-700 cursor-pointer">
-                          Guardar esta dirección en mi perfil para futuras compras
+                        <label htmlFor="guardarDir" className="text-xs text-slate-700 cursor-pointer">
+                          Guardar esta dirección en mi cuenta para futuras cotizaciones
                         </label>
                       </div>
                     </div>
                   </div>
                 )}
+
+                {/* Checkbox Urgente */}
+                <div className="pt-4 border-t border-slate-100 mt-6">
+                  <div className="flex items-start gap-3 bg-brand-50/60 p-4 rounded-xl border border-brand-100">
+                    <input 
+                      type="checkbox" 
+                      id="fleteUrg"
+                      checked={fleteUrgente}
+                      onChange={(e) => setFleteUrgente(e.target.checked)}
+                      className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500 border-gray-300 mt-0.5"
+                    />
+                    <label htmlFor="fleteUrg" className="font-semibold text-slate-800 cursor-pointer text-sm">
+                      ⚡ Requiere flete URGENTE / Prioritario
+                      <p className="text-xs text-slate-500 font-normal mt-0.5">
+                        Tu asesor buscará la opción de paquetería express más rápida disponible.
+                      </p>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Comentarios del cliente */}
+                <div className="mt-4">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Notas adicionales o requerimientos de entrega <span className="text-slate-400 font-normal">(Opcional)</span>
+                  </label>
+                  <textarea 
+                    rows={2}
+                    value={notas}
+                    onChange={(e) => setNotas(e.target.value)}
+                    placeholder="Ej. Entregar en horario de 8 a 15 hrs, maniobra en rampa, etc."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  />
+                </div>
               </div>
             </div>
 
@@ -512,7 +468,7 @@ export default function CheckoutB2BPage() {
             <div className="lg:col-span-5">
               <div className="bg-slate-900 rounded-2xl shadow-xl p-6 sm:p-8 text-white sticky top-28">
                 <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                  <ShieldCheck className="h-6 w-6 text-brand-400" /> Resumen del Pedido
+                  <ShieldCheck className="h-6 w-6 text-brand-400" /> Resumen de Cotización
                 </h2>
                 
                 <div className="space-y-4 mb-6 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
@@ -540,17 +496,17 @@ export default function CheckoutB2BPage() {
                     <span>{formatearPrecio(obtenerSubtotal() * 0.16, items[0]?.producto.moneda_venta || 'USD')}</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold text-white pt-3 border-t border-slate-800">
-                    <span>Total a Pagar</span>
+                    <span>Total Estimado</span>
                     <span className="text-brand-400">{formatearPrecio(obtenerSubtotal() * 1.16, items[0]?.producto.moneda_venta || 'USD')}</span>
                   </div>
                 </div>
 
-                {perfil?.terminos_pago && (
-                  <div className="mt-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                    <p className="text-xs text-slate-400 font-medium mb-1">Condiciones Comerciales Aplicadas:</p>
-                    <p className="text-sm font-bold text-brand-300">{perfil.terminos_pago}</p>
+                {perfil?.descuento_porcentaje ? (
+                  <div className="mt-6 p-3.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-xs text-brand-300">
+                    <span className="font-bold block text-sm text-brand-200">Descuento B2B Aplicado: {perfil.descuento_porcentaje}%</span>
+                    Tus precios en catálogo ya incluyen este beneficio comercial.
                   </div>
-                )}
+                ) : null}
 
                 {errorStr && (
                   <div className="mt-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 text-center font-medium">
@@ -561,12 +517,16 @@ export default function CheckoutB2BPage() {
                 <button
                   type="submit"
                   disabled={procesando}
-                  className="w-full mt-8 bg-brand-500 hover:bg-brand-600 text-white py-4 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none"
+                  className="w-full mt-6 bg-brand-500 hover:bg-brand-600 text-white py-4 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none text-base"
                 >
-                  {procesando ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Confirmar y Procesar Pedido'}
+                  {procesando ? (
+                    <><Loader2 className="h-5 w-5 animate-spin" /> Registrando solicitud...</>
+                  ) : (
+                    <><Send className="h-5 w-5" /> Solicitar Cotización Formal</>
+                  )}
                 </button>
-                <p className="text-[10px] text-slate-500 text-center mt-4">
-                  Al confirmar, generaremos la orden oficial en el sistema. Los tiempos de entrega serán confirmados vía correo.
+                <p className="text-[11px] text-slate-400 text-center mt-4 leading-normal">
+                  Tu asesor comercial validará existencias, tiempos de entrega y flete según tu Código Postal para contactarte por WhatsApp o correo.
                 </p>
               </div>
             </div>

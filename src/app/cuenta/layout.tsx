@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import Link from 'next/link';
-import { Package, Loader2 } from 'lucide-react';
+import { Package, Loader2, MapPin } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
@@ -54,13 +54,23 @@ export default function CuentaLayout({ children }: { children: React.ReactNode }
       <main className="flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full pt-28 pb-12 px-4 sm:px-6 lg:px-8 gap-8">
         <aside className="w-full md:w-64 shrink-0">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h2 className="font-bold text-slate-800 text-lg mb-1">{perfil?.nombre_completo || 'Mi Cuenta'}</h2>
-            <p className="text-sm text-slate-500 mb-6">{perfil?.empresa || 'Cliente'}</p>
+            <h2 className="font-bold text-slate-800 text-lg mb-0.5">{perfil?.nombre_completo || 'Mi Cuenta'}</h2>
+            <p className="text-sm text-slate-500 mb-2">{perfil?.empresa || 'Cliente'}</p>
             
-            <nav className="space-y-2">
-              <Link href="/cuenta/pedidos" className="flex items-center gap-3 px-4 py-2 bg-brand-50 text-brand-700 font-medium rounded-lg">
-                <Package className="w-5 h-5" />
-                Mis Pedidos
+            {perfil?.descuento_porcentaje > 0 && (
+              <div className="inline-block bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md text-xs font-bold text-emerald-800 mb-6">
+                ⭐ {perfil.descuento_porcentaje}% Descuento B2B
+              </div>
+            )}
+            
+            <nav className="space-y-1.5 mt-2">
+              <Link href="/cuenta/pedidos" className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-slate-50 text-slate-700 font-medium rounded-xl transition-colors">
+                <Package className="w-4 h-4 text-brand-600" />
+                Mis Cotizaciones
+              </Link>
+              <Link href="/cuenta/datos" className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-slate-50 text-slate-700 font-medium rounded-xl transition-colors">
+                <MapPin className="w-4 h-4 text-brand-600" />
+                Mis Datos y Dirección
               </Link>
             </nav>
           </div>

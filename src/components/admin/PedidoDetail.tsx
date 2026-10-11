@@ -188,23 +188,29 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
             <h2 className="text-lg font-bold text-slate-800 mb-4">Información del Cliente</h2>
             <div className="space-y-3 text-sm">
               <div>
-                <p className="text-slate-500">Cliente</p>
-                <p className="font-semibold">{pedido.perfil?.empresa || 'Desconocido'}</p>
-                <p className="text-slate-600">{pedido.perfil?.email}</p>
+                <p className="text-slate-500 text-xs">Empresa</p>
+                <p className="font-bold text-slate-900 text-base">{pedido.perfil?.empresa || 'Cliente'}</p>
+                <p className="text-slate-700 font-medium">{pedido.perfil?.nombre_completo}</p>
+                <p className="text-slate-500 text-xs mt-0.5">{pedido.perfil?.email}</p>
               </div>
-              <div>
-                <p className="text-slate-500">Orden de Compra (PO)</p>
-                <p className="font-bold">{pedido.es_po_verbal ? 'ORDEN VERBAL' : pedido.numero_po}</p>
-                {pedido.po_url && (
+
+              {pedido.perfil?.telefono && (
+                <div className="pt-2 border-t border-slate-100">
+                  <p className="text-slate-500 text-xs mb-1">Teléfono Directo</p>
                   <a 
-                    href={getPdfUrl(pedido.po_url)}
+                    href={`https://wa.me/52${pedido.perfil.telefono.replace(/\D/g, '')}?text=Hola,%20te%20contacto%20de%20REM%20Industrial%20sobre%20tu%20cotizaci%C3%B3n%20${encodeURIComponent(pedido.numero_po || '')}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-brand-600 hover:underline text-xs font-semibold"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors"
                   >
-                    Ver PDF Adjunto
+                    💬 WhatsApp: {pedido.perfil.telefono}
                   </a>
-                )}
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-slate-100">
+                <p className="text-slate-500 text-xs">Folio Cotización</p>
+                <p className="font-bold text-brand-600">{pedido.numero_po || `#${pedido.id.slice(0, 8)}`}</p>
               </div>
             </div>
           </div>
@@ -233,21 +239,21 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <h2 className="text-lg font-bold text-slate-800 mb-4">Administración</h2>
             
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Estatus del Pedido</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Estatus de la Cotización</label>
             <select 
               value={estatus}
               onChange={(e) => setEstatus(e.target.value)}
-              className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-brand-500 focus:border-brand-500"
+              className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-brand-500 focus:border-brand-500 text-sm font-medium"
             >
-              <option value="nuevo">Nuevo</option>
-              <option value="en_revision">En Revisión (Regresarlo al cliente)</option>
-              <option value="aprobado_por_cliente">Aprobado (Cliente)</option>
-              <option value="procesando">Procesando</option>
-              <option value="enviado">Enviado</option>
-              <option value="cancelado">Cancelado</option>
+              <option value="nuevo">Nueva Solicitud</option>
+              <option value="en_revision">En Atención Comercial</option>
+              <option value="aprobado_por_cliente">Confirmada / Aprobada</option>
+              <option value="procesando">En Surtido</option>
+              <option value="enviado">Enviada / Entregada</option>
+              <option value="cancelado">Cancelada</option>
             </select>
             <p className="text-xs text-slate-500 mt-2">
-              Si marcas "En Revisión", el cliente deberá aprobar los Tiempos de Entrega y alternativas.
+              Cambia el estatus para llevar el seguimiento comercial de este cliente.
             </p>
 
             <button

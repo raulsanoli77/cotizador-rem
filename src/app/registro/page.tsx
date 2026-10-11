@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { Building2, User, Mail, Phone, Globe, Briefcase, FileText, ArrowRight, CheckCircle } from 'lucide-react';
+import { Building2, User, Mail, Phone, Globe, Briefcase, FileText, ArrowRight, CheckCircle, MapPin, Map } from 'lucide-react';
 import Header from '@/components/layout/Header';
 
 export default function RegistroB2BPage() {
@@ -22,12 +22,44 @@ export default function RegistroB2BPage() {
     telefono: '',
     rfc: '',
     pagina_web: '',
+    codigo_postal: '',
+    ciudad: '',
+    estado: '',
     password: '',
   });
+
+  const [loadingCP, setLoadingCP] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCPChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.trim();
+    setFormData(prev => ({ ...prev, codigo_postal: val }));
+    if (val.length === 5) {
+      setLoadingCP(true);
+      try {
+        const res = await fetch(`https://api.zippopotam.us/mx/${val}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.places && data.places.length > 0) {
+            const estadoDetectado = data.places[0].state || '';
+            const ciudadDetectada = data.places[0]['place name'] || '';
+            setFormData(prev => ({
+              ...prev,
+              estado: estadoDetectado,
+              ciudad: prev.ciudad ? prev.ciudad : ciudadDetectada
+            }));
+          }
+        }
+      } catch (err) {
+        // Ignorar error de API
+      } finally {
+        setLoadingCP(false);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,6 +81,9 @@ export default function RegistroB2BPage() {
             telefono: formData.telefono,
             rfc: formData.rfc,
             pagina_web: formData.pagina_web,
+            codigo_postal: formData.codigo_postal,
+            ciudad: formData.ciudad,
+            estado: formData.estado,
             estatus: 'pendiente_aprobacion', // Campo clave para el Admin
           }
         }
@@ -68,6 +103,9 @@ export default function RegistroB2BPage() {
           telefono: formData.telefono,
           rfc: formData.rfc,
           pagina_web: formData.pagina_web,
+          codigo_postal: formData.codigo_postal,
+          ciudad: formData.ciudad,
+          estado: formData.estado,
           estatus: 'pendiente',
           terminos_pago: 'Contado'
         });
@@ -267,6 +305,65 @@ export default function RegistroB2BPage() {
                         onChange={handleChange}
                         className="pl-10 block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
                         placeholder="https://tuempresa.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ubicación de Envío Base (Para Fletes) */}
+                <div className="border-t border-slate-200 mt-8 pt-6">
+                  <div className="mb-4">
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-brand-600" />
+                      Ubicación de Entrega Base
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Necesaria para calcular costos y tiempos de flete en tus cotizaciones. (Calle y número se pueden agregar después).
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Código Postal */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Código Postal (5 dígitos) *</label>
+                      <input
+                        required
+                        type="text"
+                        maxLength={5}
+                        name="codigo_postal"
+                        value={formData.codigo_postal}
+                        onChange={handleCPChange}
+                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm font-semibold tracking-wide"
+                        placeholder="Ej. 31124"
+                      />
+                      {loadingCP && <span className="text-[11px] text-brand-600 mt-1 block">Detectando ciudad...</span>}
+                    </div>
+
+                    {/* Estado */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Estado *</label>
+                      <input
+                        required
+                        type="text"
+                        name="estado"
+                        value={formData.estado}
+                        onChange={handleChange}
+                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        placeholder="Ej. Chihuahua"
+                      />
+                    </div>
+
+                    {/* Ciudad */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Ciudad o Municipio *</label>
+                      <input
+                        required
+                        type="text"
+                        name="ciudad"
+                        value={formData.ciudad}
+                        onChange={handleChange}
+                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        placeholder="Ej. Chihuahua"
                       />
                     </div>
                   </div>

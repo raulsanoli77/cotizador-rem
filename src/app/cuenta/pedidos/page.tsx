@@ -56,12 +56,12 @@ export default function ClientPedidosPage() {
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
       <h1 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
         <PackageSearch className="w-6 h-6 text-brand-600" />
-        Historial de Pedidos
+        Historial de Cotizaciones
       </h1>
 
       {pedidos.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-slate-500 mb-4">Aún no tienes pedidos registrados.</p>
+          <p className="text-slate-500 mb-4">Aún no tienes cotizaciones registradas.</p>
           <Link href="/catalogo" className="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-colors">
             Ir al Catálogo
           </Link>
@@ -77,7 +77,7 @@ export default function ClientPedidosPage() {
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-bold text-lg text-slate-800">
-                      {pedido.es_po_verbal ? 'Orden Verbal' : `PO: ${pedido.numero_po || 'N/A'}`}
+                      {pedido.numero_po ? `Cotización: ${pedido.numero_po}` : `Cotización: #${pedido.id.slice(0, 8)}`}
                     </h3>
                     <span className={`px-2.5 py-1 text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1 ${statusInfo.bg} ${statusInfo.text}`}>
                       {StatusIcon && <StatusIcon className="w-3 h-3" />}
@@ -86,17 +86,17 @@ export default function ClientPedidosPage() {
                   </div>
                   
                   <div className="text-sm text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
-                    <p>ID: {pedido.id.split('-')[0]}</p>
                     <p>{new Date(pedido.fecha_creacion).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                     <p className="font-bold text-slate-700">{formatearPrecio(pedido.total, pedido.moneda)} {pedido.moneda}</p>
+                    {pedido.ciudad && <p className="text-slate-400">📍 {pedido.ciudad}, {pedido.estado} (CP {pedido.codigo_postal})</p>}
                   </div>
                 </div>
 
                 <Link 
                   href={`/cuenta/pedidos/${pedido.id}`}
-                  className="w-full sm:w-auto text-center px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  className="w-full sm:w-auto text-center px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
                 >
-                  {pedido.estatus === 'en_revision' ? 'Revisar Sugerencias' : 'Ver Detalles'}
+                  Ver Detalle
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>

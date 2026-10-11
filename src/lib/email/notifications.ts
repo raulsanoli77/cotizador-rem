@@ -99,6 +99,12 @@ function generarHTMLNotificacion(params: NotificacionCotizacionParams): string {
         <p style="margin: 4px 0; font-size: 13px;"><strong>Email:</strong> <a href="mailto:${params.lead.email}">${params.lead.email}</a></p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Teléfono:</strong> ${params.lead.telefono}</p>
         ${params.lead.direccion ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Envío a:</strong> ${params.lead.direccion}</p>` : ''}
+        ${params.lead.telefono ? `
+        <div style="margin-top: 10px;">
+          <a href="https://wa.me/52${params.lead.telefono.replace(/\D/g, '')}?text=Hola%20${encodeURIComponent(params.lead.nombre_completo)},%20te%20contacto%20de%20REM%20Industrial%20sobre%20tu%20cotizaci%C3%B3n%20${encodeURIComponent(params.folio)}" style="display: inline-block; background: #16a34a; color: white; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
+            💬 Contactar por WhatsApp al Cliente
+          </a>
+        </div>` : ''}
       </div>
 
       <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e2e8f0; border-radius: 8px;">

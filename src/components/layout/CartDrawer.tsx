@@ -100,7 +100,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                 onClick={onClose}
                 className="w-full bg-brand-600 hover:bg-brand-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
               >
-                Procesar Pedido Formal <ArrowRight className="h-4 w-4" />
+                Solicitar Cotización Formal <ArrowRight className="h-4 w-4" />
               </Link>
             ) : (
               <Link 

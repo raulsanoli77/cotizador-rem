@@ -103,7 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Marcas', icon: Award, href: '/admin/marcas' },
     { name: 'Carga Masiva', icon: UploadCloud, href: '/admin/carga-masiva' },
     { name: 'Clientes B2B', icon: Users, href: '/admin/clientes' },
-    { name: 'Pedidos B2B', icon: ShoppingCart, href: '/admin/pedidos' },
+    { name: 'Cotizaciones B2B', icon: ShoppingCart, href: '/admin/pedidos' },
     { name: 'Cotizaciones Rápidas', icon: FileText, href: '/admin/leads' },
     { name: 'Imágenes', icon: ImageIcon, href: '/admin/productos/imagenes' },
     { name: 'Configuración', icon: Settings, href: '/admin/config' },

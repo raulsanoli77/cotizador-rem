@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { enviarNotificacionVentas } from '@/lib/email/notifications';
 
 export async function crearPedidoB2B({
   cliente_id,
@@ -25,16 +26,16 @@ export async function crearPedidoB2B({
 }: {
   cliente_id: string;
   numero_po?: string;
-  es_po_verbal: boolean;
+  es_po_verbal?: boolean;
   po_url?: string;
-  calle: string;
-  num_exterior: string;
+  calle?: string;
+  num_exterior?: string;
   num_interior?: string;
-  colonia: string;
+  colonia?: string;
   ciudad: string;
   estado: string;
   codigo_postal: string;
-  flete_urgente: boolean;
+  flete_urgente?: boolean;
   notas_cliente?: string;
   subtotal: number;
   iva: number;
@@ -56,33 +57,35 @@ export async function crearPedidoB2B({
   // 0. (Opcional) Guardar dirección en el perfil si el cliente lo solicitó
   if (guardar_direccion) {
     await supabase.from('perfiles_clientes').update({
-      calle,
-      num_exterior,
-      num_interior,
-      colonia,
+      calle: calle || null,
+      num_exterior: num_exterior || null,
+      num_interior: num_interior || null,
+      colonia: colonia || null,
       ciudad,
       estado,
       codigo_postal,
     }).eq('id', cliente_id);
   }
 
-  // 1. Crear el Pedido
+  const folioGenerado = numero_po || `COT-${Date.now().toString().slice(-6)}`;
+
+  // 1. Crear el Pedido / Cotización Formal
   const { data: pedido, error: errorPedido } = await supabase
     .from('pedidos')
     .insert({
       cliente_id,
-      numero_po,
-      es_po_verbal,
-      po_url,
-      calle,
-      num_exterior,
-      num_interior,
-      colonia,
+      numero_po: folioGenerado,
+      es_po_verbal: es_po_verbal || false,
+      po_url: po_url || null,
+      calle: calle || null,
+      num_exterior: num_exterior || null,
+      num_interior: num_interior || null,
+      colonia: colonia || null,
       ciudad,
       estado,
       codigo_postal,
-      flete_urgente,
-      notas_cliente,
+      flete_urgente: flete_urgente || false,
+      notas_cliente: notas_cliente || null,
       subtotal,
       iva,
       total,
@@ -93,7 +96,7 @@ export async function crearPedidoB2B({
     .single();
 
   if (errorPedido) {
-    throw new Error('Error al crear el pedido: ' + errorPedido.message);
+    throw new Error('Error al crear la solicitud: ' + errorPedido.message);
   }
 
   // 2. Crear las partidas
@@ -113,12 +116,58 @@ export async function crearPedidoB2B({
     .insert(partidasParaInsertar);
 
   if (errorPartidas) {
-    // Ideally we would rollback the order here or use an RPC
-    throw new Error('Error al guardar los productos del pedido: ' + errorPartidas.message);
+    throw new Error('Error al guardar los productos: ' + errorPartidas.message);
   }
 
-  // 3. (Opcional) Enviar notificación por correo al Administrador
-  // Aquí puedes agregar un resend email a ventas3@remindustrial.mx
+  // 3. Obtener datos del cliente para la notificación por correo
+  try {
+    const { data: clienteData } = await supabase
+      .from('perfiles_clientes')
+      .select('*')
+      .eq('id', cliente_id)
+      .single();
+
+    if (clienteData) {
+      const direccionCompleta = [
+        calle ? `${calle} ${num_exterior || ''}`.trim() : null,
+        colonia ? `Col. ${colonia}` : null,
+        `${ciudad}, ${estado}`,
+        `CP ${codigo_postal}`,
+        flete_urgente ? '⚡ SOLICITÓ FLETE URGENTE' : null,
+      ].filter(Boolean).join(' | ');
+
+      await enviarNotificacionVentas({
+        lead: {
+          nombre_completo: clienteData.nombre_completo,
+          empresa: clienteData.empresa,
+          email: clienteData.email,
+          telefono: clienteData.telefono,
+          direccion: direccionCompleta,
+        },
+        partidas: partidas.map(p => ({
+          cantidad: p.cantidad,
+          marca: p.marca,
+          numero_parte: p.numero_parte,
+          descripcion: p.descripcion,
+          precio_unitario: p.precio_unitario,
+          total: p.importe,
+          moneda,
+        })),
+        subtotal,
+        moneda,
+        folio: folioGenerado,
+        fecha: new Date().toLocaleDateString('es-MX', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      });
+    }
+  } catch (emailErr) {
+    console.error('Error enviando correo a ventas:', emailErr);
+  }
 
   return pedido;
 }
