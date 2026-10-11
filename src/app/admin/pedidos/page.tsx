@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import Link from 'next/link';
 import { ShoppingCart, Eye, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { formatearPrecio } from '@/lib/pricing/engine';
+import BotonEliminarPedido from '@/components/admin/BotonEliminarPedido';
 
 // Para forzar SSR y siempre ver los últimos pedidos
 export const dynamic = 'force-dynamic';
@@ -136,12 +137,15 @@ export default async function AdminPedidosPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link 
-                        href={`/admin/pedidos/${pedido.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-700 rounded-lg text-sm font-semibold transition-colors"
-                      >
-                        <Eye className="w-4 h-4" /> Ver / Editar
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <Link 
+                          href={`/admin/pedidos/${pedido.id}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-700 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                          <Eye className="w-4 h-4" /> Ver / Editar
+                        </Link>
+                        <BotonEliminarPedido pedidoId={pedido.id} folio={folioLimpio} />
+                      </div>
                     </td>
                   </tr>
                 );

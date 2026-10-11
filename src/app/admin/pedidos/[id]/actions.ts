@@ -9,15 +9,30 @@ export async function actualizarPedido(
   estatusNuevo: string, 
   estatusAnterior: string, 
   partidas: any[],
-  cotizacionBind?: string
+  cotizacionBind?: string,
+  datosExtra?: {
+    notas_cliente?: string;
+    subtotal?: number;
+    iva?: number;
+    total?: number;
+    partidasEliminadas?: string[];
+  }
 ) {
   const supabase = createAdminClient();
   
   try {
-    // 1. Guardar Estatus y Cotización Bind ERP
+    // 1. Guardar Estatus, Cotización Bind ERP y Totales
     const updateData: Record<string, any> = { estatus: estatusNuevo };
     if (cotizacionBind !== undefined) {
       updateData.cotizacion_bind = cotizacionBind.trim() || null;
+    }
+    if (datosExtra?.notas_cliente !== undefined) {
+      updateData.notas_cliente = datosExtra.notas_cliente.trim() || null;
+    }
+    if (datosExtra?.subtotal !== undefined) {
+      updateData.subtotal = datosExtra.subtotal;
+      updateData.iva = datosExtra.iva ?? (datosExtra.subtotal * 0.16);
+      updateData.total = datosExtra.total ?? (updateData.subtotal + updateData.iva);
     }
 
     const { data: updatedPedido, error: errPedido } = await supabase
@@ -35,19 +50,31 @@ export async function actualizarPedido(
       throw new Error('No se encontró el pedido o no se pudo actualizar.');
     }
 
-    // 2. Guardar Partidas
+    // 2. Eliminar partidas si alguna fue borrada por el admin
+    if (datosExtra?.partidasEliminadas && datosExtra.partidasEliminadas.length > 0) {
+      const { error: errDel } = await supabase
+        .from('partidas_pedido')
+        .delete()
+        .in('id', datosExtra.partidasEliminadas);
+      if (errDel) console.error('[actualizarPedido] Error al eliminar partidas:', errDel);
+    }
+
+    // 3. Guardar / Actualizar Partidas restantes
     for (const p of partidas) {
       const { error: errPartida } = await supabase
         .from('partidas_pedido')
         .update({
-          tiempo_entrega: p.tiempo_entrega,
-          alternativa_producto_id: p.alternativa_producto_id,
-          alternativa_numero_parte: p.alternativa_numero_parte,
-          alternativa_marca: p.alternativa_marca,
-          alternativa_descripcion: p.alternativa_descripcion,
-          alternativa_precio: p.alternativa_precio,
-          alternativa_motivo: p.alternativa_motivo,
-          comentario_admin: p.comentario_admin
+          cantidad: p.cantidad,
+          precio_unitario: p.precio_unitario,
+          importe: p.importe ?? (p.cantidad * p.precio_unitario),
+          tiempo_entrega: p.tiempo_entrega || null,
+          comentario_admin: p.comentario_admin || null,
+          alternativa_producto_id: null,
+          alternativa_numero_parte: null,
+          alternativa_marca: null,
+          alternativa_descripcion: null,
+          alternativa_precio: null,
+          alternativa_motivo: null,
         })
         .eq('id', p.id);
       
@@ -89,6 +116,39 @@ export async function actualizarPedido(
 
     return { success: true };
   } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function eliminarPedido(pedidoId: string) {
+  const supabase = createAdminClient();
+  try {
+    // 1. Eliminar partidas asociadas
+    const { error: errPartidas } = await supabase
+      .from('partidas_pedido')
+      .delete()
+      .eq('pedido_id', pedidoId);
+
+    if (errPartidas) {
+      console.error('[eliminarPedido] Error al eliminar partidas:', errPartidas);
+    }
+
+    // 2. Eliminar pedido
+    const { error: errPedido } = await supabase
+      .from('pedidos')
+      .delete()
+      .eq('id', pedidoId);
+
+    if (errPedido) {
+      throw new Error(`Error al eliminar pedido: ${errPedido.message}`);
+    }
+
+    revalidatePath('/admin/pedidos');
+    revalidatePath('/cuenta/pedidos');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('[eliminarPedido] Excepción:', error);
     return { success: false, error: error.message };
   }
 }

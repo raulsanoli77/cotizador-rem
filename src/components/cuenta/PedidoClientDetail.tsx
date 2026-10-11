@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Package, Calendar, AlertCircle, MessageSquare, MapPin, MessageCircle, Clock, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Package, Calendar, MessageSquare, MapPin, MessageCircle, Clock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 
@@ -85,8 +85,6 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
       {/* Lista de Partidas */}
       <div className="space-y-6">
         {partidas.map((partida, idx) => {
-          const tieneAlternativa = !!partida.alternativa_producto_id;
-          
           return (
             <div key={partida.id} className="bg-white rounded-2xl shadow-md border-2 border-slate-300 hover:border-slate-400 p-6 overflow-hidden transition-all">
               <div className="flex items-center justify-between mb-3 pb-2 border-b-2 border-slate-100">
@@ -142,29 +140,6 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
                   </div>
                 )}
               </div>
-
-              {/* Alternativa sugerida informativa */}
-              {tieneAlternativa && (
-                <div className="mt-4 bg-amber-50/80 border-2 border-amber-300 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-xs font-bold text-amber-900 mb-2">
-                    <AlertCircle className="w-4 h-4 text-amber-600" />
-                    <span>Alternativa Sugerida por REM:</span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 rounded-xl border-2 border-amber-200 gap-3 shadow-sm">
-                    <div>
-                      <p className="font-bold text-slate-900 text-sm">{partida.alternativa_numero_parte} <span className="text-xs text-slate-500 font-normal">({partida.alternativa_marca})</span></p>
-                      <p className="text-xs text-slate-600">{partida.alternativa_descripcion}</p>
-                    </div>
-                    <div className="text-left sm:text-right shrink-0 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
-                      <p className="font-bold text-amber-900 text-sm">{formatearPrecio(partida.alternativa_precio, pedido.moneda)} c/u</p>
-                    </div>
-                  </div>
-                  {partida.alternativa_motivo && (
-                    <p className="text-xs text-amber-900 mt-2 italic font-medium">Motivo: {partida.alternativa_motivo}</p>
-                  )}
-                </div>
-              )}
-              
             </div>
           );
         })}
