@@ -359,11 +359,11 @@ export default function ProductDetailPage() {
         </section>
 
         {/* Sección Inferior: Especificaciones Técnicas */}
-        <section className="bg-slate-50 py-16 pb-24">
+        <section className="bg-slate-100 py-16 pb-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-8 flex items-center gap-4">
               Especificaciones Técnicas
-              <div className="h-1 flex-1 bg-slate-200 rounded-full"></div>
+              <div className="h-1 flex-1 bg-slate-300 rounded-full"></div>
             </h3>
             
             {specsEntries.length > 0 ? (
@@ -419,17 +419,17 @@ export default function ProductDetailPage() {
                       href={urlFiltro}
                       target="_blank"
                       title={`Buscar más productos con ${key}: ${finalValue}`}
-                      className={`bg-white border border-slate-200 p-3 sm:p-4 rounded-xl flex flex-col justify-center hover:border-brand-400 hover:shadow-md hover:bg-brand-50 transition-all cursor-pointer group ${colSpanClass}`}
+                      className={`bg-white border-2 border-slate-300 p-3 sm:p-4 rounded-xl flex flex-col justify-center hover:border-brand-600 hover:shadow-lg hover:bg-brand-50/50 transition-all cursor-pointer group shadow-sm ${colSpanClass}`}
                     >
-                      <span className="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-brand-600 transition-colors line-clamp-1">{key}</span>
+                      <span className="text-[9px] sm:text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1 group-hover:text-brand-600 transition-colors line-clamp-1">{key}</span>
                       <span className={`text-sm sm:text-base font-bold text-slate-900 group-hover:text-brand-700 transition-colors ${isEspecial ? 'leading-tight break-words' : 'line-clamp-1'}`}>{finalValue}</span>
                     </Link>
                   );
                 })}
               </div>
             ) : (
-              <div className="bg-white border border-slate-200 p-8 rounded-xl text-center shadow-sm">
-                 <p className="text-slate-500 text-lg">No hay especificaciones adicionales registradas para este producto.</p>
+              <div className="bg-white border-2 border-slate-300 p-8 rounded-2xl text-center shadow-md">
+                 <p className="text-slate-600 font-medium text-lg">No hay especificaciones adicionales registradas para este producto.</p>
               </div>
             )}
           </div>

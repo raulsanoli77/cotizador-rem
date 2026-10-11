@@ -54,59 +54,59 @@ export default function FilterSidebar({
       <div className="mt-2 flex flex-col gap-2">
         {opciones.length > 5 && (
           <div className="relative mb-1">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
             <input 
               type="text" 
               placeholder="Buscar..."
               value={busquedas[nombre] || ''}
               onChange={(e) => handleSearchChange(nombre, e.target.value)}
-              className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="w-full pl-8 pr-2.5 py-1.5 text-xs border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 rounded-lg focus:outline-none bg-white text-slate-900 font-medium transition-all"
             />
           </div>
         )}
-        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
           {filtradas.length === 0 ? (
-            <p className="text-xs text-gray-400 italic py-1">Sin resultados</p>
+            <p className="text-xs text-slate-500 italic py-1">Sin resultados</p>
           ) : (
             filtradas.map((op) => (
-              <label key={op} className={`flex items-start gap-2 text-sm cursor-pointer leading-tight rounded px-1 py-0.5 transition-colors ${isChecked(nombre, op) ? 'text-brand-700 font-medium bg-brand-50' : 'text-gray-600 hover:text-gray-900'}`}>
+              <label key={op} className={`flex items-start gap-2.5 text-sm cursor-pointer leading-tight rounded-md px-1.5 py-1 transition-colors ${isChecked(nombre, op) ? 'text-brand-800 font-bold bg-brand-50 border border-brand-200' : 'text-slate-800 hover:text-slate-900 hover:bg-slate-50'}`}>
                 <input 
                   type="checkbox" 
                   checked={isChecked(nombre, op)} 
                   onChange={() => onFiltroChange(nombre, op)} 
-                  className="accent-brand-600 mt-0.5 rounded" 
+                  className="accent-brand-600 mt-0.5 rounded h-4 w-4 border-2 border-slate-300" 
                 />
-                <span className="flex-1 break-words">{op}</span>
+                <span className="flex-1 break-words font-medium">{op}</span>
               </label>
             ))
           )}
         </div>
         {seleccionadas.length > 1 && (
-          <p className="text-[10px] text-brand-600 font-medium">{seleccionadas.length} seleccionados</p>
+          <p className="text-[10px] text-brand-700 font-bold">{seleccionadas.length} seleccionados</p>
         )}
       </div>
     );
   };
 
   return (
-    <aside className="w-full lg:w-64 shrink-0 bg-white rounded-lg shadow-sm border border-slate-200 lg:sticky lg:top-20 self-start max-h-[calc(100vh-6rem)] flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 shrink-0">
+    <aside className="w-full lg:w-64 shrink-0 bg-white rounded-2xl shadow-xl border-2 border-slate-300 lg:sticky lg:top-24 self-start max-h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b-2 border-slate-800 shrink-0">
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-slate-300" />
-          <h2 className="font-semibold text-sm tracking-wide">FILTROS</h2>
+          <Filter className="h-4 w-4 text-brand-400" />
+          <h2 className="font-bold text-sm tracking-wider uppercase">FILTROS</h2>
         </div>
         {tieneFiltros && (
-          <button onClick={onLimpiarFiltros} className="text-[10px] font-bold text-slate-300 hover:text-white uppercase tracking-wider bg-slate-800 px-2 py-1 rounded transition-colors">Limpiar</button>
+          <button onClick={onLimpiarFiltros} className="text-[10px] font-bold text-white uppercase tracking-wider bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-md border border-slate-700 transition-colors">Limpiar</button>
         )}
       </div>
 
-      <div className="p-4 overflow-y-auto flex-1">
+      <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
         {/* Marca */}
         {marcas && marcas.length > 0 && (
-          <div className="border-b border-slate-100 pb-4 mb-4">
-            <button onClick={() => toggleSeccion('marca', true)} className="flex items-center justify-between w-full text-sm font-bold text-gray-800 py-1">
+          <div className="border-b-2 border-slate-200 pb-4 mb-4">
+            <button onClick={() => toggleSeccion('marca', true)} className="flex items-center justify-between w-full text-sm font-bold text-slate-900 py-1 hover:text-brand-600 transition-colors">
               <span>Marca</span>
-              {isAbierta('marca', true) ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+              {isAbierta('marca', true) ? <ChevronUp className="h-4 w-4 text-slate-600" /> : <ChevronDown className="h-4 w-4 text-slate-600" />}
             </button>
             {isAbierta('marca', true) && renderOpciones('marca', marcas)}
           </div>
@@ -123,10 +123,10 @@ export default function FilterSidebar({
           const defaultOpen = visibleIdx < 2;
 
           return (
-            <div key={campo.nombre} className="border-b border-gray-100 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
-              <button onClick={() => toggleSeccion(campo.nombre, defaultOpen)} className="flex items-center justify-between w-full text-sm font-bold text-gray-800 py-1">
+            <div key={campo.nombre} className="border-b-2 border-slate-200 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
+              <button onClick={() => toggleSeccion(campo.nombre, defaultOpen)} className="flex items-center justify-between w-full text-sm font-bold text-slate-900 py-1 hover:text-brand-600 transition-colors">
                 <span className="text-left">{campo.nombre.replace(/_/g, ' ')}{campo.unidad ? ` (${campo.unidad})` : ''}</span>
-                {isAbierta(campo.nombre, defaultOpen) ? <ChevronUp className="h-4 w-4 text-gray-400 shrink-0" /> : <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />}
+                {isAbierta(campo.nombre, defaultOpen) ? <ChevronUp className="h-4 w-4 text-slate-600 shrink-0" /> : <ChevronDown className="h-4 w-4 text-slate-600 shrink-0" />}
               </button>
               
               {isAbierta(campo.nombre, defaultOpen) && renderOpciones(campo.nombre, opcionesBase)}

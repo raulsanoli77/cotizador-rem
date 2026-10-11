@@ -400,20 +400,20 @@ export default function CatalogoPage() {
     const renderPagination = (isTop: boolean = false) => {
     if (isTop) {
       return (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-200 pb-6 mb-2">
-          <div className="text-sm text-gray-500">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b-2 border-slate-300 pb-6 mb-4">
+          <div className="text-sm text-slate-600 font-medium">
             {productos.length > 0 ? (
-              <>Mostrando <span className="font-bold text-gray-900">{((paginaActual - 1) * 50) + 1}</span> a <span className="font-bold text-gray-900">{Math.min(paginaActual * 50, productos.length)}</span> de <span className="font-bold text-gray-900">{productos.length}</span> resultados</>
+              <>Mostrando <span className="font-extrabold text-slate-900">{((paginaActual - 1) * 50) + 1}</span> a <span className="font-extrabold text-slate-900">{Math.min(paginaActual * 50, productos.length)}</span> de <span className="font-extrabold text-slate-900">{productos.length}</span> resultados</>
             ) : (
               <span>No se encontraron resultados</span>
             )}
           </div>
           <div className="flex items-center gap-3">
-             <span className="text-sm font-medium text-gray-700">Ordenar por:</span>
+             <span className="text-sm font-bold text-slate-800">Ordenar por:</span>
              <select 
                value={orden} 
                onChange={(e) => { setOrden(e.target.value); setPaginaActual(1); }} 
-               className="border border-gray-300 rounded-lg text-sm text-gray-700 py-1.5 pl-3 pr-8 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 bg-white"
+               className="border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 rounded-xl text-sm font-bold text-slate-900 py-2 pl-3.5 pr-8 bg-white shadow-sm transition-all focus:outline-none cursor-pointer"
              >
                <option value="relevancia">Relevancia</option>
                <option value="precio_asc">Precio: Menor a Mayor</option>
@@ -427,7 +427,7 @@ export default function CatalogoPage() {
     if (productos.length <= 50) return null;
     
     return (
-      <div className="flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-gray-200 pt-6 mt-4">
+      <div className="flex flex-col sm:flex-row items-center justify-end gap-4 border-t-2 border-slate-300 pt-6 mt-6">
         <div className="flex items-center gap-2">
           <button 
             onClick={() => {
@@ -435,7 +435,7 @@ export default function CatalogoPage() {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             disabled={paginaActual === 1}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 border-2 border-slate-300 hover:border-slate-400 rounded-xl text-sm font-bold text-slate-800 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
           >
             Anterior
           </button>
@@ -452,7 +452,7 @@ export default function CatalogoPage() {
                     Math.abs(p - paginaActual) > 1
                   ) {
                     if (p === paginaActual - 2 || p === paginaActual + 2) {
-                      return <span key={p} className="px-2 text-gray-400">...</span>;
+                      return <span key={p} className="px-2 text-slate-500 font-bold">...</span>;
                     }
                     return null;
                   }
@@ -465,10 +465,10 @@ export default function CatalogoPage() {
                       setPaginaActual(p);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                    className={`w-10 h-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${
                       paginaActual === p 
-                        ? 'bg-brand-600 text-white' 
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-brand-600 text-white shadow-md' 
+                        : 'text-slate-800 hover:bg-slate-200 border-2 border-slate-300 bg-white'
                     }`}
                   >
                     {p}
@@ -483,7 +483,7 @@ export default function CatalogoPage() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               disabled={paginaActual === Math.ceil(productos.length / 50)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 border-2 border-slate-300 hover:border-slate-400 rounded-xl text-sm font-bold text-slate-800 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
               Siguiente
             </button>
@@ -495,11 +495,11 @@ export default function CatalogoPage() {
     return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 pt-28 pb-12">
+      <main className="min-h-screen bg-slate-100 pt-28 pb-12">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Título y búsqueda */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Catálogo de Herramientas</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-4">Catálogo de Herramientas</h1>
             <SearchBar onSearch={(q) => { setBusqueda(q); autoCheckDone.current = false; }} initialValue={busqueda} />
           </div>
 
@@ -513,10 +513,10 @@ export default function CatalogoPage() {
                 autoCheckDone.current = false;
                 window.history.pushState(null, '', '/catalogo');
               }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
                 categoriaActiva === null
-                  ? 'bg-brand-700 text-white shadow-sm'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  ? 'bg-brand-700 text-white shadow-md border-2 border-brand-700'
+                  : 'bg-white text-slate-800 hover:bg-slate-100 hover:border-slate-400 border-2 border-slate-300 shadow-sm'
               }`}
             >
               Todas
@@ -531,10 +531,10 @@ export default function CatalogoPage() {
                   autoCheckDone.current = false;
                   window.history.pushState(null, '', `/catalogo?categoria=${encodeURIComponent(cat.nombre)}`);
                 }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
                   categoriaActiva?.toLowerCase() === cat.nombre.toLowerCase()
-                    ? 'bg-brand-700 text-white shadow-sm'
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    ? 'bg-brand-700 text-white shadow-md border-2 border-brand-700'
+                    : 'bg-white text-slate-800 hover:bg-slate-100 hover:border-slate-400 border-2 border-slate-300 shadow-sm'
                 }`}
               >
                 {cat.nombre}
@@ -545,24 +545,24 @@ export default function CatalogoPage() {
           {/* Chips de Filtros Activos */}
           {(Object.keys(filtrosActivos).length > 0 || busqueda) && (
             <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mr-1">Filtros:</span>
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider mr-1">Filtros:</span>
               {busqueda && (
-                <span className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 border border-brand-200 px-3 py-1 rounded-full text-xs font-medium">
+                <span className="inline-flex items-center gap-1.5 bg-brand-50 text-brand-800 border-2 border-brand-300 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
                   Búsqueda: &quot;{busqueda}&quot;
-                  <button onClick={() => { setBusqueda(''); autoCheckDone.current = false; }} className="ml-1 text-brand-400 hover:text-brand-700 font-bold text-sm">×</button>
+                  <button onClick={() => { setBusqueda(''); autoCheckDone.current = false; }} className="ml-1 text-brand-600 hover:text-brand-900 font-bold text-sm">×</button>
                 </span>
               )}
               {Object.entries(filtrosActivos).map(([key, valores]) =>
                 valores.map(v => (
-                  <span key={`${key}-${v}`} className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full text-xs font-medium">
+                  <span key={`${key}-${v}`} className="inline-flex items-center gap-1.5 bg-white text-slate-900 border-2 border-slate-300 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
                     {key.replace(/_/g, ' ')}: {v}
-                    <button onClick={() => handleFiltroChange(key, v)} className="ml-1 text-slate-400 hover:text-slate-700 font-bold text-sm">×</button>
+                    <button onClick={() => handleFiltroChange(key, v)} className="ml-1 text-slate-500 hover:text-slate-900 font-bold text-sm">×</button>
                   </span>
                 ))
               )}
               <button 
                 onClick={() => { setFiltrosActivos({}); setBusqueda(''); autoCheckDone.current = false; }}
-                className="text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-wider ml-2 hover:underline"
+                className="text-xs font-bold text-red-600 hover:text-red-800 uppercase tracking-wider ml-2 hover:underline"
               >
                 Limpiar Todo
               </button>
