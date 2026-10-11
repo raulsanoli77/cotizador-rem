@@ -120,9 +120,56 @@ export default function CheckoutB2BPage() {
     }
   };
 
+  const seleccionarDireccionGuardada = () => {
+    setUsarDireccionGuardada(true);
+    setErrorStr(null);
+    if (perfil) {
+      setCalle(perfil.calle || '');
+      setNumExterior(perfil.num_exterior || '');
+      setNumInterior(perfil.num_interior || '');
+      setColonia(perfil.colonia || '');
+      setCiudad(perfil.ciudad || '');
+      setEstado(perfil.estado || '');
+      setCodigoPostal(perfil.codigo_postal || '');
+    }
+  };
+
+  const seleccionarNuevaDireccion = () => {
+    setUsarDireccionGuardada(false);
+    setErrorStr(null);
+    setCalle('');
+    setNumExterior('');
+    setNumInterior('');
+    setColonia('');
+    setCiudad('');
+    setEstado('');
+    setCodigoPostal('');
+    setSugerenciasLugares([]);
+  };
+
   const procesarCotizacion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!codigoPostal || !ciudad || !estado) {
+
+    let cpFinal = codigoPostal;
+    let ciudadFinal = ciudad;
+    let estadoFinal = estado;
+    let calleFinal = calle;
+    let numExtFinal = numExterior;
+    let numIntFinal = numInterior;
+    let colFinal = colonia;
+
+    // Si el usuario eligió usar su ubicación guardada, respaldar con los datos del perfil
+    if (usarDireccionGuardada && perfil) {
+      cpFinal = perfil.codigo_postal || cpFinal;
+      ciudadFinal = perfil.ciudad || ciudadFinal;
+      estadoFinal = perfil.estado || estadoFinal;
+      calleFinal = perfil.calle || calleFinal;
+      numExtFinal = perfil.num_exterior || numExtFinal;
+      numIntFinal = perfil.num_interior || numIntFinal;
+      colFinal = perfil.colonia || colFinal;
+    }
+
+    if (!cpFinal || !ciudadFinal || !estadoFinal) {
       setErrorStr('El Código Postal, Ciudad y Estado son obligatorios para calcular el flete.');
       return;
     }
@@ -151,13 +198,13 @@ export default function CheckoutB2BPage() {
         cliente_id: cliente.id,
         numero_po: folio,
         es_po_verbal: false,
-        calle,
-        num_exterior: numExterior,
-        num_interior: numInterior,
-        colonia,
-        ciudad,
-        estado,
-        codigo_postal: codigoPostal,
+        calle: calleFinal,
+        num_exterior: numExtFinal,
+        num_interior: numIntFinal,
+        colonia: colFinal,
+        ciudad: ciudadFinal,
+        estado: estadoFinal,
+        codigo_postal: cpFinal,
         flete_urgente: fleteUrgente,
         notas_cliente: notas,
         subtotal,
@@ -269,7 +316,7 @@ export default function CheckoutB2BPage() {
                 {tieneUbicacionGuardada && (
                   <div className="space-y-3 mb-6">
                     <label 
-                      onClick={() => setUsarDireccionGuardada(true)}
+                      onClick={seleccionarDireccionGuardada}
                       className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         usarDireccionGuardada ? 'bg-brand-50/70 border-brand-500 ring-2 ring-brand-500/20' : 'bg-white border-slate-300 hover:border-slate-400 hover:bg-slate-50/50'
                       }`}
@@ -278,28 +325,19 @@ export default function CheckoutB2BPage() {
                         type="radio" 
                         name="opcionUbicacion" 
                         checked={usarDireccionGuardada} 
-                        onChange={() => setUsarDireccionGuardada(true)} 
-                        className="mt-1 text-brand-600"
+                        onChange={seleccionarDireccionGuardada} 
+                        className="mt-1 text-brand-600 cursor-pointer"
                       />
                       <div>
                         <span className="text-sm font-bold text-slate-900 block">Usar mi ubicación registrada</span>
-                        <span className="text-xs text-slate-600 block mt-0.5">
-                          {calle ? `${calle} ${numExterior || ''}, ` : ''}{colonia ? `Col. ${colonia}, ` : ''}{ciudad}, {estado}. CP {codigoPostal}
+                        <span className="text-xs text-slate-600 block mt-0.5 font-medium">
+                          {perfil?.calle ? `${perfil.calle} ${perfil.num_exterior || ''}, ` : ''}{perfil?.colonia ? `Col. ${perfil.colonia}, ` : ''}{perfil?.ciudad || ''}, {perfil?.estado || ''}. CP {perfil?.codigo_postal || ''}
                         </span>
                       </div>
                     </label>
 
                     <label 
-                      onClick={() => {
-                        setUsarDireccionGuardada(false);
-                        setCalle('');
-                        setNumExterior('');
-                        setNumInterior('');
-                        setColonia('');
-                        setCiudad('');
-                        setEstado('');
-                        setCodigoPostal('');
-                      }}
+                      onClick={seleccionarNuevaDireccion}
                       className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                         !usarDireccionGuardada ? 'bg-brand-50/70 border-brand-500 ring-2 ring-brand-500/20' : 'bg-white border-slate-300 hover:border-slate-400 hover:bg-slate-50/50'
                       }`}
@@ -308,21 +346,12 @@ export default function CheckoutB2BPage() {
                         type="radio" 
                         name="opcionUbicacion" 
                         checked={!usarDireccionGuardada} 
-                        onChange={() => {
-                          setUsarDireccionGuardada(false);
-                          setCalle('');
-                          setNumExterior('');
-                          setNumInterior('');
-                          setColonia('');
-                          setCiudad('');
-                          setEstado('');
-                          setCodigoPostal('');
-                        }} 
-                        className="mt-1 text-brand-600"
+                        onChange={seleccionarNuevaDireccion} 
+                        className="mt-1 text-brand-600 cursor-pointer"
                       />
                       <div>
                         <span className="text-sm font-bold text-slate-900 block">Cotizar para otra ubicación / obra</span>
-                        <span className="text-xs text-slate-600 block mt-0.5">
+                        <span className="text-xs text-slate-600 block mt-0.5 font-medium">
                           Ingresa un Código Postal diferente para esta cotización específica.
                         </span>
                       </div>
