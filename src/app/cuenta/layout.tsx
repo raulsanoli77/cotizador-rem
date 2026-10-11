@@ -48,12 +48,12 @@ export default function CuentaLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-100 flex flex-col">
       <Header />
       
       <main className="flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full pt-28 pb-12 px-4 sm:px-6 lg:px-8 gap-8">
         <aside className="w-full md:w-64 shrink-0">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-2xl shadow-xl border-2 border-slate-300 p-6">
             <h2 className="font-bold text-slate-800 text-lg mb-0.5">{perfil?.nombre_completo || 'Mi Cuenta'}</h2>
             <p className="text-sm text-slate-500 mb-2">{perfil?.empresa || 'Cliente'}</p>
             
