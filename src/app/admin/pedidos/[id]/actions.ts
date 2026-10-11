@@ -1,6 +1,7 @@
 'use server';
 
-import { createServerClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { revalidatePath } from 'next/cache';
 import { enviarCorreoRevisionCliente } from '@/lib/email/notifications';
 
 export async function actualizarPedido(
@@ -10,7 +11,7 @@ export async function actualizarPedido(
   partidas: any[],
   cotizacionBind?: string
 ) {
-  const supabase = createServerClient();
+  const supabase = createAdminClient();
   
   try {
     // 1. Guardar Estatus y Cotización Bind ERP
@@ -19,12 +20,20 @@ export async function actualizarPedido(
       updateData.cotizacion_bind = cotizacionBind.trim() || null;
     }
 
-    const { error: errPedido } = await supabase
+    const { data: updatedPedido, error: errPedido } = await supabase
       .from('pedidos')
       .update(updateData)
-      .eq('id', pedidoId);
+      .eq('id', pedidoId)
+      .select();
       
-    if (errPedido) throw new Error(errPedido.message);
+    if (errPedido) {
+      console.error('[actualizarPedido] Error al actualizar pedido:', errPedido);
+      throw new Error(`Error al actualizar pedido: ${errPedido.message}`);
+    }
+
+    if (!updatedPedido || updatedPedido.length === 0) {
+      throw new Error('No se encontró el pedido o no se pudo actualizar.');
+    }
 
     // 2. Guardar Partidas
     for (const p of partidas) {
@@ -71,6 +80,12 @@ export async function actualizarPedido(
         }
       }
     }
+
+    // 4. Revalidar rutas para actualizar vistas
+    revalidatePath('/admin/pedidos');
+    revalidatePath(`/admin/pedidos/${pedidoId}`);
+    revalidatePath('/cuenta/pedidos');
+    revalidatePath(`/cuenta/pedidos/${pedidoId}`);
 
     return { success: true };
   } catch (error: any) {
