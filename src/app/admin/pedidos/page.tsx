@@ -31,23 +31,19 @@ export default async function AdminPedidosPage() {
   }
 
   const getStatusBadge = (estatus: string) => {
-    switch (estatus) {
-      case 'nuevo':
-        return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> Nueva Solicitud</span>;
-      case 'en_revision':
-        return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold flex items-center gap-1"><Clock className="w-3 h-3"/> En Atención</span>;
-      case 'aprobado_por_cliente':
-      case 'aprobado':
-        return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Confirmada</span>;
-      case 'procesando':
-        return <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">En Surtido</span>;
-      case 'enviado':
-        return <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Enviado</span>;
-      case 'cancelado':
-        return <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold flex items-center gap-1"><XCircle className="w-3 h-3"/> Cancelada</span>;
-      default:
-        return <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold">{estatus}</span>;
+    const esAtendida = estatus === 'atendida' || estatus === 'aprobado_por_cliente' || estatus === 'enviado';
+    if (esAtendida) {
+      return (
+        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold flex items-center gap-1">
+          <CheckCircle className="w-3 h-3" /> Atendida
+        </span>
+      );
     }
+    return (
+      <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold flex items-center gap-1">
+        <Clock className="w-3 h-3" /> Pendiente
+      </span>
+    );
   };
 
   return (

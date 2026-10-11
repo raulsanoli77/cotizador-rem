@@ -90,7 +90,7 @@ export async function crearPedidoB2B({
       iva,
       total,
       moneda,
-      estatus: 'nuevo',
+      estatus: 'pendiente',
     })
     .select()
     .single();

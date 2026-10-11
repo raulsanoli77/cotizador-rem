@@ -41,15 +41,11 @@ export default function ClientPedidosPage() {
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
 
   const getEstatusInfo = (estatus: string) => {
-    switch (estatus) {
-      case 'nuevo': return { label: 'Recibido (En espera)', bg: 'bg-slate-100', text: 'text-slate-700', icon: Clock };
-      case 'en_revision': return { label: 'Requiere tu Aprobación', bg: 'bg-orange-100', text: 'text-orange-800', icon: AlertTriangle };
-      case 'aprobado_por_cliente': return { label: 'Aprobado', bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle };
-      case 'procesando': return { label: 'Procesando', bg: 'bg-blue-100', text: 'text-blue-800', icon: Package };
-      case 'enviado': return { label: 'Enviado', bg: 'bg-purple-100', text: 'text-purple-800', icon: Package };
-      case 'cancelado': return { label: 'Cancelado', bg: 'bg-red-100', text: 'text-red-800', icon: null };
-      default: return { label: estatus, bg: 'bg-slate-100', text: 'text-slate-700', icon: null };
+    const esAtendida = estatus === 'atendida' || estatus === 'aprobado_por_cliente' || estatus === 'enviado';
+    if (esAtendida) {
+      return { label: 'Atendida', bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle };
     }
+    return { label: 'Pendiente', bg: 'bg-amber-100', text: 'text-amber-800', icon: Clock };
   };
 
   return (

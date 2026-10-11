@@ -1,11 +1,12 @@
 'use client';
 
-import { ArrowLeft, Package, Calendar, AlertCircle, MessageSquare, MapPin, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Package, Calendar, AlertCircle, MessageSquare, MapPin, MessageCircle, Clock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 
 export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, partidas: any[] }) {
   const folioLimpio = (pedido.numero_po || pedido.id.slice(0, 8)).replace(/^COT-/i, '');
+  const esAtendida = pedido.estatus === 'atendida' || pedido.estatus === 'aprobado_por_cliente' || pedido.estatus === 'enviado';
   const whatsAppMessage = encodeURIComponent(
     `Hola REM Industrial, me gustaría dar seguimiento a mi solicitud de cotización folio ${folioLimpio}.`
   );
@@ -24,6 +25,15 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
                 Solicitud de Cotización: #{folioLimpio}
               </h1>
+              {esAtendida ? (
+                <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800 border border-green-300 flex items-center gap-1 shadow-sm">
+                  <CheckCircle className="w-3.5 h-3.5" /> Atendida
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 shadow-sm">
+                  <Clock className="w-3.5 h-3.5" /> Pendiente
+                </span>
+              )}
               {pedido.cotizacion_bind && (
                 <span className="px-3 py-1 bg-indigo-50 border-2 border-indigo-200 text-indigo-800 text-xs font-bold rounded-lg shadow-sm">
                   🏢 Cotización Formal Bind ERP: #{pedido.cotizacion_bind}

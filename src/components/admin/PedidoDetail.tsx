@@ -11,7 +11,12 @@ import { actualizarPedido } from '@/app/admin/pedidos/[id]/actions';
 
 export default function PedidoDetailAdmin({ pedido, partidas, productosOriginales }: { pedido: any, partidas: any[], productosOriginales: any[] }) {
   const router = useRouter();
-  const [estatus, setEstatus] = useState(pedido.estatus);
+  const normalizarEstatus = (st?: string) => {
+    if (st === 'atendida' || st === 'aprobado_por_cliente' || st === 'enviado') return 'atendida';
+    return 'pendiente';
+  };
+
+  const [estatus, setEstatus] = useState(normalizarEstatus(pedido.estatus));
   const [cotizacionBind, setCotizacionBind] = useState(pedido.cotizacion_bind || '');
   const [loading, setLoading] = useState(false);
   const [partidasState, setPartidasState] = useState(partidas);
@@ -153,7 +158,7 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
       
       if (!result.success) throw new Error(result.error);
 
-      setSuccessStr('Cambios guardados correctamente. Si marcaste "En Revisión", se envió un correo al cliente.');
+      setSuccessStr('Cambios guardados correctamente.');
       router.refresh();
     } catch (e: any) {
       setErrorStr(e.message);
@@ -259,15 +264,11 @@ export default function PedidoDetailAdmin({ pedido, partidas, productosOriginale
               onChange={(e) => setEstatus(e.target.value)}
               className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-brand-500 focus:border-brand-500 text-sm font-medium"
             >
-              <option value="nuevo">Nueva Solicitud</option>
-              <option value="en_revision">En Atención Comercial</option>
-              <option value="aprobado_por_cliente">Confirmada / Aprobada</option>
-              <option value="procesando">En Surtido</option>
-              <option value="enviado">Enviada / Entregada</option>
-              <option value="cancelado">Cancelada</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="atendida">Atendida</option>
             </select>
             <p className="text-xs text-slate-500 mt-2">
-              Cambia el estatus para llevar el seguimiento comercial de este cliente.
+              Cambia a &quot;Atendida&quot; una vez que hayas revisado y procesado esta cotización.
             </p>
 
             <div className="mt-4 pt-4 border-t border-slate-200">
