@@ -236,16 +236,16 @@ export default function CheckoutB2BPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-slate-50 pt-32 pb-12">
+      <main className="min-h-screen bg-slate-100 pt-32 pb-12">
         <div className="max-w-6xl mx-auto px-4">
           
           <div className="flex items-center gap-4 mb-8">
-            <Link href="/catalogo" className="p-2 bg-white rounded-lg shadow-sm border border-slate-200 text-slate-400 hover:text-brand-600 transition-colors">
+            <Link href="/catalogo" className="p-2 bg-white rounded-lg shadow-sm border-2 border-slate-300 text-slate-600 hover:text-brand-600 hover:border-slate-400 transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
               <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Solicitud de Cotización Formal</h1>
-              <p className="text-slate-500 text-sm">Confirma los datos de entrega para calcular costos y tiempos de flete.</p>
+              <p className="text-slate-600 text-sm">Confirma los datos de entrega para calcular costos y tiempos de flete.</p>
             </div>
           </div>
 
@@ -255,14 +255,14 @@ export default function CheckoutB2BPage() {
             <div className="lg:col-span-7 space-y-6">
               
               {/* Sección: Ubicación de Envío / Destino del Flete */}
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
+              <div className="bg-white rounded-2xl shadow-xl border border-slate-300 p-6 sm:p-8">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-brand-50 p-2.5 rounded-lg text-brand-600">
+                  <div className="bg-brand-50 p-2.5 rounded-lg text-brand-600 border border-brand-200">
                     <MapPin className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-slate-800">Destino de Entrega (Para Flete)</h2>
-                    <p className="text-xs text-slate-500">El Código Postal es indispensable para calcular el costo de paquetería.</p>
+                    <h2 className="text-xl font-bold text-slate-900">Destino de Entrega (Para Flete)</h2>
+                    <p className="text-xs text-slate-600">El Código Postal es indispensable para calcular el costo de paquetería.</p>
                   </div>
                 </div>
 
@@ -270,8 +270,8 @@ export default function CheckoutB2BPage() {
                   <div className="space-y-3 mb-6">
                     <label 
                       onClick={() => setUsarDireccionGuardada(true)}
-                      className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                        usarDireccionGuardada ? 'bg-brand-50/50 border-brand-500 ring-1 ring-brand-500' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        usarDireccionGuardada ? 'bg-brand-50/70 border-brand-500 ring-2 ring-brand-500/20' : 'bg-white border-slate-300 hover:border-slate-400 hover:bg-slate-50/50'
                       }`}
                     >
                       <input 
@@ -300,8 +300,8 @@ export default function CheckoutB2BPage() {
                         setEstado('');
                         setCodigoPostal('');
                       }}
-                      className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                        !usarDireccionGuardada ? 'bg-brand-50/50 border-brand-500 ring-1 ring-brand-500' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        !usarDireccionGuardada ? 'bg-brand-50/70 border-brand-500 ring-2 ring-brand-500/20' : 'bg-white border-slate-300 hover:border-slate-400 hover:bg-slate-50/50'
                       }`}
                     >
                       <input 
@@ -322,7 +322,7 @@ export default function CheckoutB2BPage() {
                       />
                       <div>
                         <span className="text-sm font-bold text-slate-900 block">Cotizar para otra ubicación / obra</span>
-                        <span className="text-xs text-slate-500 block mt-0.5">
+                        <span className="text-xs text-slate-600 block mt-0.5">
                           Ingresa un Código Postal diferente para esta cotización específica.
                         </span>
                       </div>
@@ -333,7 +333,7 @@ export default function CheckoutB2BPage() {
                 {(!tieneUbicacionGuardada || !usarDireccionGuardada) && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Código Postal (5 dígitos) *</label>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">Código Postal (5 dígitos) *</label>
                       <input 
                         type="text" 
                         required
@@ -341,31 +341,31 @@ export default function CheckoutB2BPage() {
                         value={codigoPostal}
                         onChange={handleCPChange}
                         placeholder="Ej. 31124"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 font-semibold tracking-wide"
+                        className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-bold tracking-wide text-sm transition-all focus:outline-none"
                       />
-                      {loadingCP && <span className="text-[11px] text-brand-600 mt-1 block">Detectando ubicación...</span>}
-                      <p className="text-[11px] text-slate-400 mt-1">Al ingresar tu C.P. detectaremos tu Estado y Ciudad automáticamente.</p>
+                      {loadingCP && <span className="text-[11px] text-brand-600 font-medium mt-1 block">Detectando ubicación...</span>}
+                      <p className="text-[11px] text-slate-500 mt-1">Al ingresar tu C.P. detectaremos tu Estado y Ciudad automáticamente.</p>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Estado *</label>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">Estado *</label>
                       <input 
                         type="text" 
                         required
                         value={estado}
                         onChange={(e) => setEstado(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
+                        className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                         placeholder="Ej. Chihuahua"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Ciudad o Municipio *</label>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">Ciudad o Municipio *</label>
                       <input 
                         type="text" 
                         required
                         value={ciudad}
                         onChange={(e) => setCiudad(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
+                        className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                         placeholder="Ej. Chihuahua"
                       />
                     </div>
@@ -374,8 +374,8 @@ export default function CheckoutB2BPage() {
                       {sugerenciasLugares.length > 0 && !esColoniaManual ? (
                         <div>
                           <div className="flex items-center justify-between mb-1">
-                            <label className="block text-xs font-semibold text-slate-700">
-                              Colonia / Fraccionamiento <span className="text-slate-400 font-normal">({sugerenciasLugares.length} opciones detectadas)</span>
+                            <label className="block text-xs font-semibold text-slate-800">
+                              Colonia / Fraccionamiento <span className="text-slate-500 font-normal">({sugerenciasLugares.length} opciones detectadas)</span>
                             </label>
                             <button
                               type="button"
@@ -395,7 +395,7 @@ export default function CheckoutB2BPage() {
                                 setColonia(e.target.value);
                               }
                             }}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm font-medium cursor-pointer shadow-sm"
+                            className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 text-sm font-medium cursor-pointer shadow-sm transition-all focus:outline-none"
                           >
                             <option value="">-- Selecciona tu colonia ({sugerenciasLugares.length} disponibles) --</option>
                             {sugerenciasLugares.map((lugar, i) => (
@@ -407,8 +407,8 @@ export default function CheckoutB2BPage() {
                       ) : (
                         <div>
                           <div className="flex items-center justify-between mb-1">
-                            <label className="block text-xs font-semibold text-slate-700">
-                              Colonia <span className="text-slate-400 font-normal">(Opcional)</span>
+                            <label className="block text-xs font-semibold text-slate-800">
+                              Colonia <span className="text-slate-500 font-normal">(Opcional)</span>
                             </label>
                             {sugerenciasLugares.length > 0 && (
                               <button
@@ -429,7 +429,7 @@ export default function CheckoutB2BPage() {
                             type="text" 
                             value={colonia}
                             onChange={(e) => setColonia(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
+                            className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                             placeholder="Ej. Lomas del Santuario, Misión Universidad..."
                           />
                         </div>
@@ -437,24 +437,24 @@ export default function CheckoutB2BPage() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Calle <span className="text-slate-400 font-normal">(Opcional)</span></label>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">Calle <span className="text-slate-500 font-normal">(Opcional)</span></label>
                       <input 
                         type="text" 
                         value={calle}
                         onChange={(e) => setCalle(e.target.value)}
                         placeholder="Av. Industrial..."
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
+                        className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">No. Exterior <span className="text-slate-400 font-normal">(Opcional)</span></label>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">No. Exterior <span className="text-slate-500 font-normal">(Opcional)</span></label>
                       <input 
                         type="text" 
                         value={numExterior}
                         onChange={(e) => setNumExterior(e.target.value)}
                         placeholder="Ej. 1234"
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
+                        className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                       />
                     </div>
 
@@ -467,7 +467,7 @@ export default function CheckoutB2BPage() {
                           onChange={(e) => setGuardarDireccion(e.target.checked)}
                           className="h-4 w-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300"
                         />
-                        <label htmlFor="guardarDir" className="text-xs text-slate-700 cursor-pointer">
+                        <label htmlFor="guardarDir" className="text-xs text-slate-800 font-medium cursor-pointer">
                           Guardar esta dirección en mi cuenta para futuras cotizaciones
                         </label>
                       </div>
@@ -476,8 +476,8 @@ export default function CheckoutB2BPage() {
                 )}
 
                 {/* Checkbox Urgente */}
-                <div className="pt-4 border-t border-slate-100 mt-6">
-                  <div className="flex items-start gap-3 bg-brand-50/60 p-4 rounded-xl border border-brand-100">
+                <div className="pt-4 border-t-2 border-slate-200 mt-6">
+                  <div className="flex items-start gap-3 bg-brand-50/70 p-4 rounded-xl border-2 border-brand-200">
                     <input 
                       type="checkbox" 
                       id="fleteUrg"
@@ -485,9 +485,9 @@ export default function CheckoutB2BPage() {
                       onChange={(e) => setFleteUrgente(e.target.checked)}
                       className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500 border-gray-300 mt-0.5"
                     />
-                    <label htmlFor="fleteUrg" className="font-semibold text-slate-800 cursor-pointer text-sm">
+                    <label htmlFor="fleteUrg" className="font-semibold text-slate-900 cursor-pointer text-sm">
                       ⚡ Requiere flete URGENTE / Prioritario
-                      <p className="text-xs text-slate-500 font-normal mt-0.5">
+                      <p className="text-xs text-slate-600 font-normal mt-0.5">
                         Tu asesor buscará la opción de paquetería express más rápida disponible.
                       </p>
                     </label>
@@ -496,15 +496,15 @@ export default function CheckoutB2BPage() {
 
                 {/* Comentarios del cliente */}
                 <div className="mt-4">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Notas adicionales o requerimientos de entrega <span className="text-slate-400 font-normal">(Opcional)</span>
+                  <label className="block text-xs font-semibold text-slate-800 mb-1">
+                    Notas adicionales o requerimientos de entrega <span className="text-slate-500 font-normal">(Opcional)</span>
                   </label>
                   <textarea 
                     rows={2}
                     value={notas}
                     onChange={(e) => setNotas(e.target.value)}
                     placeholder="Ej. Entregar en horario de 8 a 15 hrs, maniobra en rampa, etc."
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm resize-none focus:outline-none transition-all"
                   />
                 </div>
               </div>

@@ -146,35 +146,35 @@ export default function MisDatosPage() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 gap-4 mb-6">
+    <div className="bg-white rounded-2xl shadow-xl border border-slate-300 p-6 sm:p-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b-2 border-slate-200 gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <User className="w-6 h-6 text-brand-600" />
             Mis Datos y Dirección
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-600 mt-1">
             Mantén actualizada tu información comercial y ubicación para calcular fletes con precisión.
           </p>
         </div>
 
         {form.descuento_porcentaje > 0 && (
-          <div className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl text-left sm:text-right">
-            <span className="text-xs font-semibold text-emerald-700 block">Descuento Preferencial Activo:</span>
-            <span className="text-base font-extrabold text-emerald-800">{form.descuento_porcentaje}% de Descuento</span>
+          <div className="bg-emerald-50 border-2 border-emerald-300 px-4 py-2 rounded-xl text-left sm:text-right">
+            <span className="text-xs font-semibold text-emerald-800 block">Descuento Preferencial Activo:</span>
+            <span className="text-base font-extrabold text-emerald-900">{form.descuento_porcentaje}% de Descuento</span>
           </div>
         )}
       </div>
 
       {mensajeExito && (
-        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-800 text-sm">
+        <div className="mb-6 p-4 bg-emerald-50 border-2 border-emerald-300 rounded-xl flex items-center gap-3 text-emerald-900 text-sm font-medium">
           <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>¡Tus datos y dirección han sido actualizados con éxito!</span>
         </div>
       )}
 
       {errorStr && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+        <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 rounded-xl text-red-800 text-sm font-medium">
           Error: {errorStr}
         </div>
       )}
@@ -184,124 +184,124 @@ export default function MisDatosPage() {
         {/* Bloque 1: Empresa y Contacto */}
         <div>
           <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <Building className="w-5 h-5 text-slate-500" />
+            <Building className="w-5 h-5 text-slate-600" />
             Información de la Empresa
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo *</label>
+              <label className="block text-xs font-semibold text-slate-800 mb-1">Nombre Completo *</label>
               <input
                 required
                 type="text"
                 value={form.nombre_completo}
                 onChange={(e) => setForm({ ...form, nombre_completo: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Razón Social / Empresa *</label>
+              <label className="block text-xs font-semibold text-slate-800 mb-1">Razón Social / Empresa *</label>
               <input
                 required
                 type="text"
                 value={form.empresa}
                 onChange={(e) => setForm({ ...form, empresa: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">RFC</label>
+              <label className="block text-xs font-semibold text-slate-800 mb-1">RFC</label>
               <input
                 type="text"
                 value={form.rfc}
                 onChange={(e) => setForm({ ...form, rfc: e.target.value.toUpperCase() })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 uppercase"
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm uppercase transition-all focus:outline-none"
                 placeholder="ABC123456T1"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Puesto o Departamento</label>
+              <label className="block text-xs font-semibold text-slate-800 mb-1">Puesto o Departamento</label>
               <input
                 type="text"
                 value={form.puesto}
                 onChange={(e) => setForm({ ...form, puesto: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                 placeholder="Ej. Comprador / Almacén"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Teléfono Directo *</label>
+              <label className="block text-xs font-semibold text-slate-800 mb-1">Teléfono Directo *</label>
               <input
                 required
                 type="tel"
                 value={form.telefono}
                 onChange={(e) => setForm({ ...form, telefono: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Correo Electrónico (Acceso)</label>
+              <label className="block text-xs font-semibold text-slate-800 mb-1">Correo Electrónico (Acceso)</label>
               <input
                 disabled
                 type="email"
                 value={form.email}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-400 text-sm cursor-not-allowed"
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-200 bg-slate-100 text-slate-600 font-medium text-sm cursor-not-allowed"
               />
             </div>
           </div>
         </div>
 
         {/* Bloque 2: Dirección de Envío */}
-        <div className="border-t border-slate-100 pt-6">
+        <div className="border-t-2 border-slate-200 pt-6">
           <div className="mb-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-slate-500" />
+              <MapPin className="w-5 h-5 text-slate-600" />
               Dirección de Envío Principal
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-600 mt-0.5">
               Esta ubicación se usará de forma predeterminada para calcular tus costos de flete en el cotizador.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Código Postal (5 dígitos) *</label>
+              <label className="block text-xs font-semibold text-slate-800 mb-1">Código Postal (5 dígitos) *</label>
               <input
                 required
                 maxLength={5}
                 type="text"
                 value={form.codigo_postal}
                 onChange={handleCPChange}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-semibold tracking-wide focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-bold tracking-wide text-sm transition-all focus:outline-none"
                 placeholder="Ej. 31124"
               />
-              {loadingCP && <span className="text-[11px] text-brand-600 mt-1 block">Buscando ciudad...</span>}
+              {loadingCP && <span className="text-[11px] text-brand-600 font-medium mt-1 block">Buscando ciudad...</span>}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Estado *</label>
+              <label className="block text-xs font-semibold text-slate-800 mb-1">Estado *</label>
               <input
                 required
                 type="text"
                 value={form.estado}
                 onChange={(e) => setForm({ ...form, estado: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                 placeholder="Ej. Chihuahua"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Ciudad o Municipio *</label>
+              <label className="block text-xs font-semibold text-slate-800 mb-1">Ciudad o Municipio *</label>
               <input
                 required
                 type="text"
                 value={form.ciudad}
                 onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                 placeholder="Ej. Chihuahua"
               />
             </div>
@@ -310,8 +310,8 @@ export default function MisDatosPage() {
               {sugerenciasColonias.length > 0 && !esColoniaManual ? (
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-slate-700">
-                      Colonia / Fraccionamiento <span className="text-slate-400 font-normal">({sugerenciasColonias.length} opciones detectadas)</span>
+                    <label className="block text-xs font-semibold text-slate-800">
+                      Colonia / Fraccionamiento <span className="text-slate-500 font-normal">({sugerenciasColonias.length} opciones detectadas)</span>
                     </label>
                     <button
                       type="button"
@@ -331,7 +331,7 @@ export default function MisDatosPage() {
                         setForm(prev => ({ ...prev, colonia: e.target.value }));
                       }
                     }}
-                    className="w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 font-medium cursor-pointer shadow-sm"
+                    className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm cursor-pointer shadow-sm transition-all focus:outline-none"
                   >
                     <option value="">-- Selecciona tu colonia ({sugerenciasColonias.length} disponibles) --</option>
                     {sugerenciasColonias.map((c, idx) => (
@@ -343,8 +343,8 @@ export default function MisDatosPage() {
               ) : (
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-slate-700">
-                      Colonia / Fraccionamiento <span className="text-slate-400 font-normal">(Opcional)</span>
+                    <label className="block text-xs font-semibold text-slate-800">
+                      Colonia / Fraccionamiento <span className="text-slate-500 font-normal">(Opcional)</span>
                     </label>
                     {sugerenciasColonias.length > 0 && (
                       <button
@@ -365,7 +365,7 @@ export default function MisDatosPage() {
                     type="text"
                     value={form.colonia}
                     onChange={(e) => setForm({ ...form, colonia: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                     placeholder="Ej. Complejo Industrial Chihuahua, Misión Universidad..."
                   />
                 </div>
@@ -373,34 +373,34 @@ export default function MisDatosPage() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Calle <span className="text-slate-400 font-normal">(Opcional para primer pedido)</span></label>
+              <label className="block text-xs font-semibold text-slate-800 mb-1">Calle <span className="text-slate-500 font-normal">(Opcional para primer pedido)</span></label>
               <input
                 type="text"
                 value={form.calle}
                 onChange={(e) => setForm({ ...form, calle: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                 placeholder="Av. De las Industrias..."
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">No. Exterior</label>
+                <label className="block text-xs font-semibold text-slate-800 mb-1">No. Exterior</label>
                 <input
                   type="text"
                   value={form.num_exterior}
                   onChange={(e) => setForm({ ...form, num_exterior: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                   placeholder="123"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">No. Interior</label>
+                <label className="block text-xs font-semibold text-slate-800 mb-1">No. Interior</label>
                 <input
                   type="text"
                   value={form.num_interior}
                   onChange={(e) => setForm({ ...form, num_interior: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  className="w-full px-3.5 py-2.5 rounded-lg border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm transition-all focus:outline-none"
                   placeholder="Bodega B"
                 />
               </div>

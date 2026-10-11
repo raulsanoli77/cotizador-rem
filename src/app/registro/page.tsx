@@ -146,11 +146,11 @@ export default function RegistroB2BPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col pt-24">
+    <div className="min-h-screen bg-slate-100 flex flex-col pt-24">
       <Header />
       
       <main className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl border border-slate-300 overflow-hidden">
           
           <div className="bg-brand-900 px-8 py-10 text-center">
             <h2 className="text-3xl font-extrabold text-white mb-2">Registro de Clientes y Empresas</h2>
@@ -174,17 +174,17 @@ export default function RegistroB2BPage() {
                 
                 {error && (
                   <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-                    <p className="text-red-700 text-sm">{error}</p>
+                    <p className="text-red-700 text-sm font-medium">{error}</p>
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Nombre */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo *</label>
+                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">Nombre Completo *</label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User className="h-5 w-5 text-slate-400" />
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <User className="h-5 w-5 text-slate-500" />
                       </div>
                       <input
                         required
@@ -192,7 +192,7 @@ export default function RegistroB2BPage() {
                         name="nombre_completo"
                         value={formData.nombre_completo}
                         onChange={handleChange}
-                        className="pl-10 block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="pl-11 block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                         placeholder="Ej. Juan Pérez"
                       />
                     </div>
@@ -200,10 +200,10 @@ export default function RegistroB2BPage() {
 
                   {/* Puesto */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Puesto o Rol *</label>
+                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">Puesto o Rol *</label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Briefcase className="h-5 w-5 text-slate-400" />
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Briefcase className="h-5 w-5 text-slate-500" />
                       </div>
                       <input
                         required
@@ -211,7 +211,7 @@ export default function RegistroB2BPage() {
                         name="puesto"
                         value={formData.puesto}
                         onChange={handleChange}
-                        className="pl-10 block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="pl-11 block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                         placeholder="Ej. Comprador / Ingeniero"
                       />
                     </div>
@@ -219,10 +219,10 @@ export default function RegistroB2BPage() {
 
                   {/* Empresa */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Nombre de la Empresa *</label>
+                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">Nombre de la Empresa *</label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Building2 className="h-5 w-5 text-slate-400" />
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Building2 className="h-5 w-5 text-slate-500" />
                       </div>
                       <input
                         required
@@ -230,7 +230,7 @@ export default function RegistroB2BPage() {
                         name="empresa"
                         value={formData.empresa}
                         onChange={handleChange}
-                        className="pl-10 block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="pl-11 block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                         placeholder="Razón social o Nombre comercial"
                       />
                     </div>
@@ -238,13 +238,13 @@ export default function RegistroB2BPage() {
 
                   {/* Perfil */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Perfil de la Empresa *</label>
+                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">Perfil de la Empresa *</label>
                     <select
                       required
                       name="perfil_empresa"
                       value={formData.perfil_empresa}
                       onChange={handleChange}
-                      className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                      className="block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors cursor-pointer"
                     >
                       <option value="Usuario Final (Planta, Taller, Maquinados)">Usuario Final (Planta, Taller, Maquinados)</option>
                       <option value="Distribuidor / Revendedor">Distribuidor / Revendedor</option>
@@ -254,10 +254,10 @@ export default function RegistroB2BPage() {
 
                   {/* Correo */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Correo Corporativo *</label>
+                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">Correo Corporativo *</label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className="h-5 w-5 text-slate-400" />
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-slate-500" />
                       </div>
                       <input
                         required
@@ -265,7 +265,7 @@ export default function RegistroB2BPage() {
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="pl-10 block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="pl-11 block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                         placeholder="correo@tuempresa.com"
                       />
                     </div>
@@ -273,10 +273,10 @@ export default function RegistroB2BPage() {
 
                   {/* Teléfono */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Teléfono Directo *</label>
+                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">Teléfono Directo *</label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Phone className="h-5 w-5 text-slate-400" />
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Phone className="h-5 w-5 text-slate-500" />
                       </div>
                       <input
                         required
@@ -284,7 +284,7 @@ export default function RegistroB2BPage() {
                         name="telefono"
                         value={formData.telefono}
                         onChange={handleChange}
-                        className="pl-10 block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="pl-11 block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                         placeholder="614 000 0000"
                       />
                     </div>
@@ -292,10 +292,10 @@ export default function RegistroB2BPage() {
 
                   {/* RFC */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">RFC (Empresa o Física) *</label>
+                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">RFC (Empresa o Física) *</label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <FileText className="h-5 w-5 text-slate-400" />
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <FileText className="h-5 w-5 text-slate-500" />
                       </div>
                       <input
                         required
@@ -303,7 +303,7 @@ export default function RegistroB2BPage() {
                         name="rfc"
                         value={formData.rfc}
                         onChange={handleChange}
-                        className="pl-10 block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm uppercase"
+                        className="pl-11 block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm uppercase font-medium outline-none transition-colors"
                         placeholder="ABC123456T1"
                       />
                     </div>
@@ -311,17 +311,17 @@ export default function RegistroB2BPage() {
 
                   {/* Página Web */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Página Web <span className="text-slate-400 font-normal">(Opcional)</span></label>
+                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">Página Web <span className="text-slate-400 font-normal">(Opcional)</span></label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Globe className="h-5 w-5 text-slate-400" />
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Globe className="h-5 w-5 text-slate-500" />
                       </div>
                       <input
                         type="url"
                         name="pagina_web"
                         value={formData.pagina_web}
                         onChange={handleChange}
-                        className="pl-10 block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="pl-11 block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                         placeholder="https://tuempresa.com"
                       />
                     </div>
@@ -329,13 +329,13 @@ export default function RegistroB2BPage() {
                 </div>
 
                 {/* Ubicación de Entrega Base (Para Fletes) */}
-                <div className="border-t border-slate-200 mt-8 pt-6">
+                <div className="border-t-2 border-slate-200 mt-8 pt-6">
                   <div className="mb-4">
                     <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-brand-600" />
                       Ubicación de Entrega Base
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-slate-600 mt-0.5 font-medium">
                       Necesaria para calcular costos y tiempos de flete en tus cotizaciones. (Calle y número son opcionales y se pueden agregar después).
                     </p>
                   </div>
@@ -344,7 +344,7 @@ export default function RegistroB2BPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Código Postal */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Código Postal (5 dígitos) *</label>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">Código Postal (5 dígitos) *</label>
                       <input
                         required
                         type="text"
@@ -352,36 +352,36 @@ export default function RegistroB2BPage() {
                         name="codigo_postal"
                         value={formData.codigo_postal}
                         onChange={handleCPChange}
-                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm font-semibold tracking-wide"
+                        className="block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-bold tracking-wide outline-none transition-colors"
                         placeholder="Ej. 32668"
                       />
-                      {loadingCP && <span className="text-[11px] text-brand-600 mt-1 block">Detectando ubicación...</span>}
+                      {loadingCP && <span className="text-[11px] text-brand-600 font-semibold mt-1 block">Detectando ubicación...</span>}
                     </div>
 
                     {/* Estado */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Estado *</label>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">Estado *</label>
                       <input
                         required
                         type="text"
                         name="estado"
                         value={formData.estado}
                         onChange={handleChange}
-                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                         placeholder="Ej. Chihuahua"
                       />
                     </div>
 
                     {/* Ciudad o Municipio */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Ciudad o Municipio *</label>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">Ciudad o Municipio *</label>
                       <input
                         required
                         type="text"
                         name="ciudad"
                         value={formData.ciudad}
                         onChange={handleChange}
-                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                         placeholder="Ej. Juárez"
                       />
                     </div>
@@ -392,15 +392,15 @@ export default function RegistroB2BPage() {
                     {sugerenciasColonias.length > 0 && !esColoniaManual ? (
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="block text-xs font-semibold text-slate-700">
-                            Colonia / Fraccionamiento <span className="text-slate-400 font-normal">({sugerenciasColonias.length} opciones detectadas)</span>
+                          <label className="block text-xs font-semibold text-slate-800">
+                            Colonia / Fraccionamiento <span className="text-slate-500 font-normal">({sugerenciasColonias.length} opciones detectadas)</span>
                           </label>
                           <button
                             type="button"
                             onClick={() => {
                               setEsColoniaManual(true);
                             }}
-                            className="text-[11px] text-brand-600 hover:text-brand-800 font-semibold hover:underline"
+                            className="text-[11px] text-brand-600 hover:text-brand-800 font-bold hover:underline"
                           >
                             ✏️ Escribir otra manualmente
                           </button>
@@ -416,7 +416,7 @@ export default function RegistroB2BPage() {
                               setFormData(prev => ({ ...prev, colonia: e.target.value }));
                             }
                           }}
-                          className="block w-full rounded-lg border border-slate-300 bg-white py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm font-medium shadow-sm cursor-pointer"
+                          className="block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium shadow-sm cursor-pointer outline-none transition-colors"
                         >
                           <option value="">-- Selecciona tu colonia ({sugerenciasColonias.length} disponibles) --</option>
                           {sugerenciasColonias.map((c, idx) => (
@@ -428,8 +428,8 @@ export default function RegistroB2BPage() {
                     ) : (
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="block text-xs font-semibold text-slate-700">
-                            Colonia / Fraccionamiento <span className="text-slate-400 font-normal">(Opcional)</span>
+                          <label className="block text-xs font-semibold text-slate-800">
+                            Colonia / Fraccionamiento <span className="text-slate-500 font-normal">(Opcional)</span>
                           </label>
                           {sugerenciasColonias.length > 0 && (
                             <button
@@ -440,7 +440,7 @@ export default function RegistroB2BPage() {
                                   setFormData(prev => ({ ...prev, colonia: sugerenciasColonias[0] }));
                                 }
                               }}
-                              className="text-[11px] text-brand-600 hover:text-brand-800 font-semibold hover:underline"
+                              className="text-[11px] text-brand-600 hover:text-brand-800 font-bold hover:underline"
                             >
                               📋 Ver lista desplegable ({sugerenciasColonias.length})
                             </button>
@@ -451,7 +451,7 @@ export default function RegistroB2BPage() {
                           name="colonia"
                           value={formData.colonia}
                           onChange={handleChange}
-                          className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                          className="block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                           placeholder="Ej. Las Palmas, Misión Universidad..."
                         />
                       </div>
@@ -461,8 +461,8 @@ export default function RegistroB2BPage() {
                   {/* Fila 3: Calle, No. Exterior, No. Interior (Opcionales) */}
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4">
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Calle <span className="text-slate-400 font-normal">(Opcional para después)</span>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">
+                        Calle <span className="text-slate-500 font-normal">(Opcional para después)</span>
                       </label>
                       <input
                         type="text"
@@ -470,13 +470,13 @@ export default function RegistroB2BPage() {
                         value={formData.calle}
                         onChange={handleChange}
                         placeholder="Av. Industrial, Blvd..."
-                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        No. Exterior <span className="text-slate-400 font-normal">(Opcional)</span>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">
+                        No. Exterior <span className="text-slate-500 font-normal">(Opcional)</span>
                       </label>
                       <input
                         type="text"
@@ -484,13 +484,13 @@ export default function RegistroB2BPage() {
                         value={formData.num_exterior}
                         onChange={handleChange}
                         placeholder="Ej. 123"
-                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        No. Interior <span className="text-slate-400 font-normal">(Opcional)</span>
+                      <label className="block text-xs font-semibold text-slate-800 mb-1">
+                        No. Interior <span className="text-slate-500 font-normal">(Opcional)</span>
                       </label>
                       <input
                         type="text"
@@ -498,13 +498,13 @@ export default function RegistroB2BPage() {
                         value={formData.num_interior}
                         onChange={handleChange}
                         placeholder="Ej. Bodega 2"
-                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                        className="block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-200 mt-8 pt-8">
+                <div className="border-t-2 border-slate-200 mt-8 pt-8">
                   <h3 className="text-lg font-bold text-slate-900 mb-4">Crea tu contraseña de acceso</h3>
                   <div className="relative max-w-md">
                     <input
@@ -514,7 +514,7 @@ export default function RegistroB2BPage() {
                       value={formData.password}
                       onChange={handleChange}
                       minLength={6}
-                      className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                      className="block w-full rounded-lg border-2 border-slate-300 hover:border-slate-400 bg-white py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 sm:text-sm font-medium outline-none transition-colors"
                       placeholder="Mínimo 6 caracteres"
                     />
                   </div>
