@@ -30,6 +30,7 @@ export default function MisDatosPage() {
   });
 
   const [loadingCP, setLoadingCP] = useState(false);
+  const [sugerenciasColonias, setSugerenciasColonias] = useState<string[]>([]);
 
   useEffect(() => {
     async function cargarPerfil() {
@@ -79,11 +80,13 @@ export default function MisDatosPage() {
         if (res.ok) {
           const data = await res.json();
           if (data.estado) {
+            const colonias = data.colonias || [];
+            setSugerenciasColonias(colonias);
             setForm(prev => ({
               ...prev,
               estado: data.estado,
               ciudad: data.ciudad || data.municipio || prev.ciudad,
-              colonia: data.colonias && data.colonias.length === 1 ? data.colonias[0] : prev.colonia
+              colonia: colonias.length === 1 ? colonias[0] : (colonias.length > 0 && !prev.colonia ? colonias[0] : prev.colonia)
             }));
           }
         }
@@ -92,6 +95,8 @@ export default function MisDatosPage() {
       } finally {
         setLoadingCP(false);
       }
+    } else {
+      setSugerenciasColonias([]);
     }
   };
 
@@ -300,14 +305,22 @@ export default function MisDatosPage() {
             </div>
 
             <div className="sm:col-span-3">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Colonia <span className="text-slate-400 font-normal">(Opcional)</span></label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Colonia / Fraccionamiento <span className="text-slate-400 font-normal">(Opcional, autocompletada por C.P.)</span>
+              </label>
               <input
                 type="text"
+                list="sugerencias-colonias-datos"
                 value={form.colonia}
                 onChange={(e) => setForm({ ...form, colonia: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
-                placeholder="Ej. Complejo Industrial Chihuahua"
+                placeholder="Ej. Complejo Industrial Chihuahua, Misión de los Lagos..."
               />
+              <datalist id="sugerencias-colonias-datos">
+                {sugerenciasColonias.map((c, idx) => (
+                  <option key={idx} value={c} />
+                ))}
+              </datalist>
             </div>
 
             <div className="sm:col-span-2">

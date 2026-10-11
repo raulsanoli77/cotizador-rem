@@ -25,10 +25,15 @@ export default function RegistroB2BPage() {
     codigo_postal: '',
     ciudad: '',
     estado: '',
+    colonia: '',
+    calle: '',
+    num_exterior: '',
+    num_interior: '',
     password: '',
   });
 
   const [loadingCP, setLoadingCP] = useState(false);
+  const [sugerenciasColonias, setSugerenciasColonias] = useState<string[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -45,10 +50,13 @@ export default function RegistroB2BPage() {
         if (res.ok) {
           const data = await res.json();
           if (data.estado) {
+            const colonias = data.colonias || [];
+            setSugerenciasColonias(colonias);
             setFormData(prev => ({
               ...prev,
               estado: data.estado,
-              ciudad: data.ciudad || data.municipio || prev.ciudad
+              ciudad: data.ciudad || data.municipio || prev.ciudad,
+              colonia: colonias.length === 1 ? colonias[0] : (colonias.length > 0 && !prev.colonia ? colonias[0] : prev.colonia),
             }));
           }
         }
@@ -57,6 +65,8 @@ export default function RegistroB2BPage() {
       } finally {
         setLoadingCP(false);
       }
+    } else {
+      setSugerenciasColonias([]);
     }
   };
 
@@ -82,6 +92,10 @@ export default function RegistroB2BPage() {
             codigo_postal: formData.codigo_postal,
             ciudad: formData.ciudad,
             estado: formData.estado,
+            colonia: formData.colonia || null,
+            calle: formData.calle || null,
+            num_exterior: formData.num_exterior || null,
+            num_interior: formData.num_interior || null,
             estatus: 'pendiente_aprobacion', // Campo clave para el Admin
           }
         }
@@ -104,6 +118,10 @@ export default function RegistroB2BPage() {
           codigo_postal: formData.codigo_postal,
           ciudad: formData.ciudad,
           estado: formData.estado,
+          colonia: formData.colonia || null,
+          calle: formData.calle || null,
+          num_exterior: formData.num_exterior || null,
+          num_interior: formData.num_interior || null,
           estatus: 'pendiente',
           terminos_pago: 'Contado'
         });
@@ -308,7 +326,7 @@ export default function RegistroB2BPage() {
                   </div>
                 </div>
 
-                {/* Ubicación de Envío Base (Para Fletes) */}
+                {/* Ubicación de Entrega Base (Para Fletes) */}
                 <div className="border-t border-slate-200 mt-8 pt-6">
                   <div className="mb-4">
                     <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -316,10 +334,11 @@ export default function RegistroB2BPage() {
                       Ubicación de Entrega Base
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Necesaria para calcular costos y tiempos de flete en tus cotizaciones. (Calle y número se pueden agregar después).
+                      Necesaria para calcular costos y tiempos de flete en tus cotizaciones. (Calle y número son opcionales y se pueden agregar después).
                     </p>
                   </div>
 
+                  {/* Fila 1: CP, Estado, Ciudad */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Código Postal */}
                     <div>
@@ -332,9 +351,9 @@ export default function RegistroB2BPage() {
                         value={formData.codigo_postal}
                         onChange={handleCPChange}
                         className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm font-semibold tracking-wide"
-                        placeholder="Ej. 31124"
+                        placeholder="Ej. 32668"
                       />
-                      {loadingCP && <span className="text-[11px] text-brand-600 mt-1 block">Detectando ciudad...</span>}
+                      {loadingCP && <span className="text-[11px] text-brand-600 mt-1 block">Detectando ubicación...</span>}
                     </div>
 
                     {/* Estado */}
@@ -351,7 +370,7 @@ export default function RegistroB2BPage() {
                       />
                     </div>
 
-                    {/* Ciudad */}
+                    {/* Ciudad o Municipio */}
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 mb-1">Ciudad o Municipio *</label>
                       <input
@@ -361,7 +380,73 @@ export default function RegistroB2BPage() {
                         value={formData.ciudad}
                         onChange={handleChange}
                         className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
-                        placeholder="Ej. Chihuahua"
+                        placeholder="Ej. Juárez"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Fila 2: Colonia */}
+                  <div className="mt-4">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Colonia / Fraccionamiento <span className="text-slate-400 font-normal">(Opcional, autocompletada por C.P.)</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="colonia"
+                      list="sugerencias-colonias-registro"
+                      value={formData.colonia}
+                      onChange={handleChange}
+                      className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                      placeholder="Ej. Las Palmas, Misión de los Lagos..."
+                    />
+                    <datalist id="sugerencias-colonias-registro">
+                      {sugerenciasColonias.map((c, idx) => (
+                        <option key={idx} value={c} />
+                      ))}
+                    </datalist>
+                  </div>
+
+                  {/* Fila 3: Calle, No. Exterior, No. Interior (Opcionales) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Calle <span className="text-slate-400 font-normal">(Opcional para después)</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="calle"
+                        value={formData.calle}
+                        onChange={handleChange}
+                        placeholder="Av. Industrial, Blvd..."
+                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        No. Exterior <span className="text-slate-400 font-normal">(Opcional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="num_exterior"
+                        value={formData.num_exterior}
+                        onChange={handleChange}
+                        placeholder="Ej. 123"
+                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        No. Interior <span className="text-slate-400 font-normal">(Opcional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="num_interior"
+                        value={formData.num_interior}
+                        onChange={handleChange}
+                        placeholder="Ej. Bodega 2"
+                        className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
                       />
                     </div>
                   </div>
