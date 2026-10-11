@@ -155,7 +155,7 @@ export default function ClientesB2BPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Users className="h-6 w-6 text-brand-600" />
-            Clientes B2B
+            Clientes Registrados
           </h1>
           <p className="text-slate-500 text-sm mt-1">
             Gestiona aprobaciones, accesos y términos de pago de tus clientes.
@@ -258,7 +258,7 @@ export default function ClientesB2BPage() {
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-slate-100">
-              <h3 className="font-bold text-lg text-slate-900">Administrar Cliente B2B</h3>
+              <h3 className="font-bold text-lg text-slate-900">Administrar Cliente</h3>
               <button 
                 onClick={() => setModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -316,8 +316,8 @@ export default function ClientesB2BPage() {
                     value={editEstatus}
                     onChange={(e: any) => setEditEstatus(e.target.value)}
                   >
-                    <option value="pendiente">Pendiente (Sin acceso B2B)</option>
-                    <option value="aprobado">Aprobado (Acceso B2B activo)</option>
+                    <option value="pendiente">Pendiente (Sin precio preferencial)</option>
+                    <option value="aprobado">Aprobado (Precios preferenciales activos)</option>
                     <option value="rechazado">Rechazado (Bloqueado)</option>
                   </select>
                 </div>
@@ -329,7 +329,7 @@ export default function ClientesB2BPage() {
                     value={editRol}
                     onChange={(e: any) => setEditRol(e.target.value)}
                   >
-                    <option value="cliente">Cliente B2B Normal</option>
+                    <option value="cliente">Cliente Registrado (Estándar)</option>
                     <option value="admin">Administrador (Acceso Total)</option>
                   </select>
                 </div>

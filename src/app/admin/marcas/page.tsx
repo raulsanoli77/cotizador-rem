@@ -230,7 +230,7 @@ export default function MarcasAdminPage() {
                   <ImageIcon className="h-12 w-12 text-slate-300" />
                 )}
                 <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-                  <span className="bg-brand-100 text-brand-800 text-xs font-bold px-2 py-1 rounded">B2B: x{margen}</span>
+                  <span className="bg-brand-100 text-brand-800 text-xs font-bold px-2 py-1 rounded">Base: x{margen}</span>
                   <span className="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded">Pub: x{margenP}</span>
                   {cruce && <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">+12% Cruce</span>}
                 </div>
@@ -289,7 +289,7 @@ export default function MarcasAdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Multiplicador de Margen B2B (Base USD)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Multiplicador de Margen Base (USD)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -298,7 +298,7 @@ export default function MarcasAdminPage() {
                   onChange={(e) => setMargenUsa(Number(e.target.value))}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2"
                 />
-                <p className="text-xs text-slate-500 mt-1">Ej. 1.5 es el valor B2B por defecto.</p>
+                <p className="text-xs text-slate-500 mt-1">Ej. 1.5 es el multiplicador base por defecto para clientes.</p>
               </div>
 
               <div>
@@ -311,7 +311,7 @@ export default function MarcasAdminPage() {
                   onChange={(e) => setMargenPub(Number(e.target.value))}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2"
                 />
-                <p className="text-xs text-slate-500 mt-1">Ej. 1.35 multiplica el precio final B2B por 1.35 (35% más) para invitados.</p>
+                <p className="text-xs text-slate-500 mt-1">Ej. 1.35 multiplica el precio base por 1.35 (35% más) para público general.</p>
               </div>
 
               <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">

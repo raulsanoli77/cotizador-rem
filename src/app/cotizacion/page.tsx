@@ -112,7 +112,7 @@ export default function CotizacionPage() {
               {isAuthenticated && lead && (
                 <div className="bg-white border-l-4 border-l-brand-600 shadow-sm border border-slate-200 rounded-r-xl p-5">
                   <p className="text-sm text-slate-800">
-                    <span className="font-bold">Cliente B2B:</span> {lead.nombre_completo} — {lead.empresa} {lead.email && !lead.email.includes('no-email.rem') ? `— ${lead.email}` : ''}
+                    <span className="font-bold">Cliente:</span> {lead.nombre_completo} — {lead.empresa} {lead.email && !lead.email.includes('no-email.rem') ? `— ${lead.email}` : ''}
                   </p>
                   {lead.direccion && (
                     <p className="text-sm text-slate-600 mt-2 flex items-center gap-2">

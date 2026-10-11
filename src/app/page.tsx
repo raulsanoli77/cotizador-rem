@@ -108,7 +108,7 @@ export default async function Home() {
               
               <div className="group p-8 border border-slate-800 bg-slate-800/30 hover:bg-slate-800/60 transition-colors">
                 <Settings className="h-10 w-10 text-brand-500 mb-6 group-hover:scale-110 transition-transform" />
-                <h3 className="text-xl font-bold mb-3 text-white uppercase tracking-wide">Desempeño B2B</h3>
+                <h3 className="text-xl font-bold mb-3 text-white uppercase tracking-wide">Atención Empresarial</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   Solicita cotizaciones formales al equipo de ingeniería con tiempos de entrega precisos para tu línea de producción.
                 </p>

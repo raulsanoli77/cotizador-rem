@@ -549,7 +549,7 @@ export default function CheckoutB2BPage() {
 
                 {perfil?.descuento_porcentaje ? (
                   <div className="mt-6 p-3.5 rounded-xl bg-brand-500/10 border border-brand-500/20 text-xs text-brand-300">
-                    <span className="font-bold block text-sm text-brand-200">Descuento B2B Aplicado: {perfil.descuento_porcentaje}%</span>
+                    <span className="font-bold block text-sm text-brand-200">Descuento Preferencial: {perfil.descuento_porcentaje}%</span>
                     Tus precios en catálogo ya incluyen este beneficio comercial.
                   </div>
                 ) : null}

@@ -153,8 +153,8 @@ export default function RegistroB2BPage() {
         <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
           
           <div className="bg-brand-900 px-8 py-10 text-center">
-            <h2 className="text-3xl font-extrabold text-white mb-2">Portal de Clientes B2B</h2>
-            <p className="text-brand-100">Regístrate para acceder a tus precios con descuento, gestión de órdenes y términos de pago.</p>
+            <h2 className="text-3xl font-extrabold text-white mb-2">Registro de Clientes y Empresas</h2>
+            <p className="text-brand-100">Regístrate para acceder a tus precios preferenciales y solicitar cotizaciones formales.</p>
           </div>
 
           <div className="px-8 py-10">
@@ -526,7 +526,7 @@ export default function RegistroB2BPage() {
                     disabled={loading}
                     className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-bold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {loading ? 'Procesando registro...' : 'Crear Cuenta B2B'}
+                    {loading ? 'Procesando registro...' : 'Crear Cuenta Empresarial'}
                     {!loading && <ArrowRight className="h-5 w-5" />}
                   </button>
                   <p className="text-center text-sm text-slate-500 mt-4">

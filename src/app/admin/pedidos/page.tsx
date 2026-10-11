@@ -56,7 +56,7 @@ export default async function AdminPedidosPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <ShoppingCart className="h-6 w-6 text-brand-600" />
-            Cotizaciones B2B
+            Cotizaciones Formales
           </h1>
           <p className="text-slate-500 mt-1">Historial de solicitudes de cotización formal enviadas por clientes registrados</p>
         </div>

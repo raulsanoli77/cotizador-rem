@@ -152,11 +152,11 @@ export async function enviarNotificacionAprobacion(
     const { data, error } = await resend.emails.send({
       from: 'REM Industrial <onboarding@resend.dev>', // Importante: Configura tu dominio real en Resend
       to: [destinatario],
-      subject: '¡Tu cuenta B2B en REM Industrial ha sido aprobada!',
+      subject: '¡Tu cuenta empresarial en REM Industrial ha sido aprobada!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
           <h2 style="color: #0f172a;">¡Hola ${nombre}!</h2>
-          <p>Nos complace informarte que tu cuenta en el <strong>Portal B2B de REM Industrial</strong> ha sido aprobada.</p>
+          <p>Nos complace informarte que tu cuenta en el <strong>Portal de Clientes de REM Industrial</strong> ha sido aprobada.</p>
           
           <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0;"><strong>Tus términos comerciales:</strong> ${terminosPago}</p>
@@ -212,8 +212,8 @@ export async function enviarNotificacionRechazo(
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
           <h2 style="color: #0f172a;">Hola ${nombre},</h2>
-          <p>Gracias por tu interés en registrarte en el Portal B2B de REM Industrial.</p>
-          <p>Después de revisar tu solicitud, lamentamos informarte que en este momento <strong>no ha sido posible aprobar tu cuenta B2B</strong>.</p>
+          <p>Gracias por tu interés en registrarte en el Portal de Clientes de REM Industrial.</p>
+          <p>Después de revisar tu solicitud, lamentamos informarte que en este momento <strong>no ha sido posible aprobar tu cuenta empresarial</strong>.</p>
           <p>Si consideras que esto es un error o deseas proveer información adicional sobre tu empresa, por favor responde a este correo o contáctanos directamente a nuestro departamento de ventas.</p>
           <p>Agradecemos tu comprensión.</p>
           <br/>

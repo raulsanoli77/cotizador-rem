@@ -112,7 +112,7 @@ export default function LoginPage() {
               className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border-2 border-brand-600 rounded-lg shadow-sm text-sm font-bold text-brand-700 bg-white hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors"
             >
               <UserPlus className="h-4 w-4 text-brand-600" />
-              Crear Cuenta B2B
+              Crear Cuenta Empresarial
             </Link>
           </div>
         </div>

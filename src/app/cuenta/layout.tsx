@@ -59,7 +59,7 @@ export default function CuentaLayout({ children }: { children: React.ReactNode }
             
             {perfil?.descuento_porcentaje > 0 && (
               <div className="inline-block bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md text-xs font-bold text-emerald-800 mb-6">
-                ⭐ {perfil.descuento_porcentaje}% Descuento B2B
+                ⭐ {perfil.descuento_porcentaje}% Descuento Preferencial
               </div>
             )}
             

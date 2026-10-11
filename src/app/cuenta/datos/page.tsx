@@ -160,7 +160,7 @@ export default function MisDatosPage() {
 
         {form.descuento_porcentaje > 0 && (
           <div className="bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl text-left sm:text-right">
-            <span className="text-xs font-semibold text-emerald-700 block">Beneficio B2B Activo:</span>
+            <span className="text-xs font-semibold text-emerald-700 block">Descuento Preferencial Activo:</span>
             <span className="text-base font-extrabold text-emerald-800">{form.descuento_porcentaje}% de Descuento</span>
           </div>
         )}
