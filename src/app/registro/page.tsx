@@ -34,6 +34,7 @@ export default function RegistroB2BPage() {
 
   const [loadingCP, setLoadingCP] = useState(false);
   const [sugerenciasColonias, setSugerenciasColonias] = useState<string[]>([]);
+  const [esColoniaManual, setEsColoniaManual] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -52,11 +53,12 @@ export default function RegistroB2BPage() {
           if (data.estado) {
             const colonias = data.colonias || [];
             setSugerenciasColonias(colonias);
+            setEsColoniaManual(false);
             setFormData(prev => ({
               ...prev,
               estado: data.estado,
               ciudad: data.ciudad || data.municipio || prev.ciudad,
-              colonia: colonias.length === 1 ? colonias[0] : (colonias.length > 0 && !prev.colonia ? colonias[0] : prev.colonia),
+              colonia: colonias.length === 1 ? colonias[0] : (colonias.length > 0 ? (colonias.includes(prev.colonia) ? prev.colonia : colonias[0]) : prev.colonia),
             }));
           }
         }
@@ -387,23 +389,73 @@ export default function RegistroB2BPage() {
 
                   {/* Fila 2: Colonia */}
                   <div className="mt-4">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Colonia / Fraccionamiento <span className="text-slate-400 font-normal">(Opcional, autocompletada por C.P.)</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="colonia"
-                      list="sugerencias-colonias-registro"
-                      value={formData.colonia}
-                      onChange={handleChange}
-                      className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
-                      placeholder="Ej. Las Palmas, Misión de los Lagos..."
-                    />
-                    <datalist id="sugerencias-colonias-registro">
-                      {sugerenciasColonias.map((c, idx) => (
-                        <option key={idx} value={c} />
-                      ))}
-                    </datalist>
+                    {sugerenciasColonias.length > 0 && !esColoniaManual ? (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-semibold text-slate-700">
+                            Colonia / Fraccionamiento <span className="text-slate-400 font-normal">({sugerenciasColonias.length} opciones detectadas)</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEsColoniaManual(true);
+                            }}
+                            className="text-[11px] text-brand-600 hover:text-brand-800 font-semibold hover:underline"
+                          >
+                            ✏️ Escribir otra manualmente
+                          </button>
+                        </div>
+                        <select
+                          name="colonia"
+                          value={formData.colonia}
+                          onChange={(e) => {
+                            if (e.target.value === '__OTRA__') {
+                              setEsColoniaManual(true);
+                              setFormData(prev => ({ ...prev, colonia: '' }));
+                            } else {
+                              setFormData(prev => ({ ...prev, colonia: e.target.value }));
+                            }
+                          }}
+                          className="block w-full rounded-lg border border-slate-300 bg-white py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm font-medium shadow-sm cursor-pointer"
+                        >
+                          <option value="">-- Selecciona tu colonia ({sugerenciasColonias.length} disponibles) --</option>
+                          {sugerenciasColonias.map((c, idx) => (
+                            <option key={idx} value={c}>{c}</option>
+                          ))}
+                          <option value="__OTRA__">✏️ Otra colonia (no está en la lista)...</option>
+                        </select>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-semibold text-slate-700">
+                            Colonia / Fraccionamiento <span className="text-slate-400 font-normal">(Opcional)</span>
+                          </label>
+                          {sugerenciasColonias.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEsColoniaManual(false);
+                                if (!formData.colonia && sugerenciasColonias.length > 0) {
+                                  setFormData(prev => ({ ...prev, colonia: sugerenciasColonias[0] }));
+                                }
+                              }}
+                              className="text-[11px] text-brand-600 hover:text-brand-800 font-semibold hover:underline"
+                            >
+                              📋 Ver lista desplegable ({sugerenciasColonias.length})
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          name="colonia"
+                          value={formData.colonia}
+                          onChange={handleChange}
+                          className="block w-full rounded-lg border border-slate-300 bg-slate-50 py-2.5 px-3 text-slate-900 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                          placeholder="Ej. Las Palmas, Misión Universidad..."
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Fila 3: Calle, No. Exterior, No. Interior (Opcionales) */}

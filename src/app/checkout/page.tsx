@@ -38,6 +38,7 @@ export default function CheckoutB2BPage() {
   const [notas, setNotas] = useState('');
   
   const [sugerenciasLugares, setSugerenciasLugares] = useState<string[]>([]);
+  const [esColoniaManual, setEsColoniaManual] = useState(false);
   const [loadingCP, setLoadingCP] = useState(false);
 
   const [guardarDireccion, setGuardarDireccion] = useState(false);
@@ -104,9 +105,8 @@ export default function CheckoutB2BPage() {
             setCiudad(data.ciudad || data.municipio || '');
             if (data.colonias && data.colonias.length > 0) {
               setSugerenciasLugares(data.colonias);
-              if (data.colonias.length === 1) {
-                setColonia(data.colonias[0]);
-              }
+              setEsColoniaManual(false);
+              setColonia(data.colonias.length === 1 ? data.colonias[0] : (data.colonias.includes(colonia) ? colonia : data.colonias[0]));
             }
           }
         }
@@ -371,20 +371,69 @@ export default function CheckoutB2BPage() {
                     </div>
                     
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Colonia <span className="text-slate-400 font-normal">(Opcional)</span></label>
-                      <input 
-                        type="text" 
-                        value={colonia}
-                        list="sugerencias-colonia"
-                        onChange={(e) => setColonia(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
-                        placeholder="Ej. Lomas del Santuario"
-                      />
-                      <datalist id="sugerencias-colonia">
-                        {sugerenciasLugares.map((lugar, i) => (
-                          <option key={`col-${i}`} value={lugar} />
-                        ))}
-                      </datalist>
+                      {sugerenciasLugares.length > 0 && !esColoniaManual ? (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-semibold text-slate-700">
+                              Colonia / Fraccionamiento <span className="text-slate-400 font-normal">({sugerenciasLugares.length} opciones detectadas)</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setEsColoniaManual(true)}
+                              className="text-[11px] text-brand-600 hover:text-brand-800 font-semibold hover:underline"
+                            >
+                              ✏️ Escribir otra manualmente
+                            </button>
+                          </div>
+                          <select
+                            value={colonia}
+                            onChange={(e) => {
+                              if (e.target.value === '__OTRA__') {
+                                setEsColoniaManual(true);
+                                setColonia('');
+                              } else {
+                                setColonia(e.target.value);
+                              }
+                            }}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm font-medium cursor-pointer shadow-sm"
+                          >
+                            <option value="">-- Selecciona tu colonia ({sugerenciasLugares.length} disponibles) --</option>
+                            {sugerenciasLugares.map((lugar, i) => (
+                              <option key={`col-${i}`} value={lugar}>{lugar}</option>
+                            ))}
+                            <option value="__OTRA__">✏️ Otra colonia (no está en la lista)...</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-semibold text-slate-700">
+                              Colonia <span className="text-slate-400 font-normal">(Opcional)</span>
+                            </label>
+                            {sugerenciasLugares.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEsColoniaManual(false);
+                                  if (!colonia && sugerenciasLugares.length > 0) {
+                                    setColonia(sugerenciasLugares[0]);
+                                  }
+                                }}
+                                className="text-[11px] text-brand-600 hover:text-brand-800 font-semibold hover:underline"
+                              >
+                                📋 Ver lista desplegable ({sugerenciasLugares.length})
+                              </button>
+                            )}
+                          </div>
+                          <input 
+                            type="text" 
+                            value={colonia}
+                            onChange={(e) => setColonia(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 text-sm"
+                            placeholder="Ej. Lomas del Santuario, Misión Universidad..."
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div>
