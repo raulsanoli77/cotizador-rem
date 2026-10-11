@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Lock, Mail, Loader2, Wrench } from 'lucide-react';
+import { Lock, Mail, Loader2, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -58,7 +58,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="focus:ring-brand-500 focus:border-brand-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border"
-                  placeholder="admin@remindustrial.com"
+                  placeholder="correo@tuempresa.com"
                 />
               </div>
             </div>
@@ -95,12 +95,26 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:bg-brand-400"
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:bg-brand-400 transition-colors"
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Ingresar'}
               </button>
             </div>
           </form>
+
+          {/* Divisor y Botón Crear Cuenta */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-center text-xs text-gray-500 mb-3">
+              ¿Aún no tienes cuenta para tu empresa?
+            </p>
+            <Link
+              href="/registro"
+              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border-2 border-brand-600 rounded-lg shadow-sm text-sm font-bold text-brand-700 bg-white hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors"
+            >
+              <UserPlus className="h-4 w-4 text-brand-600" />
+              Crear Cuenta B2B
+            </Link>
+          </div>
         </div>
       </div>
     </div>
