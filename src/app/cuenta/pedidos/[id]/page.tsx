@@ -38,7 +38,7 @@ export default function CuentaPedidoPage() {
           .order('id', { ascending: true }),
         supabase
           .from('perfiles_clientes')
-          .select('vendedor:vendedores(id, nombre, telefono, email, activo)')
+          .select('vendedor:vendedores(id, nombre, telefono, email, foto_url, activo)')
           .eq('id', session.user.id)
           .single()
       ]);

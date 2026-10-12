@@ -12,6 +12,7 @@ interface PedidoClientDetailProps {
     nombre: string;
     telefono: string;
     email: string;
+    foto_url?: string | null;
   } | null;
 }
 
@@ -72,11 +73,19 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
 
       {/* Asesor Comercial Asignado */}
       {vendedor && (
-        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl">
-              <MessageSquare className="w-5 h-5" />
-            </div>
+        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3.5">
+            {vendedor.foto_url ? (
+              <img 
+                src={vendedor.foto_url} 
+                alt={vendedor.nombre} 
+                className="w-12 h-12 rounded-full object-cover border-2 border-emerald-300 shadow-sm shrink-0" 
+              />
+            ) : (
+              <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl shrink-0">
+                <MessageSquare className="w-6 h-6" />
+              </div>
+            )}
             <div>
               <p className="text-xs font-bold uppercase text-emerald-800 tracking-wider">Tu Asesor Comercial Asignado</p>
               <p className="text-base font-extrabold text-slate-900">{vendedor.nombre}</p>

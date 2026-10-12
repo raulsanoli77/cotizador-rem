@@ -40,6 +40,7 @@ type PerfilCliente = {
     nombre: string;
     telefono: string;
     email: string;
+    foto_url?: string | null;
   } | null;
 };
 
@@ -90,7 +91,7 @@ export default function ClientesB2BPage() {
     const [clientesRes, vendedoresRes] = await Promise.all([
       supabase
         .from('perfiles_clientes')
-        .select('*, vendedor:vendedores(id, nombre, telefono, email)')
+        .select('*, vendedor:vendedores(id, nombre, telefono, email, foto_url)')
         .order('fecha_registro', { ascending: false }),
       supabase
         .from('vendedores')
@@ -255,12 +256,24 @@ export default function ClientesB2BPage() {
                     </td>
                     <td className="px-6 py-4">
                       {c.vendedor ? (
-                        <div className="flex flex-col">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-800">
-                            <UserCheck className="h-3.5 w-3.5 text-brand-600" />
-                            {c.vendedor.nombre}
-                          </span>
-                          <span className="text-[11px] text-slate-500 mt-0.5">{c.vendedor.telefono}</span>
+                        <div className="flex items-center gap-2.5">
+                          {c.vendedor.foto_url ? (
+                            <img 
+                              src={c.vendedor.foto_url} 
+                              alt={c.vendedor.nombre} 
+                              className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0 shadow-sm" 
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center shrink-0 text-xs border border-brand-200">
+                              {c.vendedor.nombre.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold text-slate-800 truncate">
+                              {c.vendedor.nombre}
+                            </span>
+                            <span className="text-[11px] text-slate-500">{c.vendedor.telefono}</span>
+                          </div>
                         </div>
                       ) : (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-400">

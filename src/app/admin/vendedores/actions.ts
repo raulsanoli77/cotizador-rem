@@ -8,6 +8,7 @@ export type Vendedor = {
   nombre: string;
   telefono: string;
   email: string;
+  foto_url?: string | null;
   activo: boolean;
   created_at: string;
   clientes_count?: number;
@@ -31,6 +32,7 @@ export async function obtenerVendedores(): Promise<{ success: boolean; data?: Ve
       nombre: v.nombre,
       telefono: v.telefono,
       email: v.email,
+      foto_url: v.foto_url || null,
       activo: v.activo,
       created_at: v.created_at,
       clientes_count: Array.isArray(v.clientes) ? v.clientes.length : 0,
@@ -46,6 +48,7 @@ export async function crearVendedor(datos: {
   nombre: string;
   telefono: string;
   email: string;
+  foto_url?: string | null;
 }) {
   const supabase = createAdminClient();
   try {
@@ -55,6 +58,7 @@ export async function crearVendedor(datos: {
         nombre: datos.nombre.trim(),
         telefono: datos.telefono.trim(),
         email: datos.email.trim().toLowerCase(),
+        foto_url: datos.foto_url || null,
         activo: true,
       });
 
@@ -74,6 +78,7 @@ export async function actualizarVendedor(
     nombre: string;
     telefono: string;
     email: string;
+    foto_url?: string | null;
     activo: boolean;
   }
 ) {
@@ -85,6 +90,7 @@ export async function actualizarVendedor(
         nombre: datos.nombre.trim(),
         telefono: datos.telefono.trim(),
         email: datos.email.trim().toLowerCase(),
+        foto_url: datos.foto_url || null,
         activo: datos.activo,
       })
       .eq('id', id);

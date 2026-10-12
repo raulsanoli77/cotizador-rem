@@ -18,7 +18,7 @@ export default function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [vendedorAsignado, setVendedorAsignado] = useState<{ nombre: string; telefono: string; email: string } | null>(null);
+  const [vendedorAsignado, setVendedorAsignado] = useState<{ nombre: string; telefono: string; email: string; foto_url?: string | null } | null>(null);
 
   useEffect(() => {
     async function fetchBranding() {
@@ -36,7 +36,7 @@ export default function Header() {
       if (session) {
         const { data: perfil } = await supabase
           .from('perfiles_clientes')
-          .select('estatus, rol, vendedor:vendedores(nombre, telefono, email, activo)')
+          .select('estatus, rol, vendedor:vendedores(nombre, telefono, email, foto_url, activo)')
           .eq('id', session.user.id)
           .single();
           
@@ -91,6 +91,13 @@ export default function Header() {
       <div className="fixed top-0 left-0 right-0 z-50 h-8 bg-brand-700 text-white flex items-center justify-center text-xs sm:text-sm font-medium px-4 truncate">
         {vendedorAsignado ? (
           <>
+            {vendedorAsignado.foto_url && (
+              <img 
+                src={vendedorAsignado.foto_url} 
+                alt={vendedorAsignado.nombre} 
+                className="w-5 h-5 rounded-full object-cover inline-block mr-1.5 border border-white/50 shadow-xs" 
+              />
+            )}
             <span>Tu asesor asignado: <strong className="font-bold">{vendedorAsignado.nombre}</strong></span>
             <span className="mx-2">|</span>
             <a href={`mailto:${vendedorAsignado.email}`} className="hover:underline font-bold">{vendedorAsignado.email}</a>
