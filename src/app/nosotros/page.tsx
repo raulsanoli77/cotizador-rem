@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import OrganigramaEquipo from '@/components/nosotros/OrganigramaEquipo';
+import BannerCtaNosotros from '@/components/nosotros/BannerCtaNosotros';
 import { createServerClient } from '@/lib/supabase/server';
 import { 
   NOSOTROS_CONFIG_DEFAULT, 
@@ -390,34 +391,7 @@ export default async function SobreNosotrosPage() {
             </div>
 
             {/* BANNER CTA */}
-            <div className="mt-16 bg-gradient-to-r from-slate-900 via-brand-900/60 to-slate-900 border border-cyan-500/30 rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden shadow-2xl">
-              <div className="max-w-2xl mx-auto space-y-6 relative z-10">
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                  ¿Listo para equipar tu planta con las mejores herramientas?
-                </h3>
-                <p className="text-slate-300 text-sm sm:text-base">
-                  Explora nuestro catálogo en línea, cotiza en segundos con entrega inmediata en Cd. Juárez, El Paso TX o envíos a todo México.
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-                  <Link
-                    href="/catalogo"
-                    className="px-8 py-3.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl transition-all shadow-lg shadow-cyan-500/25 flex items-center gap-2 text-sm uppercase tracking-wider"
-                  >
-                    <span>Ir al Catálogo de Productos</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                  <a
-                    href="https://wa.me/526566341516?text=Hola,%20me%20gustar%C3%ADa%20solicitar%20asesor%C3%ADa%20técnica%20de%20REM%20Industrial."
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl border border-slate-700 transition-all flex items-center gap-2 text-sm"
-                  >
-                    <WhatsAppIcon className="w-4 h-4 text-emerald-400 fill-current" />
-                    <span>Hablar por WhatsApp</span>
-                  </a>
-                </div>
-              </div>
-            </div>
+            <BannerCtaNosotros />
 
           </div>
         </section>
