@@ -54,6 +54,40 @@ export async function enviarNotificacionVentas(
 
     if (error) {
       console.error('[Email] Error al enviar:', error);
+
+      // Si el error es por restricción de sandbox de Resend (solo permite enviar a la cuenta registrada)
+      if (
+        error.message?.includes('testing emails to your own email address') || 
+        error.message?.includes('verify a domain')
+      ) {
+        console.warn('[Email] Reintentando envío a la cuenta autorizada de Resend (Sandbox fallback)...');
+        const match = error.message.match(/\(([^)]+)\)/);
+        const ownerEmail = match ? match[1] : 'raulsanoli77@gmail.com';
+
+        try {
+          const fallbackRes = await resend.emails.send({
+            from: DEFAULT_FROM,
+            to: [ownerEmail],
+            subject: `[PRUEBA RESEND - Destinado a: ${destinatarios.join(', ')}] Nueva Solicitud #${params.folio.replace(/^COT-/i, '')} | ${params.lead.empresa}`,
+            html: `
+              <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 14px; margin-bottom: 16px; border-radius: 8px; font-family: sans-serif; font-size: 13px; color: #92400e;">
+                <strong>⚠️ NOTIFICACIÓN EN MODO PRUEBA (RESEND SANDBOX):</strong><br/>
+                Esta cotización estaba destinada a los correos: <strong>${destinatarios.join(', ')}</strong>.<br/>
+                Resend la entregó aquí (<code>${ownerEmail}</code>) porque tu dominio corporativo aún no está verificado en <a href="https://resend.com/domains" target="_blank" style="color: #b45309; font-weight: bold;">resend.com/domains</a>.<br/>
+                En cuanto agregues y verifiques tu dominio en Resend, los correos saldrán directamente a cualquier vendedor (Hotmail, Outlook, etc.) y a los clientes.
+              </div>
+              ${generarHTMLNotificacion(params)}
+            `,
+          });
+          if (!fallbackRes.error) {
+            console.log('[Email] Notificación entregada en modo prueba a:', ownerEmail);
+            return { success: true };
+          }
+        } catch (fallbackErr) {
+          console.error('[Email] Error en fallback de pruebas:', fallbackErr);
+        }
+      }
+
       return { success: false, error: error.message };
     }
 
