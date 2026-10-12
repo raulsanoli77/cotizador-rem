@@ -8,6 +8,10 @@ export interface MiembroEquipo {
   telefono?: string;
   email?: string;
   descripcion?: string;
+  mostrarTelefono?: boolean;      // Ver texto con número de teléfono
+  mostrarEmail?: boolean;         // Ver texto con correo electrónico
+  mostrarBotonWhatsapp?: boolean; // Ver botón de WhatsApp
+  mostrarBotonEmail?: boolean;    // Ver botón de correo electrónico
 }
 
 export interface TelefonoItem {

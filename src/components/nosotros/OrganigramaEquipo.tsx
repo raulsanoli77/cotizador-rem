@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { 
   Users, 
   Mail, 
+  Phone,
   Check, 
   Network,
   Grid
@@ -107,35 +108,71 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
 
         {/* Descripción */}
         {m.descripcion && (
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4 line-clamp-3 px-2">
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-3 line-clamp-3 px-2">
             {m.descripcion}
           </p>
         )}
 
-        {/* Botones de contacto directo */}
-        <div className="mt-auto w-full pt-4 border-t border-slate-700/60 flex items-center justify-center gap-2">
-          {telLimpio && (
-            <a
-              href={`https://wa.me/52${telLimpio}?text=Hola%20${encodeURIComponent(m.nombre)},%20te%20contacto%20desde%20la%20página%20de%20REM%20Industrial.`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 py-2.5 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-all"
-              title="Contactar por WhatsApp"
-            >
-              <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
-              <span>WhatsApp</span>
-            </a>
-          )}
-          {m.email && (
-            <a
-              href={`mailto:${m.email}?subject=Consulta%20Técnica%20-%20REM%20Industrial`}
-              className="py-2.5 px-3.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/40 flex items-center justify-center text-xs sm:text-sm font-semibold transition-all"
-              title="Enviar correo electrónico"
-            >
-              <Mail className="w-4 h-4" />
-            </a>
-          )}
-        </div>
+        {/* Contenedor de contacto y acciones */}
+        {((m.telefono && m.mostrarTelefono !== false) ||
+          (m.email && m.mostrarEmail !== false) ||
+          (telLimpio && m.mostrarBotonWhatsapp !== false) ||
+          (m.email && m.mostrarBotonEmail !== false)) && (
+          <div className="w-full mt-auto pt-3 border-t border-slate-700/60 space-y-3">
+            {/* Teléfono y Correo en texto */}
+            {((m.telefono && m.mostrarTelefono !== false) || (m.email && m.mostrarEmail !== false)) && (
+              <div className="space-y-1.5 text-left">
+                {m.telefono && m.mostrarTelefono !== false && (
+                  <a
+                    href={`tel:${telLimpio}`}
+                    className="flex items-center gap-2 text-slate-300 hover:text-cyan-300 transition-colors group/tel font-mono text-xs sm:text-sm font-medium"
+                    title="Llamar"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span className="truncate">{m.telefono}</span>
+                  </a>
+                )}
+                {m.email && m.mostrarEmail !== false && (
+                  <a
+                    href={`mailto:${m.email}?subject=Consulta%20Técnica%20-%20REM%20Industrial`}
+                    className="flex items-center gap-2 text-slate-300 hover:text-cyan-300 transition-colors group/mail text-xs sm:text-sm font-medium"
+                    title="Enviar correo"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span className="truncate break-all">{m.email}</span>
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Botones de acción */}
+            {((telLimpio && m.mostrarBotonWhatsapp !== false) || (m.email && m.mostrarBotonEmail !== false)) && (
+              <div className={`flex items-center justify-center gap-2 ${((m.telefono && m.mostrarTelefono !== false) || (m.email && m.mostrarEmail !== false)) ? 'pt-2.5 border-t border-slate-700/40' : ''}`}>
+                {telLimpio && m.mostrarBotonWhatsapp !== false && (
+                  <a
+                    href={`https://wa.me/52${telLimpio}?text=Hola%20${encodeURIComponent(m.nombre)},%20te%20contacto%20desde%20la%20página%20de%20REM%20Industrial.`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 py-2.5 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-all"
+                    title="Contactar por WhatsApp"
+                  >
+                    <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                    <span>WhatsApp</span>
+                  </a>
+                )}
+                {m.email && m.mostrarBotonEmail !== false && (
+                  <a
+                    href={`mailto:${m.email}?subject=Consulta%20Técnica%20-%20REM%20Industrial`}
+                    className="py-2.5 px-3.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/40 flex items-center justify-center text-xs sm:text-sm font-semibold transition-all"
+                    title="Enviar correo electrónico"
+                  >
+                    <Mail className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };

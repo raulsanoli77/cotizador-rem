@@ -63,6 +63,10 @@ export default function AdminNosotrosPage() {
   const [formEmail, setFormEmail] = useState('');
   const [formFotoUrl, setFormFotoUrl] = useState('');
   const [formDescripcion, setFormDescripcion] = useState('');
+  const [formMostrarTelefono, setFormMostrarTelefono] = useState(true);
+  const [formMostrarEmail, setFormMostrarEmail] = useState(true);
+  const [formMostrarBotonWhatsapp, setFormMostrarBotonWhatsapp] = useState(true);
+  const [formMostrarBotonEmail, setFormMostrarBotonEmail] = useState(true);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
 
   // Cargar datos de Supabase
@@ -266,6 +270,10 @@ export default function AdminNosotrosPage() {
     setFormEmail('ventasrem@remindustrial.mx');
     setFormFotoUrl('');
     setFormDescripcion('');
+    setFormMostrarTelefono(true);
+    setFormMostrarEmail(true);
+    setFormMostrarBotonWhatsapp(true);
+    setFormMostrarBotonEmail(true);
     setModalAbierto(true);
   };
 
@@ -279,6 +287,10 @@ export default function AdminNosotrosPage() {
     setFormEmail(miembro.email || '');
     setFormFotoUrl(miembro.foto_url || '');
     setFormDescripcion(miembro.descripcion || '');
+    setFormMostrarTelefono(miembro.mostrarTelefono !== false);
+    setFormMostrarEmail(miembro.mostrarEmail !== false);
+    setFormMostrarBotonWhatsapp(miembro.mostrarBotonWhatsapp !== false);
+    setFormMostrarBotonEmail(miembro.mostrarBotonEmail !== false);
     setModalAbierto(true);
   };
 
@@ -300,6 +312,10 @@ export default function AdminNosotrosPage() {
               email: formEmail.trim(),
               foto_url: formFotoUrl.trim(),
               descripcion: formDescripcion.trim(),
+              mostrarTelefono: formMostrarTelefono,
+              mostrarEmail: formMostrarEmail,
+              mostrarBotonWhatsapp: formMostrarBotonWhatsapp,
+              mostrarBotonEmail: formMostrarBotonEmail,
             }
           : m
       );
@@ -314,6 +330,10 @@ export default function AdminNosotrosPage() {
         email: formEmail.trim(),
         foto_url: formFotoUrl.trim(),
         descripcion: formDescripcion.trim(),
+        mostrarTelefono: formMostrarTelefono,
+        mostrarEmail: formMostrarEmail,
+        mostrarBotonWhatsapp: formMostrarBotonWhatsapp,
+        mostrarBotonEmail: formMostrarBotonEmail,
       };
       nuevoEquipo = [...equipo, nuevo];
     }
@@ -1231,6 +1251,56 @@ export default function AdminNosotrosPage() {
                   onChange={(e) => setFormDescripcion(e.target.value)}
                   className="w-full text-sm border border-gray-300 rounded-xl px-3 py-2 text-gray-900 focus:outline-hidden focus:ring-2 focus:ring-brand-500 resize-none"
                 />
+              </div>
+
+              {/* Opciones de Visibilidad de Contacto */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-800">
+                    Visibilidad en la tarjeta pública
+                  </span>
+                  <span className="text-[11px] text-gray-500">
+                    Selecciona qué datos y botones mostrar
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900 select-none">
+                    <input
+                      type="checkbox"
+                      checked={formMostrarTelefono}
+                      onChange={(e) => setFormMostrarTelefono(e.target.checked)}
+                      className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 accent-brand-600 cursor-pointer"
+                    />
+                    <span>Mostrar número de teléfono</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900 select-none">
+                    <input
+                      type="checkbox"
+                      checked={formMostrarEmail}
+                      onChange={(e) => setFormMostrarEmail(e.target.checked)}
+                      className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 accent-brand-600 cursor-pointer"
+                    />
+                    <span>Mostrar correo electrónico</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900 select-none">
+                    <input
+                      type="checkbox"
+                      checked={formMostrarBotonWhatsapp}
+                      onChange={(e) => setFormMostrarBotonWhatsapp(e.target.checked)}
+                      className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 accent-brand-600 cursor-pointer"
+                    />
+                    <span>Mostrar botón de WhatsApp</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-700 hover:text-gray-900 select-none">
+                    <input
+                      type="checkbox"
+                      checked={formMostrarBotonEmail}
+                      onChange={(e) => setFormMostrarBotonEmail(e.target.checked)}
+                      className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 accent-brand-600 cursor-pointer"
+                    />
+                    <span>Mostrar botón de Correo</span>
+                  </label>
+                </div>
               </div>
 
               {/* Botones de acción */}
