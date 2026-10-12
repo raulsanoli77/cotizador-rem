@@ -84,6 +84,7 @@ export default function Header() {
   const enlaces = [
     { href: '/', label: 'Inicio' },
     { href: '/catalogo', label: 'Catálogo' },
+    { href: '/nosotros', label: 'Sobre Nosotros' },
     { href: '/cotizacion', label: 'Checkout' },
   ];
 

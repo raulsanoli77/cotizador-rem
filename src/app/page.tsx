@@ -69,9 +69,15 @@ export default async function Home() {
                 </Link>
                 <Link 
                   href="/cotizacion" 
-                  className="w-full sm:w-auto bg-slate-800/80 hover:bg-slate-700/80 backdrop-blur-md text-white border border-slate-600 font-bold py-4 px-8 rounded-none transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto bg-slate-800/80 hover:bg-slate-700/80 backdrop-blur-md text-white border border-slate-600 font-bold py-4 px-6 rounded-none transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2"
                 >
                   Cotización Rápida
+                </Link>
+                <Link 
+                  href="/nosotros" 
+                  className="w-full sm:w-auto bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 font-bold py-4 px-6 rounded-none transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+                >
+                  Sobre Nosotros
                 </Link>
               </div>
             </div>
