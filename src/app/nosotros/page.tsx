@@ -8,7 +8,8 @@ import {
   NOSOTROS_CONFIG_DEFAULT, 
   EQUIPO_INICIAL, 
   NosotrosConfig, 
-  MiembroEquipo 
+  MiembroEquipo,
+  normalizarNosotrosConfig
 } from '@/data/equipo';
 import { 
   Target, 
@@ -48,7 +49,7 @@ export default async function SobreNosotrosPage() {
     if (data) {
       data.forEach((item) => {
         if (item.clave === 'nosotros_pagina' && item.valor) {
-          config = { ...NOSOTROS_CONFIG_DEFAULT, ...item.valor };
+          config = normalizarNosotrosConfig(item.valor);
         }
         if (item.clave === 'nosotros_equipo' && Array.isArray(item.valor)) {
           equipo = item.valor;
@@ -58,9 +59,6 @@ export default async function SobreNosotrosPage() {
   } catch (err) {
     console.error('Error cargando configuración pública de nosotros:', err);
   }
-
-  const tel1Limpio = (config.telefono1 || '').replace(/\D/g, '');
-  const tel2Limpio = (config.telefono2 || '').replace(/\D/g, '');
 
   return (
     <div className="min-h-screen flex flex-col pt-24 bg-slate-900 text-slate-100">
@@ -72,8 +70,8 @@ export default async function SobreNosotrosPage() {
           <div className="absolute inset-0 bg-[radial-gradient(#06b6d4_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none"></div>
           
           <div className="container mx-auto max-w-6xl px-4 relative z-10 text-center">
-            {/* Badge solicitado: Tú Socio Industrial */}
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-6 shadow-sm">
+            {/* Badge: Tú Socio Industrial */}
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-6 shadow-xs">
               <Building2 className="w-4 h-4" />
               {config.badge || 'Tú Socio Industrial'}
             </span>
@@ -119,7 +117,7 @@ export default async function SobreNosotrosPage() {
           <div className="container mx-auto max-w-6xl">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               
-              {/* Foto oficial con tarjeta flotante */}
+              {/* Foto oficial con tarjeta flotante dinámica de contactos */}
               <div className="lg:col-span-7 relative">
                 <div className="relative rounded-3xl overflow-hidden border-2 border-slate-700 shadow-2xl bg-slate-950 group">
                   <img
@@ -130,35 +128,56 @@ export default async function SobreNosotrosPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent"></div>
                 </div>
 
-                {/* Tarjeta flotante de contacto directo */}
-                <div className="mt-4 sm:mt-0 sm:absolute sm:-bottom-6 sm:left-6 bg-slate-900/95 border border-cyan-500/40 rounded-2xl p-5 shadow-2xl backdrop-blur-md">
-                  <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                {/* Tarjeta flotante con teléfonos y correos dinámicos */}
+                <div className="mt-4 sm:mt-0 sm:absolute sm:-bottom-8 sm:left-6 sm:max-w-md bg-slate-900/95 border border-cyan-500/40 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-md">
+                  <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                     <Phone className="w-4 h-4 text-cyan-400" />
                     Contáctanos Directo
                   </h4>
-                  <div className="space-y-1">
-                    {config.telefono1 && (
-                      <a
-                        href={`tel:${tel1Limpio}`}
-                        className="block text-base sm:text-lg font-bold text-white hover:text-cyan-300 transition-colors"
-                      >
-                        {config.telefono1}
-                      </a>
-                    )}
-                    {config.telefono2 && (
-                      <a
-                        href={`tel:${tel2Limpio}`}
-                        className="block text-base sm:text-lg font-bold text-white hover:text-cyan-300 transition-colors"
-                      >
-                        {config.telefono2}
-                      </a>
+                  
+                  {/* Lista de teléfonos con títulos personalizados */}
+                  <div className="space-y-2">
+                    {config.telefonos.map((t) => {
+                      const telLimpio = t.numero.replace(/\D/g, '');
+                      return (
+                        <div key={t.id} className="text-left">
+                          <span className="block text-[11px] font-semibold text-slate-400">
+                            {t.titulo}
+                          </span>
+                          <a
+                            href={`tel:${telLimpio}`}
+                            className="text-sm sm:text-base font-bold text-white hover:text-cyan-300 transition-colors inline-block"
+                          >
+                            {t.numero}
+                          </a>
+                        </div>
+                      );
+                    })}
+
+                    {/* Correos dentro de la tarjeta flotante */}
+                    {config.emails.length > 0 && (
+                      <div className="pt-2 border-t border-slate-800 mt-2 space-y-1.5">
+                        {config.emails.map((e) => (
+                          <div key={e.id} className="text-left">
+                            <span className="block text-[11px] font-semibold text-slate-400">
+                              {e.titulo}
+                            </span>
+                            <a
+                              href={`mailto:${e.email}`}
+                              className="text-xs sm:text-sm font-semibold text-cyan-400 hover:text-cyan-300 transition-colors break-all"
+                            >
+                              {e.email}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Texto corporativo, Misión y Visión */}
-              <div className="lg:col-span-5 space-y-6">
+              <div className="lg:col-span-5 space-y-6 pt-6 lg:pt-0">
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2 block">
                     Nuestra Identidad
@@ -281,12 +300,11 @@ export default async function SobreNosotrosPage() {
               </p>
             </div>
 
-            {/* Organigrama de solo lectura */}
             <OrganigramaEquipo miembros={equipo} />
           </div>
         </section>
 
-        {/* PRESENCIA GEOGRÁFICA Y CONTACTO */}
+        {/* PRESENCIA GEOGRÁFICA, SUCURSALES Y CONTACTO */}
         <section className="py-20 px-4 bg-slate-950">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center max-w-2xl mx-auto mb-12">
@@ -303,7 +321,7 @@ export default async function SobreNosotrosPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               {/* Mapa de Google */}
-              <div className="lg:col-span-7 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl h-[380px] bg-slate-900">
+              <div className="lg:col-span-6 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl h-[420px] bg-slate-900">
                 <iframe
                   title="Ubicación REM Industrial Ciudad Juárez"
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3395.7851862421567!2d-106.3649875!3d31.667096299999994!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86e75d415bc9e1a5%3A0xbb84ce7aa4611460!2sBlvd.%20Manuel%20G%C3%B3mez%20Mor%C3%ADn%201249%2C%20Las%20Palmas%2C%2032330%20Ju%C3%A1rez%2C%20Chih.!5e0!3m2!1ses-419!2smx!4v1717351876684!5m2!1ses-419!2smx"
@@ -316,66 +334,106 @@ export default async function SobreNosotrosPage() {
                 ></iframe>
               </div>
 
-              {/* Tarjetas de Información de Contacto */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                      Matriz & Centro de Distribución
-                    </h4>
-                    <p className="text-sm font-semibold text-white leading-relaxed">
-                      {config.direccion}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
-                    <Phone className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                      Teléfonos de Oficina
-                    </h4>
-                    <p className="text-sm font-bold text-white">
-                      {config.telefono1} &bull; {config.telefono2}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                      Correo Electrónico
-                    </h4>
-                    <a
-                      href={`mailto:${config.email}`}
-                      className="text-sm font-bold text-cyan-400 hover:underline"
+              {/* Tarjetas de Información de Contacto y Múltiples Sucursales */}
+              <div className="lg:col-span-6 space-y-4">
+                
+                {/* MÚLTIPLES DIRECCIONES / SUCURSALES */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>Sedes & Sucursales</span>
+                  </h4>
+                  {config.direcciones.map((dir) => (
+                    <div
+                      key={dir.id}
+                      className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-start gap-3 hover:border-slate-700 transition-colors"
                     >
-                      {config.email}
-                    </a>
+                      <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0 mt-0.5">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+                          {dir.titulo}
+                        </h5>
+                        <p className="text-sm font-semibold text-white leading-relaxed mt-0.5">
+                          {dir.direccion}
+                        </p>
+                        {dir.detalles && (
+                          <p className="text-xs text-slate-400 mt-1">
+                            {dir.detalles}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* TELÉFONOS CON TÍTULO PERSONALIZADO */}
+                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-3 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Líneas Telefónicas</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {config.telefonos.map((t) => {
+                      const numLimpio = t.numero.replace(/\D/g, '');
+                      return (
+                        <div key={t.id} className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60">
+                          <span className="block text-[11px] font-semibold text-slate-400">
+                            {t.titulo}
+                          </span>
+                          <a
+                            href={`tel:${numLimpio}`}
+                            className="text-sm font-bold text-white hover:text-cyan-300 transition-colors block mt-0.5"
+                          >
+                            {t.numero}
+                          </a>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
-                    <Clock className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                      Horario de Atención
-                    </h4>
-                    <p className="text-sm font-semibold text-white">
-                      {config.horario}
-                    </p>
+                {/* CORREOS ELECTRÓNICOS */}
+                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-3 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Correos Oficiales</span>
+                  </h4>
+                  <div className="space-y-2">
+                    {config.emails.map((e) => (
+                      <div key={e.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-slate-800/60 px-3 py-2 rounded-xl border border-slate-700/60">
+                        <span className="text-xs font-semibold text-slate-400">
+                          {e.titulo}:
+                        </span>
+                        <a
+                          href={`mailto:${e.email}`}
+                          className="text-xs sm:text-sm font-bold text-cyan-400 hover:underline break-all"
+                        >
+                          {e.email}
+                        </a>
+                      </div>
+                    ))}
                   </div>
                 </div>
+
+                {/* HORARIO DE ATENCIÓN */}
+                {config.horario && (
+                  <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        Horario de Atención
+                      </span>
+                      <p className="text-xs sm:text-sm font-semibold text-white">
+                        {config.horario}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
               </div>
             </div>
 

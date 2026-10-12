@@ -11,15 +11,12 @@ import {
   Edit2, 
   Trash2, 
   ExternalLink, 
-  Upload, 
-  Check, 
   X, 
   RotateCcw,
-  Sparkles,
   Phone,
   Mail,
   MapPin,
-  Image as ImageIcon
+  Upload
 } from 'lucide-react';
 import Link from 'next/link';
 import ImageUploader from '@/components/admin/ImageUploader';
@@ -27,7 +24,11 @@ import {
   NosotrosConfig, 
   NOSOTROS_CONFIG_DEFAULT, 
   MiembroEquipo, 
-  EQUIPO_INICIAL 
+  EQUIPO_INICIAL,
+  TelefonoItem,
+  EmailItem,
+  DireccionItem,
+  normalizarNosotrosConfig
 } from '@/data/equipo';
 
 const DEPARTAMENTOS: MiembroEquipo['departamento'][] = [
@@ -75,7 +76,7 @@ export default function AdminNosotrosPage() {
         if (!error && data) {
           data.forEach((item) => {
             if (item.clave === 'nosotros_pagina' && item.valor) {
-              setConfig({ ...NOSOTROS_CONFIG_DEFAULT, ...item.valor });
+              setConfig(normalizarNosotrosConfig(item.valor));
             }
             if (item.clave === 'nosotros_equipo' && Array.isArray(item.valor)) {
               setEquipo(item.valor);
@@ -140,7 +141,101 @@ export default function AdminNosotrosPage() {
     }
   };
 
-  // Manejo del modal de miembros
+  // MANEJO DE TELÉFONOS DINÁMICOS
+  const agregarTelefono = () => {
+    const nuevo: TelefonoItem = {
+      id: `tel-${Date.now()}`,
+      titulo: 'Nuevo Teléfono / WhatsApp',
+      numero: '(656) ',
+    };
+    setConfig({
+      ...config,
+      telefonos: [...config.telefonos, nuevo],
+    });
+  };
+
+  const actualizarTelefono = (id: string, campo: 'titulo' | 'numero', valor: string) => {
+    setConfig({
+      ...config,
+      telefonos: config.telefonos.map((t) => (t.id === id ? { ...t, [campo]: valor } : t)),
+    });
+  };
+
+  const eliminarTelefono = (id: string) => {
+    if (config.telefonos.length <= 1) {
+      alert('Debes mantener al menos un número telefónico de contacto.');
+      return;
+    }
+    setConfig({
+      ...config,
+      telefonos: config.telefonos.filter((t) => t.id !== id),
+    });
+  };
+
+  // MANEJO DE CORREOS DINÁMICOS
+  const agregarEmail = () => {
+    const nuevo: EmailItem = {
+      id: `email-${Date.now()}`,
+      titulo: 'Nuevo Correo',
+      email: 'contacto@remindustrial.mx',
+    };
+    setConfig({
+      ...config,
+      emails: [...config.emails, nuevo],
+    });
+  };
+
+  const actualizarEmail = (id: string, campo: 'titulo' | 'email', valor: string) => {
+    setConfig({
+      ...config,
+      emails: config.emails.map((e) => (e.id === id ? { ...e, [campo]: valor } : e)),
+    });
+  };
+
+  const eliminarEmail = (id: string) => {
+    if (config.emails.length <= 1) {
+      alert('Debes mantener al menos un correo de contacto.');
+      return;
+    }
+    setConfig({
+      ...config,
+      emails: config.emails.filter((e) => e.id !== id),
+    });
+  };
+
+  // MANEJO DE DIRECCIONES / SUCURSALES DINÁMICAS
+  const agregarDireccion = () => {
+    const nuevo: DireccionItem = {
+      id: `dir-${Date.now()}`,
+      titulo: 'Nueva Sucursal / Sede',
+      direccion: 'Ciudad, Estado, México',
+      detalles: 'Oficina y atención a clientes',
+    };
+    setConfig({
+      ...config,
+      direcciones: [...config.direcciones, nuevo],
+    });
+  };
+
+  const actualizarDireccion = (id: string, campo: 'titulo' | 'direccion' | 'detalles', valor: string) => {
+    setConfig({
+      ...config,
+      direcciones: config.direcciones.map((d) => (d.id === id ? { ...d, [campo]: valor } : d)),
+    });
+  };
+
+  const eliminarDireccion = (id: string) => {
+    if (config.direcciones.length <= 1) {
+      alert('Debes mantener al menos una dirección principal.');
+      return;
+    }
+    setConfig({
+      ...config,
+      direcciones: config.direcciones.filter((d) => d.id !== id),
+    });
+  };
+
+  // MANEJO DE MODAL DE MIEMBROS ORGANIGRAMA
   const abrirModalNuevo = () => {
     setMiembroEditando(null);
     setFormNombre('');
@@ -265,7 +360,7 @@ export default function AdminNosotrosPage() {
             </h1>
           </div>
           <p className="text-sm text-gray-500 mt-1">
-            Gestiona la información institucional, fotos oficiales y el organigrama del equipo de REM Industrial.
+            Gestiona la información institucional, teléfonos con título, correos, múltiples direcciones y el organigrama del equipo.
           </p>
         </div>
 
@@ -308,7 +403,7 @@ export default function AdminNosotrosPage() {
           }`}
         >
           <Building2 className="w-4 h-4" />
-          <span>Contenido General & Fotos</span>
+          <span>Contenido, Contactos & Sucursales</span>
         </button>
 
         <button
@@ -324,79 +419,12 @@ export default function AdminNosotrosPage() {
         </button>
       </div>
 
-      {/* TAB 1: CONTENIDO GENERAL & FOTOS */}
+      {/* TAB 1: CONTENIDO, CONTACTOS & SUCURSALES */}
       {tabActiva === 'contenido' && (
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-6">
-            <h2 className="text-lg font-bold text-gray-900 border-b pb-3">
-              Encabezado Hero & Alcance de la Empresa
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Insignia / Badge */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Insignia / Badge Superior
-                </label>
-                <input
-                  type="text"
-                  value={config.badge}
-                  onChange={(e) => setConfig({ ...config, badge: e.target.value })}
-                  placeholder="Tú Socio Industrial"
-                  className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500 font-semibold"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Ejemplo: &quot;Tú Socio Industrial&quot;
-                </p>
-              </div>
-
-              {/* Título Principal Hero */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Título Hero
-                </label>
-                <input
-                  type="text"
-                  value={config.titulo_hero}
-                  onChange={(e) => setConfig({ ...config, titulo_hero: e.target.value })}
-                  className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-
-              {/* Subtítulo Hero */}
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Subtítulo Hero
-                </label>
-                <textarea
-                  rows={2}
-                  value={config.subtitulo_hero}
-                  onChange={(e) => setConfig({ ...config, subtitulo_hero: e.target.value })}
-                  className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500 resize-none"
-                />
-              </div>
-
-              {/* Presencia de Ciudades y Cobertura */}
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Presencia Geográfica y Expansión
-                </label>
-                <input
-                  type="text"
-                  value={config.presencia_ciudades}
-                  onChange={(e) => setConfig({ ...config, presencia_ciudades: e.target.value })}
-                  placeholder="Ciudad Juárez • El Paso TX • Próxima apertura Chihuahua Capital • Envíos a todo México"
-                  className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Destaca la presencia binacional y la apertura de nuevas plazas.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* FOTO PRINCIPAL DEL EQUIPO */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-6">
+          
+          {/* FOTOGRAFÍA OFICIAL */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-4">
             <h2 className="text-lg font-bold text-gray-900 border-b pb-3">
               Fotografía Oficial del Equipo (Sección Acerca de Nosotros)
             </h2>
@@ -412,51 +440,349 @@ export default function AdminNosotrosPage() {
                   currentUrl={config.foto_principal_url}
                   onUploadSuccess={(url) => setConfig({ ...config, foto_principal_url: url })}
                 />
-                <div className="mt-3">
-                  <label className="block text-xs text-gray-500 mb-1">O escribe una URL directa:</label>
-                  <input
-                    type="text"
-                    value={config.foto_principal_url}
-                    onChange={(e) => setConfig({ ...config, foto_principal_url: e.target.value })}
-                    className="w-full text-xs border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                </div>
               </div>
 
-              <div className="space-y-4">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Teléfonos de Contacto Directo (Tarjeta Flotante)
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  O escribe una URL directa:
                 </label>
-                <div>
-                  <label className="text-xs text-gray-500">Teléfono 1</label>
-                  <input
-                    type="text"
-                    value={config.telefono1}
-                    onChange={(e) => setConfig({ ...config, telefono1: e.target.value })}
-                    className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500">Teléfono 2</label>
-                  <input
-                    type="text"
-                    value={config.telefono2}
-                    onChange={(e) => setConfig({ ...config, telefono2: e.target.value })}
-                    className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2"
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={config.foto_principal_url}
+                  onChange={(e) => setConfig({ ...config, foto_principal_url: e.target.value })}
+                  placeholder="/images/equipo-rem.jpg"
+                  className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Esta fotografía se muestra en la sección principal con la tarjeta flotante de contacto directo.
+                </p>
               </div>
             </div>
           </div>
 
-          {/* TEXTO CORPORATIVO, MISIÓN Y VISIÓN */}
+          {/* TELÉFONOS Y CORREOS JUNTOS (DINÁMICOS Y CON TÍTULO EDITABLE) */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-6">
-            <h2 className="text-lg font-bold text-gray-900 border-b pb-3">
-              Misión, Visión y Filosofía Empresarial
-            </h2>
+            <div className="border-b pb-3">
+              <h2 className="text-lg font-bold text-gray-900">
+                Medios de Contacto Directo (Teléfonos y Correos)
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Añade y personaliza los títulos de cada teléfono y correo. Se muestran en la tarjeta flotante y en la sección de contacto.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              
+              {/* COLUMNA 1: TELÉFONOS */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-brand-600" />
+                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                      Teléfonos de Contacto
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={agregarTelefono}
+                    className="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Agregar Teléfono</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {config.telefonos.map((tel, idx) => (
+                    <div
+                      key={tel.id}
+                      className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-2 hover:border-brand-400 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-gray-500 uppercase">
+                          Teléfono #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => eliminarTelefono(tel.id)}
+                          className="text-gray-400 hover:text-red-500 p-1 transition-colors"
+                          title="Eliminar este teléfono"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">
+                            Título / Etiqueta
+                          </label>
+                          <input
+                            type="text"
+                            value={tel.titulo}
+                            onChange={(e) => actualizarTelefono(tel.id, 'titulo', e.target.value)}
+                            placeholder="Ej. Oficina Matriz, Línea 2, WhatsApp"
+                            className="w-full text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:ring-1 focus:ring-brand-500 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">
+                            Número Telefónico
+                          </label>
+                          <input
+                            type="text"
+                            value={tel.numero}
+                            onChange={(e) => actualizarTelefono(tel.id, 'numero', e.target.value)}
+                            placeholder="Ej. (656) 634 1516"
+                            className="w-full text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:ring-1 focus:ring-brand-500 bg-white font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* COLUMNA 2: CORREOS ELECTRÓNICOS */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-brand-600" />
+                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                      Correos Electrónicos
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={agregarEmail}
+                    className="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Agregar Correo</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {config.emails.map((em, idx) => (
+                    <div
+                      key={em.id}
+                      className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-2 hover:border-brand-400 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-gray-500 uppercase">
+                          Correo #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => eliminarEmail(em.id)}
+                          className="text-gray-400 hover:text-red-500 p-1 transition-colors"
+                          title="Eliminar este correo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">
+                            Título / Etiqueta
+                          </label>
+                          <input
+                            type="text"
+                            value={em.titulo}
+                            onChange={(e) => actualizarEmail(em.id, 'titulo', e.target.value)}
+                            placeholder="Ej. Ventas Generales, Cotizaciones"
+                            className="w-full text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:ring-1 focus:ring-brand-500 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            value={em.email}
+                            onChange={(e) => actualizarEmail(em.id, 'email', e.target.value)}
+                            placeholder="ventasrem@remindustrial.mx"
+                            className="w-full text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:ring-1 focus:ring-brand-500 bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* SUCURSALES Y DIRECCIONES FÍSICAS (MÚLTIPLES DIRECCIONES) */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b">
+              <div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-brand-600" />
+                  <h2 className="text-lg font-bold text-gray-900">
+                    Sucursales & Direcciones Físicas
+                  </h2>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Gestiona las sedes de la empresa (Cd. Juárez, El Paso TX, Chihuahua Capital, etc.).
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={agregarDireccion}
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Agregar Dirección / Sucursal</span>
+              </button>
+            </div>
 
             <div className="space-y-4">
+              {config.direcciones.map((dir, idx) => (
+                <div
+                  key={dir.id}
+                  className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-3 hover:border-brand-400 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-gray-200/80 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-brand-100 text-brand-700 text-xs font-bold flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-gray-700">
+                        {dir.titulo || `Sucursal #${idx + 1}`}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => eliminarDireccion(dir.id)}
+                      className="text-gray-400 hover:text-red-500 p-1 transition-colors"
+                      title="Eliminar esta dirección"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        Título de la Sede / Sucursal *
+                      </label>
+                      <input
+                        type="text"
+                        value={dir.titulo}
+                        onChange={(e) => actualizarDireccion(dir.id, 'titulo', e.target.value)}
+                        placeholder="Ej. Matriz Cd. Juárez, Oficina El Paso TX"
+                        className="w-full text-xs border border-gray-300 rounded-xl px-3 py-2 bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-500 font-semibold"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        Dirección Completa *
+                      </label>
+                      <input
+                        type="text"
+                        value={dir.direccion}
+                        onChange={(e) => actualizarDireccion(dir.id, 'direccion', e.target.value)}
+                        placeholder="Calle, número, colonia, código postal, ciudad y estado"
+                        className="w-full text-xs border border-gray-300 rounded-xl px-3 py-2 bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-500"
+                      />
+                    </div>
+
+                    <div className="md:col-span-3">
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        Detalles / Nota Adicional (Opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={dir.detalles || ''}
+                        onChange={(e) => actualizarDireccion(dir.id, 'detalles', e.target.value)}
+                        placeholder="Ej. Oficinas corporativas, almacén y mostrador de entrega"
+                        className="w-full text-xs border border-gray-300 rounded-xl px-3 py-2 bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Horario General de Atención
+              </label>
+              <input
+                type="text"
+                value={config.horario}
+                onChange={(e) => setConfig({ ...config, horario: e.target.value })}
+                placeholder="Lunes a Viernes: 08:00 AM - 05:00 PM"
+                className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2"
+              />
+            </div>
+          </div>
+
+          {/* ENCABEZADOS Y TEXTOS DE LA EMPRESA */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-6">
+            <h2 className="text-lg font-bold text-gray-900 border-b pb-3">
+              Identidad, Misión y Visión
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Insignia / Badge Superior
+                </label>
+                <input
+                  type="text"
+                  value={config.badge}
+                  onChange={(e) => setConfig({ ...config, badge: e.target.value })}
+                  placeholder="Tú Socio Industrial"
+                  className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2 font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Presencia y Expansión (Franja de Ciudades)
+                </label>
+                <input
+                  type="text"
+                  value={config.presencia_ciudades}
+                  onChange={(e) => setConfig({ ...config, presencia_ciudades: e.target.value })}
+                  placeholder="Ciudad Juárez • El Paso TX • Próxima apertura Chihuahua Capital • Envíos a todo México"
+                  className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Título Hero
+                </label>
+                <input
+                  type="text"
+                  value={config.titulo_hero}
+                  onChange={(e) => setConfig({ ...config, titulo_hero: e.target.value })}
+                  className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Subtítulo Hero
+                </label>
+                <textarea
+                  rows={2}
+                  value={config.subtitulo_hero}
+                  onChange={(e) => setConfig({ ...config, subtitulo_hero: e.target.value })}
+                  className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2 resize-none"
+                />
+              </div>
+
+              <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
                   Texto Corporativo Principal
                 </label>
@@ -464,77 +790,30 @@ export default function AdminNosotrosPage() {
                   rows={3}
                   value={config.texto_nosotros}
                   onChange={(e) => setConfig({ ...config, texto_nosotros: e.target.value })}
-                  className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                    Visión
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={config.vision}
-                    onChange={(e) => setConfig({ ...config, vision: e.target.value })}
-                    className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                    Misión
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={config.mision}
-                    onChange={(e) => setConfig({ ...config, mision: e.target.value })}
-                    className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* DATOS DE UBICACIÓN Y CONTACTO */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-6">
-            <h2 className="text-lg font-bold text-gray-900 border-b pb-3">
-              Datos de Instalaciones y Medios de Contacto
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-3">
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Dirección Matriz
-                </label>
-                <input
-                  type="text"
-                  value={config.direccion}
-                  onChange={(e) => setConfig({ ...config, direccion: e.target.value })}
                   className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Horario de Atención
+                  Visión
                 </label>
-                <input
-                  type="text"
-                  value={config.horario}
-                  onChange={(e) => setConfig({ ...config, horario: e.target.value })}
+                <textarea
+                  rows={3}
+                  value={config.vision}
+                  onChange={(e) => setConfig({ ...config, vision: e.target.value })}
                   className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2"
                 />
               </div>
 
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Email Oficial
+                  Misión
                 </label>
-                <input
-                  type="email"
-                  value={config.email}
-                  onChange={(e) => setConfig({ ...config, email: e.target.value })}
+                <textarea
+                  rows={3}
+                  value={config.mision}
+                  onChange={(e) => setConfig({ ...config, mision: e.target.value })}
                   className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2"
                 />
               </div>
