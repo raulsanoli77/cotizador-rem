@@ -117,62 +117,14 @@ export default async function SobreNosotrosPage() {
           <div className="container mx-auto max-w-6xl">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               
-              {/* Foto oficial con tarjeta flotante dinámica de contactos */}
-              <div className="lg:col-span-7 relative">
+              {/* Foto oficial del equipo */}
+              <div className="lg:col-span-7">
                 <div className="relative rounded-3xl overflow-hidden border-2 border-slate-700 shadow-2xl bg-slate-950 group">
                   <img
                     src={config.foto_principal_url || '/images/equipo-rem.jpg'}
                     alt="Equipo REM Industrial"
                     className="w-full h-auto object-cover group-hover:scale-102 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent"></div>
-                </div>
-
-                {/* Tarjeta flotante con teléfonos y correos dinámicos */}
-                <div className="mt-4 sm:mt-0 sm:absolute sm:-bottom-8 sm:left-6 sm:max-w-md bg-slate-900/95 border border-cyan-500/40 rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-md">
-                  <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-cyan-400" />
-                    Contáctanos Directo
-                  </h4>
-                  
-                  {/* Lista de teléfonos con títulos personalizados */}
-                  <div className="space-y-2">
-                    {config.telefonos.map((t) => {
-                      const telLimpio = t.numero.replace(/\D/g, '');
-                      return (
-                        <div key={t.id} className="text-left">
-                          <span className="block text-[11px] font-semibold text-slate-400">
-                            {t.titulo}
-                          </span>
-                          <a
-                            href={`tel:${telLimpio}`}
-                            className="text-sm sm:text-base font-bold text-white hover:text-cyan-300 transition-colors inline-block"
-                          >
-                            {t.numero}
-                          </a>
-                        </div>
-                      );
-                    })}
-
-                    {/* Correos dentro de la tarjeta flotante */}
-                    {config.emails.length > 0 && (
-                      <div className="pt-2 border-t border-slate-800 mt-2 space-y-1.5">
-                        {config.emails.map((e) => (
-                          <div key={e.id} className="text-left">
-                            <span className="block text-[11px] font-semibold text-slate-400">
-                              {e.titulo}
-                            </span>
-                            <a
-                              href={`mailto:${e.email}`}
-                              className="text-xs sm:text-sm font-semibold text-cyan-400 hover:text-cyan-300 transition-colors break-all"
-                            >
-                              {e.email}
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
 
