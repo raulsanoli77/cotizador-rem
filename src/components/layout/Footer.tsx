@@ -95,6 +95,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/nosotros#organigrama" className="text-gray-400 hover:text-white text-sm transition-colors">
+                  Contacto
+                </Link>
+              </li>
+              <li>
                 <Link href="/cotizacion" className="text-gray-400 hover:text-white text-sm transition-colors">
                   Cotización
                 </Link>

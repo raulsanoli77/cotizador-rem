@@ -224,7 +224,9 @@ export default async function SobreNosotrosPage() {
         </section>
 
         {/* ORGANIGRAMA Y EQUIPO (100% LIMPIO Y DE SOLO LECTURA PARA CLIENTES) */}
-        <section className="py-12 md:py-16 px-4 bg-slate-900 border-b border-slate-800">
+        <section id="organigrama" className="scroll-mt-24 py-12 md:py-16 px-4 bg-slate-900 border-b border-slate-800 relative">
+          <div id="contacto" className="absolute -top-24 left-0 pointer-events-none" />
+          <div id="equipo" className="absolute -top-24 left-0 pointer-events-none" />
           <div className="container mx-auto max-w-6xl">
             <div className="text-center max-w-3xl mx-auto mb-10">
               <span className="text-sm sm:text-base font-bold uppercase tracking-widest text-cyan-400 mb-2 block">

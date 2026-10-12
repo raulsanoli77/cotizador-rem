@@ -58,7 +58,7 @@ export default async function RootLayout({
   const colors = colorPrimario ? generatePalette(colorPrimario) : defaultColors;
 
   return (
-    <html lang="es">
+    <html lang="es" className="scroll-smooth">
       <body className="font-sans antialiased text-slate-900 bg-slate-50 selection:bg-brand-200 selection:text-brand-900">
         <style dangerouslySetInnerHTML={{__html: `
           :root {

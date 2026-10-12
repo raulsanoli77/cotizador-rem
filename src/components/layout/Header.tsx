@@ -85,6 +85,7 @@ export default function Header() {
     { href: '/', label: 'Inicio' },
     { href: '/catalogo', label: 'Catálogo' },
     { href: '/nosotros', label: 'Sobre Nosotros' },
+    { href: '/nosotros#organigrama', label: 'Contacto' },
   ];
 
   return (
