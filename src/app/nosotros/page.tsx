@@ -73,7 +73,7 @@ export default async function SobreNosotrosPage() {
           
           <div className="container mx-auto max-w-6xl px-4 relative z-10 text-center">
             {/* Badge: Tú Socio Industrial */}
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-6 shadow-xs">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs sm:text-sm font-bold uppercase tracking-wider mb-6 shadow-xs">
               <Building2 className="w-4 h-4" />
               {config.badge || 'Tú Socio Industrial'}
             </span>
@@ -82,7 +82,7 @@ export default async function SobreNosotrosPage() {
               {config.titulo_hero}
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto font-medium leading-relaxed mb-8">
+            <p className="text-lg sm:text-xl text-slate-300 max-w-4xl mx-auto font-medium leading-relaxed mb-8">
               {config.subtitulo_hero}
             </p>
 
@@ -96,7 +96,7 @@ export default async function SobreNosotrosPage() {
                   <span className="block text-xl sm:text-2xl font-black text-cyan-400 tracking-tight leading-tight mb-1">
                     {r.destacado}
                   </span>
-                  <span className="text-xs text-slate-400 font-medium leading-snug block">
+                  <span className="text-xs sm:text-sm text-slate-300 font-medium leading-snug block">
                     {r.subtitulo}
                   </span>
                 </div>
@@ -104,7 +104,7 @@ export default async function SobreNosotrosPage() {
             </div>
 
             {/* Franja de presencia y expansión */}
-            <div className="mt-8 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300">
+            <div className="mt-8 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs sm:text-sm font-medium text-slate-200">
               <Globe className="w-4 h-4 text-cyan-400 shrink-0" />
               <span>{config.presencia_ciudades}</span>
             </div>
@@ -130,15 +130,15 @@ export default async function SobreNosotrosPage() {
               {/* Texto corporativo, Misión y Visión */}
               <div className="lg:col-span-5 space-y-6 pt-6 lg:pt-0">
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2 block">
+                  <span className="text-sm sm:text-base font-bold uppercase tracking-widest text-cyan-400 mb-2.5 block">
                     Nuestra Identidad
                   </span>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug">
+                  <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
                     Compromiso con el Éxito de tus Operaciones
                   </h2>
                 </div>
 
-                <p className="text-slate-300 text-sm sm:text-base leading-relaxed italic border-l-2 border-cyan-500 pl-4 py-1">
+                <p className="text-slate-200 text-base sm:text-lg leading-relaxed italic border-l-4 border-cyan-500 pl-4 py-1.5 font-normal">
                   {config.texto_nosotros}
                 </p>
 
@@ -146,30 +146,30 @@ export default async function SobreNosotrosPage() {
                 <div className="space-y-4 pt-2">
                   {/* Visión */}
                   <div className="bg-slate-800/80 border border-slate-700/80 hover:border-cyan-500/40 rounded-2xl p-5 transition-all shadow-md">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                    <div className="flex items-center gap-3 mb-2.5">
+                      <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                         <Eye className="w-5 h-5" />
                       </div>
-                      <h3 className="text-lg font-bold text-white uppercase tracking-wide">
+                      <h3 className="text-lg sm:text-xl font-extrabold text-white uppercase tracking-wider">
                         Visión
                       </h3>
                     </div>
-                    <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
                       {config.vision}
                     </p>
                   </div>
 
                   {/* Misión */}
                   <div className="bg-slate-800/80 border border-slate-700/80 hover:border-emerald-500/40 rounded-2xl p-5 transition-all shadow-md">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <div className="flex items-center gap-3 mb-2.5">
+                      <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         <Target className="w-5 h-5" />
                       </div>
-                      <h3 className="text-lg font-bold text-white uppercase tracking-wide">
+                      <h3 className="text-lg sm:text-xl font-extrabold text-white uppercase tracking-wider">
                         Misión
                       </h3>
                     </div>
-                    <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
                       {config.mision}
                     </p>
                   </div>
@@ -183,16 +183,16 @@ export default async function SobreNosotrosPage() {
         {/* PILARES Y VALORES */}
         <section className="py-16 px-4 bg-slate-950/80 border-b border-slate-800">
           <div className="container mx-auto max-w-6xl">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2 block">
+            <div className="text-center max-w-3xl mx-auto mb-14">
+              <span className="text-sm sm:text-base font-bold uppercase tracking-widest text-cyan-400 mb-3 block">
                 Por Qué Elegirnos
               </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
                 Pilares de Valor Industrial
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {(config.pilares || []).map((pilar) => {
                 const getIcon = (ico?: string) => {
                   switch (ico) {
@@ -204,12 +204,12 @@ export default async function SobreNosotrosPage() {
                   }
                 };
                 return (
-                  <div key={pilar.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                  <div key={pilar.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-colors">
                     <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
                       {getIcon(pilar.icono)}
                     </div>
-                    <h4 className="text-base font-bold text-white mb-2">{pilar.titulo}</h4>
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <h4 className="text-lg font-extrabold text-white mb-2.5">{pilar.titulo}</h4>
+                    <p className="text-sm text-slate-300 leading-relaxed font-normal">
                       {pilar.descripcion}
                     </p>
                   </div>
@@ -222,14 +222,14 @@ export default async function SobreNosotrosPage() {
         {/* ORGANIGRAMA Y EQUIPO (100% LIMPIO Y DE SOLO LECTURA PARA CLIENTES) */}
         <section className="py-20 px-4 bg-slate-900 border-b border-slate-800">
           <div className="container mx-auto max-w-6xl">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2 block">
+            <div className="text-center max-w-3xl mx-auto mb-14">
+              <span className="text-sm sm:text-base font-bold uppercase tracking-widest text-cyan-400 mb-3 block">
                 Estructura Organizacional
               </span>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
                 Nuestro Equipo de Trabajo
               </h2>
-              <p className="text-sm text-slate-400 mt-3">
+              <p className="text-base sm:text-lg text-slate-300 mt-4 max-w-3xl mx-auto font-medium leading-relaxed">
                 Especialistas técnicos, asesores de aplicaciones y personal operativo enfocados en maximizar la productividad de tu planta.
               </p>
             </div>
@@ -241,14 +241,14 @@ export default async function SobreNosotrosPage() {
         {/* PRESENCIA GEOGRÁFICA, SUCURSALES Y CONTACTO */}
         <section className="py-20 px-4 bg-slate-950">
           <div className="container mx-auto max-w-6xl">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2 block">
+            <div className="text-center max-w-3xl mx-auto mb-14">
+              <span className="text-sm sm:text-base font-bold uppercase tracking-widest text-cyan-400 mb-3 block">
                 Presencia Binacional & Envíos Nacionales
               </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
                 Nuestras Instalaciones y Medios de Contacto
               </h2>
-              <p className="text-sm text-slate-400 mt-2">
+              <p className="text-base sm:text-lg text-slate-300 mt-4 max-w-3xl mx-auto font-medium leading-relaxed">
                 {config.presencia_ciudades}
               </p>
             </div>
@@ -273,8 +273,8 @@ export default async function SobreNosotrosPage() {
                 
                 {/* MÚLTIPLES DIRECCIONES / SUCURSALES */}
                 <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" />
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
                     <span>Sedes & Sucursales</span>
                   </h4>
                   {config.direcciones.map((dir) => (
@@ -286,14 +286,14 @@ export default async function SobreNosotrosPage() {
                         <MapPin className="w-4 h-4" />
                       </div>
                       <div>
-                        <h5 className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+                        <h5 className="text-sm font-bold uppercase tracking-wider text-cyan-300">
                           {dir.titulo}
                         </h5>
-                        <p className="text-sm font-semibold text-white leading-relaxed mt-0.5">
+                        <p className="text-base font-semibold text-white leading-relaxed mt-0.5">
                           {dir.direccion}
                         </p>
                         {dir.detalles && (
-                          <p className="text-xs text-slate-400 mt-1">
+                          <p className="text-sm text-slate-300 mt-1">
                             {dir.detalles}
                           </p>
                         )}
@@ -304,8 +304,8 @@ export default async function SobreNosotrosPage() {
 
                 {/* TELÉFONOS CON TÍTULO PERSONALIZADO */}
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-3 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5" />
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-cyan-400 mb-3 flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
                     <span>Líneas Telefónicas</span>
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -313,12 +313,12 @@ export default async function SobreNosotrosPage() {
                       const numLimpio = t.numero.replace(/\D/g, '');
                       return (
                         <div key={t.id} className="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60">
-                          <span className="block text-[11px] font-semibold text-slate-400">
+                          <span className="block text-xs font-semibold text-slate-400">
                             {t.titulo}
                           </span>
                           <a
                             href={`tel:${numLimpio}`}
-                            className="text-sm font-bold text-white hover:text-cyan-300 transition-colors block mt-0.5"
+                            className="text-base font-bold text-white hover:text-cyan-300 transition-colors block mt-0.5"
                           >
                             {t.numero}
                           </a>
@@ -330,19 +330,19 @@ export default async function SobreNosotrosPage() {
 
                 {/* CORREOS ELECTRÓNICOS */}
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-3 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" />
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-cyan-400 mb-3 flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
                     <span>Correos Oficiales</span>
                   </h4>
                   <div className="space-y-2">
                     {config.emails.map((e) => (
-                      <div key={e.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-slate-800/60 px-3 py-2 rounded-xl border border-slate-700/60">
-                        <span className="text-xs font-semibold text-slate-400">
+                      <div key={e.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-slate-800/60 px-3.5 py-2.5 rounded-xl border border-slate-700/60">
+                        <span className="text-sm font-semibold text-slate-300">
                           {e.titulo}:
                         </span>
                         <a
                           href={`mailto:${e.email}`}
-                          className="text-xs sm:text-sm font-bold text-cyan-400 hover:underline break-all"
+                          className="text-sm sm:text-base font-bold text-cyan-400 hover:underline break-all"
                         >
                           {e.email}
                         </a>
@@ -353,15 +353,15 @@ export default async function SobreNosotrosPage() {
 
                 {/* HORARIO DE ATENCIÓN */}
                 {config.horario && (
-                  <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
+                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
                       <Clock className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      <span className="block text-xs font-bold uppercase tracking-wider text-slate-400">
                         Horario de Atención
                       </span>
-                      <p className="text-xs sm:text-sm font-semibold text-white">
+                      <p className="text-sm sm:text-base font-semibold text-white mt-0.5">
                         {config.horario}
                       </p>
                     </div>

@@ -98,16 +98,16 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
         </span>
 
         {/* Nombre y Puesto */}
-        <h4 className="text-lg font-bold text-white group-hover:text-cyan-300 transition-colors leading-snug">
+        <h4 className="text-lg sm:text-xl font-extrabold text-white group-hover:text-cyan-300 transition-colors leading-snug">
           {m.nombre}
         </h4>
-        <p className="text-xs font-medium text-cyan-400 mb-3 tracking-wide">
+        <p className="text-xs sm:text-sm font-semibold text-cyan-400 mb-3 tracking-wide">
           {m.puesto}
         </p>
 
         {/* Descripción */}
         {m.descripcion && (
-          <p className="text-xs text-slate-400 leading-relaxed mb-4 line-clamp-3 px-2">
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4 line-clamp-3 px-2">
             {m.descripcion}
           </p>
         )}
@@ -119,7 +119,7 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
               href={`https://wa.me/52${telLimpio}?text=Hola%20${encodeURIComponent(m.nombre)},%20te%20contacto%20desde%20la%20página%20de%20REM%20Industrial.`}
               target="_blank"
               rel="noreferrer"
-              className="flex-1 py-2 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 flex items-center justify-center gap-1.5 text-xs font-semibold transition-all"
+              className="flex-1 py-2.5 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-all"
               title="Contactar por WhatsApp"
             >
               <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
@@ -129,10 +129,10 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
           {m.email && (
             <a
               href={`mailto:${m.email}?subject=Consulta%20Técnica%20-%20REM%20Industrial`}
-              className="py-2 px-3 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/40 flex items-center justify-center text-xs font-semibold transition-all"
+              className="py-2.5 px-3.5 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/40 flex items-center justify-center text-xs sm:text-sm font-semibold transition-all"
               title="Enviar correo electrónico"
             >
-              <Mail className="w-3.5 h-3.5" />
+              <Mail className="w-4 h-4" />
             </a>
           )}
         </div>
@@ -211,12 +211,12 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
           {/* Nivel 1: Dirección & Liderazgo */}
           {nivel1.length > 0 && (
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="h-px w-8 bg-amber-500/50"></span>
-                <span className="text-xs font-bold text-amber-400 tracking-wider uppercase">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="h-0.5 w-12 sm:w-16 bg-amber-500/50"></span>
+                <span className="text-sm sm:text-base font-extrabold text-amber-400 tracking-wider uppercase">
                   Nivel 1 • Liderazgo & Dirección
                 </span>
-                <span className="h-px w-8 bg-amber-500/50"></span>
+                <span className="h-0.5 w-12 sm:w-16 bg-amber-500/50"></span>
               </div>
               <div className="flex flex-wrap justify-center gap-6 w-full">
                 {nivel1.map(renderCard)}
@@ -234,12 +234,12 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
           {/* Nivel 2: Ventas Técnicas & Asesoría Especializada */}
           {nivel2.length > 0 && (
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="h-px w-8 bg-cyan-500/50"></span>
-                <span className="text-xs font-bold text-cyan-400 tracking-wider uppercase">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="h-0.5 w-12 sm:w-16 bg-cyan-500/50"></span>
+                <span className="text-sm sm:text-base font-extrabold text-cyan-400 tracking-wider uppercase">
                   Nivel 2 • Ventas Técnicas & Asesoría de Campo
                 </span>
-                <span className="h-px w-8 bg-cyan-500/50"></span>
+                <span className="h-0.5 w-12 sm:w-16 bg-cyan-500/50"></span>
               </div>
               <div className="flex flex-wrap justify-center gap-6 w-full">
                 {nivel2.map(renderCard)}
@@ -257,12 +257,12 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
           {/* Nivel 3: Cotizaciones, Logística y Soporte */}
           {nivel3.length > 0 && (
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="h-px w-8 bg-emerald-500/50"></span>
-                <span className="text-xs font-bold text-emerald-400 tracking-wider uppercase">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="h-0.5 w-12 sm:w-16 bg-emerald-500/50"></span>
+                <span className="text-sm sm:text-base font-extrabold text-emerald-400 tracking-wider uppercase">
                   Nivel 3 • Cotizaciones, Soporte & Logística
                 </span>
-                <span className="h-px w-8 bg-emerald-500/50"></span>
+                <span className="h-0.5 w-12 sm:w-16 bg-emerald-500/50"></span>
               </div>
               <div className="flex flex-wrap justify-center gap-6 w-full">
                 {nivel3.map(renderCard)}
