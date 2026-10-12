@@ -3,6 +3,13 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import OrganigramaEquipo from '@/components/nosotros/OrganigramaEquipo';
+import { createServerClient } from '@/lib/supabase/server';
+import { 
+  NOSOTROS_CONFIG_DEFAULT, 
+  EQUIPO_INICIAL, 
+  NosotrosConfig, 
+  MiembroEquipo 
+} from '@/data/equipo';
 import { 
   Target, 
   Eye, 
@@ -15,16 +22,46 @@ import {
   Zap, 
   Wrench, 
   ArrowRight,
-  Building2
+  Building2,
+  Globe,
+  Truck
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 
 export const metadata: Metadata = {
   title: 'Sobre Nosotros | REM Industrial',
-  description: 'Conoce a REM Industrial: distribuidor líder en herramientas de corte, equipo de medición, sujeción y suministros industriales en Ciudad Juárez, Chihuahua.',
+  description: 'Conoce a REM Industrial: Tú Socio Industrial en herramientas de corte, medición y maquinado en Ciudad Juárez, El Paso TX, Chihuahua y toda la República Mexicana.',
 };
 
-export default function SobreNosotrosPage() {
+export default async function SobreNosotrosPage() {
+  const supabase = createServerClient();
+
+  let config: NosotrosConfig = NOSOTROS_CONFIG_DEFAULT;
+  let equipo: MiembroEquipo[] = EQUIPO_INICIAL;
+
+  try {
+    const { data } = await supabase
+      .from('configuracion')
+      .select('clave, valor')
+      .in('clave', ['nosotros_pagina', 'nosotros_equipo']);
+
+    if (data) {
+      data.forEach((item) => {
+        if (item.clave === 'nosotros_pagina' && item.valor) {
+          config = { ...NOSOTROS_CONFIG_DEFAULT, ...item.valor };
+        }
+        if (item.clave === 'nosotros_equipo' && Array.isArray(item.valor)) {
+          equipo = item.valor;
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Error cargando configuración pública de nosotros:', err);
+  }
+
+  const tel1Limpio = (config.telefono1 || '').replace(/\D/g, '');
+  const tel2Limpio = (config.telefono2 || '').replace(/\D/g, '');
+
   return (
     <div className="min-h-screen flex flex-col pt-24 bg-slate-900 text-slate-100">
       <Header />
@@ -35,37 +72,44 @@ export default function SobreNosotrosPage() {
           <div className="absolute inset-0 bg-[radial-gradient(#06b6d4_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none"></div>
           
           <div className="container mx-auto max-w-6xl px-4 relative z-10 text-center">
-            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-6">
+            {/* Badge solicitado: Tú Socio Industrial */}
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-6 shadow-sm">
               <Building2 className="w-4 h-4" />
-              Socio Industrial en Ciudad Juárez
+              {config.badge || 'Tú Socio Industrial'}
             </span>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight uppercase max-w-4xl mx-auto leading-tight mb-6">
-              Pasión por la Precisión y el <span className="text-cyan-400">Servicio Industrial</span>
+              {config.titulo_hero}
             </h1>
 
             <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto font-medium leading-relaxed mb-8">
-              En <strong className="text-white">REM Industrial</strong> proveemos soluciones técnicas de alto rendimiento en herramientas de corte, metrología, abrasivos y suministros MRO para la industria metalmecánica y maquiladora.
+              {config.subtitulo_hero}
             </p>
 
-            {/* Badges Rápidos */}
+            {/* Badges de Cobertura y Fortalezas */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-4">
               <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm">
                 <span className="block text-2xl sm:text-3xl font-black text-cyan-400">+15</span>
                 <span className="text-xs text-slate-400 font-medium">Marcas Líderes Globales</span>
               </div>
               <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm">
-                <span className="block text-2xl sm:text-3xl font-black text-cyan-400">100%</span>
-                <span className="text-xs text-slate-400 font-medium">Cobertura en Cd. Juárez</span>
+                <span className="block text-2xl sm:text-3xl font-black text-cyan-400">Binacional</span>
+                <span className="text-xs text-slate-400 font-medium">Cd. Juárez & El Paso TX</span>
               </div>
               <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm">
-                <span className="block text-2xl sm:text-3xl font-black text-cyan-400">Inmediato</span>
-                <span className="text-xs text-slate-400 font-medium">Cotizaciones Digitales</span>
+                <span className="block text-2xl sm:text-3xl font-black text-cyan-400">Envíos</span>
+                <span className="text-xs text-slate-400 font-medium">Toda la Rep. Mexicana</span>
               </div>
               <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm">
                 <span className="block text-2xl sm:text-3xl font-black text-cyan-400">Técnico</span>
                 <span className="text-xs text-slate-400 font-medium">Soporte Especializado</span>
               </div>
+            </div>
+
+            {/* Franja de presencia y expansión */}
+            <div className="mt-8 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800/50 border border-slate-700/60 text-xs text-slate-300">
+              <Globe className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>{config.presencia_ciudades}</span>
             </div>
           </div>
         </section>
@@ -75,11 +119,11 @@ export default function SobreNosotrosPage() {
           <div className="container mx-auto max-w-6xl">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               
-              {/* Foto oficial con tarjeta flotante (como en el sitio oficial) */}
+              {/* Foto oficial con tarjeta flotante */}
               <div className="lg:col-span-7 relative">
                 <div className="relative rounded-3xl overflow-hidden border-2 border-slate-700 shadow-2xl bg-slate-950 group">
                   <img
-                    src="/images/equipo-rem.jpg"
+                    src={config.foto_principal_url || '/images/equipo-rem.jpg'}
                     alt="Equipo REM Industrial"
                     className="w-full h-auto object-cover group-hover:scale-102 transition-transform duration-500"
                   />
@@ -93,18 +137,22 @@ export default function SobreNosotrosPage() {
                     Contáctanos Directo
                   </h4>
                   <div className="space-y-1">
-                    <a
-                      href="tel:6566341516"
-                      className="block text-base sm:text-lg font-bold text-white hover:text-cyan-300 transition-colors"
-                    >
-                      (656) 634 1516
-                    </a>
-                    <a
-                      href="tel:6566341571"
-                      className="block text-base sm:text-lg font-bold text-white hover:text-cyan-300 transition-colors"
-                    >
-                      (656) 634 1571
-                    </a>
+                    {config.telefono1 && (
+                      <a
+                        href={`tel:${tel1Limpio}`}
+                        className="block text-base sm:text-lg font-bold text-white hover:text-cyan-300 transition-colors"
+                      >
+                        {config.telefono1}
+                      </a>
+                    )}
+                    {config.telefono2 && (
+                      <a
+                        href={`tel:${tel2Limpio}`}
+                        className="block text-base sm:text-lg font-bold text-white hover:text-cyan-300 transition-colors"
+                      >
+                        {config.telefono2}
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
@@ -121,7 +169,7 @@ export default function SobreNosotrosPage() {
                 </div>
 
                 <p className="text-slate-300 text-sm sm:text-base leading-relaxed italic border-l-2 border-cyan-500 pl-4 py-1">
-                  En <strong className="text-white">REM Industrial</strong>, nos comprometemos a ser el socio preferido y más confiable para la provisión de productos y servicios diseñados para optimizar la productividad y calidad de nuestros clientes, todo ello al costo más competitivo. Nuestra visión es ser reconocidos como la opción predilecta por nuestra capacidad de aportar soluciones efectivas y accesibles.
+                  {config.texto_nosotros}
                 </p>
 
                 {/* Tarjetas Misión & Visión */}
@@ -137,7 +185,7 @@ export default function SobreNosotrosPage() {
                       </h3>
                     </div>
                     <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                      Ser el recurso preferido y el más confiable para los productos y servicios que mejoren y faciliten la productividad y calidad de nuestros clientes al menor costo posible.
+                      {config.vision}
                     </p>
                   </div>
 
@@ -152,7 +200,7 @@ export default function SobreNosotrosPage() {
                       </h3>
                     </div>
                     <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                      Ser la empresa líder en la distribución de productos de calidad y servicios de gran valor, cuando y donde los necesite el cliente, creando relaciones positivas y duraderas con nuestros clientes.
+                      {config.mision}
                     </p>
                   </div>
                 </div>
@@ -207,18 +255,18 @@ export default function SobreNosotrosPage() {
 
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
                 <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
-                  <CheckCircle2 className="w-6 h-6" />
+                  <Truck className="w-6 h-6" />
                 </div>
-                <h4 className="text-base font-bold text-white mb-2">Alianzas Duraderas</h4>
+                <h4 className="text-base font-bold text-white mb-2">Logística y Envíos</h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Convenios comerciales, precios por volumen y esquemas de crédito adaptados a los requerimientos de tu empresa.
+                  Stock estratégico en Ciudad Juárez y El Paso TX, con envíos seguros y rápidos a cualquier parque industrial de México.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ORGANIGRAMA Y EQUIPO */}
+        {/* ORGANIGRAMA Y EQUIPO (100% LIMPIO Y DE SOLO LECTURA PARA CLIENTES) */}
         <section className="py-20 px-4 bg-slate-900 border-b border-slate-800">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center max-w-2xl mx-auto mb-12">
@@ -229,27 +277,27 @@ export default function SobreNosotrosPage() {
                 Nuestro Equipo de Trabajo
               </h2>
               <p className="text-sm text-slate-400 mt-3">
-                Profesionales especializados comprometidos con brindarte la mejor atención y asesoría técnica en cada proyecto.
+                Especialistas técnicos, asesores de aplicaciones y personal operativo enfocados en maximizar la productividad de tu planta.
               </p>
             </div>
 
-            {/* Componente Interactivo de Organigrama */}
-            <OrganigramaEquipo />
+            {/* Organigrama de solo lectura */}
+            <OrganigramaEquipo miembros={equipo} />
           </div>
         </section>
 
-        {/* UBICACIÓN Y MEDIOS DE CONTACTO (CIUDAD JUÁREZ) */}
+        {/* PRESENCIA GEOGRÁFICA Y CONTACTO */}
         <section className="py-20 px-4 bg-slate-950">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center max-w-2xl mx-auto mb-12">
               <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2 block">
-                Instalaciones en Ciudad Juárez
+                Presencia Binacional & Envíos Nacionales
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-                Visítanos o Contáctanos
+                Nuestras Instalaciones y Medios de Contacto
               </h2>
               <p className="text-sm text-slate-400 mt-2">
-                Estamos estratégicamente ubicados en el corazón industrial de Ciudad Juárez, Chihuahua.
+                {config.presencia_ciudades}
               </p>
             </div>
 
@@ -276,10 +324,10 @@ export default function SobreNosotrosPage() {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                      Dirección
+                      Matriz & Centro de Distribución
                     </h4>
                     <p className="text-sm font-semibold text-white leading-relaxed">
-                      Av. Manuel Gómez Morín 1249, Colonia Las Palmas, Local 5, C.P. 32668 Ciudad Juárez, Chihuahua, México
+                      {config.direccion}
                     </p>
                   </div>
                 </div>
@@ -293,7 +341,7 @@ export default function SobreNosotrosPage() {
                       Teléfonos de Oficina
                     </h4>
                     <p className="text-sm font-bold text-white">
-                      (656) 634 1516 &bull; (656) 634 1571
+                      {config.telefono1} &bull; {config.telefono2}
                     </p>
                   </div>
                 </div>
@@ -307,10 +355,10 @@ export default function SobreNosotrosPage() {
                       Correo Electrónico
                     </h4>
                     <a
-                      href="mailto:ventasrem@remindustrial.mx"
+                      href={`mailto:${config.email}`}
                       className="text-sm font-bold text-cyan-400 hover:underline"
                     >
-                      ventasrem@remindustrial.mx
+                      {config.email}
                     </a>
                   </div>
                 </div>
@@ -324,7 +372,7 @@ export default function SobreNosotrosPage() {
                       Horario de Atención
                     </h4>
                     <p className="text-sm font-semibold text-white">
-                      Lunes a Viernes: 08:00 AM - 05:00 PM
+                      {config.horario}
                     </p>
                   </div>
                 </div>
@@ -338,7 +386,7 @@ export default function SobreNosotrosPage() {
                   ¿Listo para equipar tu planta con las mejores herramientas?
                 </h3>
                 <p className="text-slate-300 text-sm sm:text-base">
-                  Explora nuestro catálogo en línea, selecciona tus medidas exactas y descarga o solicita tu cotización formal al instante.
+                  Explora nuestro catálogo en línea, cotiza en segundos con entrega inmediata en Cd. Juárez, El Paso TX o envíos a todo México.
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
                   <Link
