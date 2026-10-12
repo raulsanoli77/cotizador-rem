@@ -23,6 +23,8 @@ import ImageUploader from '@/components/admin/ImageUploader';
 import { 
   NosotrosConfig, 
   NOSOTROS_CONFIG_DEFAULT, 
+  RECUADROS_HERO_DEFAULT,
+  RecuadroHeroItem,
   MiembroEquipo, 
   EQUIPO_INICIAL,
   TelefonoItem,
@@ -240,6 +242,16 @@ export default function AdminNosotrosPage() {
     setConfig({
       ...config,
       pilares: (config.pilares || []).map((p) => (p.id === id ? { ...p, [campo]: valor } : p)),
+    });
+  };
+
+  // MANEJO DE RECUADROS HERO (ESTADÍSTICAS Y COBERTURA)
+  const actualizarRecuadroHero = (id: string, campo: 'destacado' | 'subtitulo', valor: string) => {
+    setConfig({
+      ...config,
+      recuadros_hero: (config.recuadros_hero || RECUADROS_HERO_DEFAULT).map((r) =>
+        r.id === id ? { ...r, [campo]: valor } : r
+      ),
     });
   };
 
@@ -825,6 +837,59 @@ export default function AdminNosotrosPage() {
                   className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* RECUADROS DESTACADOS DEL HERO (ESTADÍSTICAS Y COBERTURA) */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-4">
+            <div className="border-b pb-3">
+              <h2 className="text-lg font-bold text-gray-900">
+                Tarjetas de Impacto Superior (Hero)
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Personaliza los 4 recuadros destacados bajo el título principal (Distribución de Marcas, Presencia Binacional, Envíos a la República Mexicana, Soporte Técnico).
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {(config.recuadros_hero || RECUADROS_HERO_DEFAULT).map((rec, idx) => (
+                <div
+                  key={rec.id}
+                  className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-3 hover:border-brand-400 transition-colors"
+                >
+                  <div className="border-b border-gray-200/80 pb-1.5 flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-700">
+                      Tarjeta #{idx + 1}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                      Texto Destacado
+                    </label>
+                    <input
+                      type="text"
+                      value={rec.destacado}
+                      onChange={(e) => actualizarRecuadroHero(rec.id, 'destacado', e.target.value)}
+                      placeholder="Ej. Distribución"
+                      className="w-full text-xs font-bold border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white text-cyan-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                      Descripción / Subtítulo
+                    </label>
+                    <input
+                      type="text"
+                      value={rec.subtitulo}
+                      onChange={(e) => actualizarRecuadroHero(rec.id, 'subtitulo', e.target.value)}
+                      placeholder="Ej. Marcas Globales de Prestigio"
+                      className="w-full text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

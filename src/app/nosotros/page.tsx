@@ -7,6 +7,7 @@ import BannerCtaNosotros from '@/components/nosotros/BannerCtaNosotros';
 import { createServerClient } from '@/lib/supabase/server';
 import { 
   NOSOTROS_CONFIG_DEFAULT, 
+  RECUADROS_HERO_DEFAULT,
   EQUIPO_INICIAL, 
   NosotrosConfig, 
   MiembroEquipo,
@@ -87,22 +88,19 @@ export default async function SobreNosotrosPage() {
 
             {/* Badges de Cobertura y Fortalezas */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-4">
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm">
-                <span className="block text-2xl sm:text-3xl font-black text-cyan-400">+15</span>
-                <span className="text-xs text-slate-400 font-medium">Marcas Líderes Globales</span>
-              </div>
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm">
-                <span className="block text-2xl sm:text-3xl font-black text-cyan-400">Binacional</span>
-                <span className="text-xs text-slate-400 font-medium">Cd. Juárez, El Paso TX & Chihuahua Capital</span>
-              </div>
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm">
-                <span className="block text-2xl sm:text-3xl font-black text-cyan-400">Envíos</span>
-                <span className="text-xs text-slate-400 font-medium">Toda la Rep. Mexicana</span>
-              </div>
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm">
-                <span className="block text-2xl sm:text-3xl font-black text-cyan-400">Técnico</span>
-                <span className="text-xs text-slate-400 font-medium">Soporte Especializado</span>
-              </div>
+              {(config.recuadros_hero || RECUADROS_HERO_DEFAULT).map((r) => (
+                <div
+                  key={r.id}
+                  className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm flex flex-col justify-center min-h-[96px]"
+                >
+                  <span className="block text-xl sm:text-2xl font-black text-cyan-400 tracking-tight leading-tight mb-1">
+                    {r.destacado}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium leading-snug block">
+                    {r.subtitulo}
+                  </span>
+                </div>
+              ))}
             </div>
 
             {/* Franja de presencia y expansión */}

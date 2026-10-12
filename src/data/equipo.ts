@@ -36,6 +36,35 @@ export interface PilarValorItem {
   icono: 'shield' | 'zap' | 'wrench' | 'truck';
 }
 
+export interface RecuadroHeroItem {
+  id: string;
+  destacado: string; // ej: 'Distribución', 'Binacional', 'Envíos', 'Técnico'
+  subtitulo: string; // ej: 'Marcas Globales de Prestigio', 'Cd. Juárez, El Paso TX & Chihuahua Capital', 'Toda la República Mexicana', 'Soporte Especializado'
+}
+
+export const RECUADROS_HERO_DEFAULT: RecuadroHeroItem[] = [
+  {
+    id: 'recuadro-1',
+    destacado: 'Distribución',
+    subtitulo: 'Marcas Globales de Prestigio',
+  },
+  {
+    id: 'recuadro-2',
+    destacado: 'Binacional',
+    subtitulo: 'Cd. Juárez, El Paso TX & Chihuahua Capital',
+  },
+  {
+    id: 'recuadro-3',
+    destacado: 'Envíos',
+    subtitulo: 'Toda la República Mexicana',
+  },
+  {
+    id: 'recuadro-4',
+    destacado: 'Técnico',
+    subtitulo: 'Soporte Especializado',
+  },
+];
+
 export interface NosotrosConfig {
   badge: string;
   titulo_hero: string;
@@ -45,6 +74,7 @@ export interface NosotrosConfig {
   emails: EmailItem[];
   direcciones: DireccionItem[];
   pilares: PilarValorItem[];
+  recuadros_hero?: RecuadroHeroItem[];
   texto_nosotros: string;
   vision: string;
   mision: string;
@@ -117,6 +147,7 @@ export const NOSOTROS_CONFIG_DEFAULT: NosotrosConfig = {
     }
   ],
   pilares: PILARES_DEFAULT,
+  recuadros_hero: RECUADROS_HERO_DEFAULT,
   texto_nosotros: 'En REM Industrial, nos comprometemos a ser el socio preferido y más confiable para la provisión de productos y servicios diseñados para optimizar la productividad y calidad de nuestros clientes, todo ello al costo más competitivo. Nuestra visión es ser reconocidos como la opción predilecta por nuestra capacidad de aportar soluciones efectivas y accesibles.',
   vision: 'Ser el recurso preferido y el más confiable para los productos y servicios que mejoren y faciliten la productividad y calidad de nuestros clientes al menor costo posible.',
   mision: 'Ser la empresa líder en la distribución de productos de calidad y servicios de gran valor, cuando y donde los necesite el cliente, creando relaciones positivas y duraderas con nuestros clientes.',
@@ -164,6 +195,27 @@ export function normalizarNosotrosConfig(raw?: any): NosotrosConfig {
   // Normalizar pilares de valor
   if (!Array.isArray(config.pilares) || config.pilares.length === 0) {
     config.pilares = PILARES_DEFAULT;
+  }
+
+  // Normalizar recuadros hero
+  if (!Array.isArray(config.recuadros_hero) || config.recuadros_hero.length === 0) {
+    config.recuadros_hero = RECUADROS_HERO_DEFAULT;
+  } else {
+    // Si la configuración guardada previa tiene "+15" o abreviatura "Rep.", reformularlos automáticamente
+    config.recuadros_hero = config.recuadros_hero.map((r) => {
+      let d = r.destacado || '';
+      let s = r.subtitulo || '';
+      if (d === '+15' || d.includes('15')) {
+        d = 'Distribución';
+        if (!s || s === 'Marcas Líderes Globales') {
+          s = 'Marcas Globales de Prestigio';
+        }
+      }
+      if (s && s.includes('Rep. Mexicana')) {
+        s = s.replace('Rep. Mexicana', 'República Mexicana');
+      }
+      return { ...r, destacado: d, subtitulo: s };
+    });
   }
 
   return config;
