@@ -65,8 +65,8 @@ export default function BannerCtaNosotros() {
 
   return (
     <div className="mt-16 bg-gradient-to-r from-slate-900 via-brand-900/60 to-slate-900 border border-cyan-500/30 rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden shadow-2xl">
-      <div className="max-w-2xl mx-auto space-y-6 relative z-10">
-        <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+      <div className="max-w-4xl mx-auto space-y-8 relative z-10">
+        <p className="text-white text-lg sm:text-xl md:text-2xl font-bold leading-relaxed sm:leading-normal tracking-tight">
           Explora nuestro catálogo en línea, cotiza en segundos con entrega inmediata en Cd. Juárez, El Paso TX, Chihuahua Capital o envíos a toda la República Mexicana.
         </p>
 
