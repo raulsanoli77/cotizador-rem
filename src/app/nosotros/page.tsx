@@ -93,7 +93,7 @@ export default async function SobreNosotrosPage() {
               </div>
               <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm">
                 <span className="block text-2xl sm:text-3xl font-black text-cyan-400">Binacional</span>
-                <span className="text-xs text-slate-400 font-medium">Cd. Juárez & El Paso TX</span>
+                <span className="text-xs text-slate-400 font-medium">Cd. Juárez, El Paso TX & Chihuahua Capital</span>
               </div>
               <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 text-center backdrop-blur-sm">
                 <span className="block text-2xl sm:text-3xl font-black text-cyan-400">Envíos</span>
