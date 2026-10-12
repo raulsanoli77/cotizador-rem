@@ -87,7 +87,7 @@ export default function BannerCtaNosotros() {
             title={nombreVendedor ? `Contactar a tu asesor: ${nombreVendedor}` : 'Contactar por WhatsApp'}
           >
             <WhatsAppIcon className="w-4 h-4 text-emerald-400 fill-current" />
-            <span>Hablar por WhatsApp</span>
+            <span>Contacta por WhatsApp</span>
           </a>
         </div>
       </div>
