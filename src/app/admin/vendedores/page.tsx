@@ -18,6 +18,7 @@ import {
   User
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 import { 
   obtenerVendedores, 
   crearVendedor, 
@@ -255,7 +256,7 @@ export default function VendedoresAdminPage() {
                         className="inline-flex items-center gap-1.5 font-bold text-emerald-600 hover:text-emerald-700 text-xs sm:text-sm"
                         title="Abrir chat en WhatsApp"
                       >
-                        <Phone className="h-3.5 w-3.5 shrink-0" />
+                        <WhatsAppIcon className="w-3.5 h-3.5 shrink-0 fill-current text-emerald-600" />
                         <span>{v.telefono}</span>
                       </a>
                     </td>

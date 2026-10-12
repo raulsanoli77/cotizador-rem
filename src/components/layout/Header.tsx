@@ -6,6 +6,7 @@ import { ShoppingCart, Menu, X, Search } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { supabase } from '@/lib/supabase/client';
 import CartDrawer from './CartDrawer';
+import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 
 export default function Header() {
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -102,11 +103,32 @@ export default function Header() {
             <span className="mx-2">|</span>
             <a href={`mailto:${vendedorAsignado.email}`} className="hover:underline font-bold">{vendedorAsignado.email}</a>
             <span className="mx-2">|</span>
-            <span>📞 <a href={`tel:${vendedorAsignado.telefono.replace(/\D/g, '')}`} className="hover:underline font-bold">{vendedorAsignado.telefono}</a></span>
+            <a 
+              href={`https://wa.me/52${vendedorAsignado.telefono.replace(/\D/g, '')}`} 
+              target="_blank" 
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 hover:underline font-bold"
+              title="Abrir WhatsApp con tu asesor"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-300 fill-current" />
+              <span>{vendedorAsignado.telefono}</span>
+            </a>
           </>
         ) : (
           <>
-            ¿Prefieres atención personalizada? Contáctanos: <a href="mailto:ventas3@remindustrial.mx" className="ml-1 hover:underline font-bold">ventas3@remindustrial.mx</a> <span className="mx-2">|</span> 📞 <a href="tel:614815170" className="ml-1 hover:underline font-bold">614 81 51 70</a>
+            <span>¿Prefieres atención personalizada? Contáctanos:</span> 
+            <a href="mailto:ventas3@remindustrial.mx" className="ml-1 hover:underline font-bold">ventas3@remindustrial.mx</a> 
+            <span className="mx-2">|</span> 
+            <a 
+              href="https://wa.me/52614815170" 
+              target="_blank" 
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 hover:underline font-bold"
+              title="Abrir WhatsApp de Ventas"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-300 fill-current" />
+              <span>614 81 51 70</span>
+            </a>
           </>
         )}
       </div>

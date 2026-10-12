@@ -3,6 +3,7 @@
 import { ArrowLeft, Package, Calendar, MessageSquare, MapPin, MessageCircle, Clock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
+import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 
 interface PedidoClientDetailProps {
   pedido: any;
@@ -66,7 +67,7 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
           rel="noreferrer"
           className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-600/20 transition-colors"
         >
-          <MessageCircle className="w-4 h-4" />
+          <WhatsAppIcon className="w-4 h-4 fill-current text-white" />
           {vendedor ? `Contactar a ${vendedor.nombre} por WhatsApp` : 'Contactar Asesor por WhatsApp'}
         </a>
       </div>
@@ -96,8 +97,15 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
               ✉️ {vendedor.email}
             </a>
             <span className="text-emerald-300 hidden sm:inline">|</span>
-            <a href={`tel:${telefonoWhatsApp}`} className="font-semibold text-emerald-800 hover:underline">
-              📞 {vendedor.telefono}
+            <a 
+              href={`https://wa.me/52${telefonoWhatsApp}?text=${whatsAppMessage}`} 
+              target="_blank" 
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 font-bold text-emerald-800 hover:underline"
+              title="Abrir chat en WhatsApp"
+            >
+              <WhatsAppIcon className="w-4 h-4 text-emerald-600 fill-current" />
+              <span>{vendedor.telefono}</span>
             </a>
           </div>
         </div>
@@ -215,7 +223,7 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
             rel="noreferrer"
             className="w-full sm:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-colors"
           >
-            <MessageCircle className="w-5 h-5" />
+            <WhatsAppIcon className="w-5 h-5 fill-current text-white" />
             {vendedor ? `Contactar a ${vendedor.nombre}` : 'Contactar a Ventas'}
           </a>
         </div>

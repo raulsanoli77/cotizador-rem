@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Mail, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -112,12 +113,15 @@ export default function Footer() {
                 </a>
               </li>
               <li className="flex items-center gap-2 text-gray-400 text-sm">
-                <Phone className="h-4 w-4 shrink-0" />
+                <WhatsAppIcon className="h-4 w-4 shrink-0 text-emerald-400 fill-current" />
                 <a 
-                  href={`tel:${(vendedorAsignado?.telefono || empresa.telefono).replace(/\D/g, '')}`} 
-                  className="hover:text-white transition-colors"
+                  href={`https://wa.me/52${(vendedorAsignado?.telefono || empresa.telefono).replace(/\D/g, '')}`} 
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                  title="Abrir chat en WhatsApp"
                 >
-                  {vendedorAsignado?.telefono || empresa.telefono}
+                  <span>{vendedorAsignado?.telefono || empresa.telefono}</span>
                 </a>
               </li>
             </ul>
