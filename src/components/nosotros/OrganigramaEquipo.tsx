@@ -66,7 +66,7 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
     return (
       <div
         key={m.id}
-        className="group relative bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/50 rounded-2xl p-6 transition-all duration-300 shadow-xl hover:shadow-cyan-500/10 flex flex-col items-center text-center"
+        className="group relative bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/50 rounded-2xl p-6 transition-all duration-300 shadow-xl hover:shadow-cyan-500/10 flex flex-col items-center text-center w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] max-w-sm"
       >
         {/* Foto / Avatar */}
         <div className="relative mb-4">
@@ -218,7 +218,7 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
                 </span>
                 <span className="h-px w-8 bg-amber-500/50"></span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl w-full justify-center">
+              <div className="flex flex-wrap justify-center gap-6 w-full">
                 {nivel1.map(renderCard)}
               </div>
             </div>
@@ -241,7 +241,7 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
                 </span>
                 <span className="h-px w-8 bg-cyan-500/50"></span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+              <div className="flex flex-wrap justify-center gap-6 w-full">
                 {nivel2.map(renderCard)}
               </div>
             </div>
@@ -264,7 +264,7 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
                 </span>
                 <span className="h-px w-8 bg-emerald-500/50"></span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+              <div className="flex flex-wrap justify-center gap-6 w-full">
                 {nivel3.map(renderCard)}
               </div>
             </div>
@@ -272,7 +272,7 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
         </div>
       ) : (
         /* Vista Grid normal */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-wrap justify-center gap-6 w-full">
           {equipoFiltrado.map(renderCard)}
         </div>
       )}
