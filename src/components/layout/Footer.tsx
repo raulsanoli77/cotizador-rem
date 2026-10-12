@@ -10,7 +10,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [titulo, setTitulo] = useState('REM Industrial');
-  const [empresa, setEmpresa] = useState({ email: 'ventas3@remindustrial.mx', telefono: '614 81 51 70' });
+  const [empresa, setEmpresa] = useState({ email: 'ventas3@remindustrial.mx', telefono: '614 181 5170' });
   const [vendedorAsignado, setVendedorAsignado] = useState<{ nombre: string; email: string; telefono: string } | null>(null);
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function Footer() {
           if (item.clave === 'empresa' && item.valor) {
             setEmpresa({
               email: item.valor.email || 'ventas3@remindustrial.mx',
-              telefono: item.valor.telefono || '614 81 51 70',
+              telefono: item.valor.telefono || '614 181 5170',
             });
           }
         });

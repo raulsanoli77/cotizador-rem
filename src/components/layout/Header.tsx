@@ -85,7 +85,6 @@ export default function Header() {
     { href: '/', label: 'Inicio' },
     { href: '/catalogo', label: 'Catálogo' },
     { href: '/nosotros', label: 'Sobre Nosotros' },
-    { href: '/cotizacion', label: 'Checkout' },
   ];
 
   return (
@@ -121,14 +120,14 @@ export default function Header() {
             <a href="mailto:ventas3@remindustrial.mx" className="ml-1 hover:underline font-bold">ventas3@remindustrial.mx</a> 
             <span className="mx-2">|</span> 
             <a 
-              href="https://wa.me/52614815170" 
+              href="https://wa.me/526141815170" 
               target="_blank" 
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 hover:underline font-bold"
               title="Abrir WhatsApp de Ventas"
             >
               <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-300 fill-current" />
-              <span>614 81 51 70</span>
+              <span>614 181 5170</span>
             </a>
           </>
         )}
@@ -172,7 +171,7 @@ export default function Header() {
           {/* Carrito + Menu Móvil */}
           <div className="flex items-center gap-4 flex-shrink-0">
             <nav className="hidden md:flex items-center gap-6 mr-2">
-              {enlaces.slice(0, 2).map((e) => (
+              {enlaces.map((e) => (
                 <Link
                   key={e.href}
                   href={e.href}
