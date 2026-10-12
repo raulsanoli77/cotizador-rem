@@ -10,6 +10,7 @@ export default function Footer() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [titulo, setTitulo] = useState('REM Industrial');
   const [empresa, setEmpresa] = useState({ email: 'ventas3@remindustrial.mx', telefono: '614 81 51 70' });
+  const [vendedorAsignado, setVendedorAsignado] = useState<{ nombre: string; email: string; telefono: string } | null>(null);
 
   useEffect(() => {
     async function fetchConfig() {
@@ -29,7 +30,35 @@ export default function Footer() {
         });
       }
     }
+
+    async function checkSeller() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: perfil } = await supabase
+          .from('perfiles_clientes')
+          .select('vendedor:vendedores(nombre, telefono, email, activo)')
+          .eq('id', session.user.id)
+          .single();
+
+        if (perfil?.vendedor && (perfil.vendedor as any).activo !== false) {
+          setVendedorAsignado(perfil.vendedor as any);
+        } else {
+          setVendedorAsignado(null);
+        }
+      } else {
+        setVendedorAsignado(null);
+      }
+    }
+
     fetchConfig();
+    checkSeller();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) checkSeller();
+      else setVendedorAsignado(null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return (
@@ -69,15 +98,27 @@ export default function Footer() {
 
           {/* Contacto */}
           <div>
-            <h3 className="font-semibold text-lg mb-4">Contacto</h3>
+            <h3 className="font-semibold text-lg mb-4">
+              {vendedorAsignado ? `Asesor Asignado: ${vendedorAsignado.nombre}` : 'Contacto'}
+            </h3>
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-gray-400 text-sm">
-                <Mail className="h-4 w-4" />
-                <span>{empresa.email}</span>
+                <Mail className="h-4 w-4 shrink-0" />
+                <a 
+                  href={`mailto:${vendedorAsignado?.email || empresa.email}`} 
+                  className="hover:text-white transition-colors break-all"
+                >
+                  {vendedorAsignado?.email || empresa.email}
+                </a>
               </li>
               <li className="flex items-center gap-2 text-gray-400 text-sm">
-                <Phone className="h-4 w-4" />
-                <span>{empresa.telefono}</span>
+                <Phone className="h-4 w-4 shrink-0" />
+                <a 
+                  href={`tel:${(vendedorAsignado?.telefono || empresa.telefono).replace(/\D/g, '')}`} 
+                  className="hover:text-white transition-colors"
+                >
+                  {vendedorAsignado?.telefono || empresa.telefono}
+                </a>
               </li>
             </ul>
           </div>

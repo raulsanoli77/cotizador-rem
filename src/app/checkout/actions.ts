@@ -123,7 +123,7 @@ export async function crearPedidoB2B({
   try {
     const { data: clienteData } = await supabase
       .from('perfiles_clientes')
-      .select('*')
+      .select('*, vendedor:vendedores(nombre, email, telefono, activo)')
       .eq('id', cliente_id)
       .single();
 
@@ -136,6 +136,8 @@ export async function crearPedidoB2B({
         flete_urgente ? '⚡ SOLICITÓ FLETE URGENTE' : null,
       ].filter(Boolean).join(' | ');
 
+      const vendedorInfo = (clienteData.vendedor as any)?.activo !== false ? clienteData.vendedor : null;
+
       await enviarNotificacionVentas({
         lead: {
           nombre_completo: clienteData.nombre_completo,
@@ -144,6 +146,7 @@ export async function crearPedidoB2B({
           telefono: clienteData.telefono,
           direccion: direccionCompleta,
         },
+        vendedor: vendedorInfo as any,
         partidas: partidas.map(p => ({
           cantidad: p.cantidad,
           marca: p.marca,

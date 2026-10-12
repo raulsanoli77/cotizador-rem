@@ -4,12 +4,25 @@ import { ArrowLeft, Package, Calendar, MessageSquare, MapPin, MessageCircle, Clo
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 
-export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, partidas: any[] }) {
+interface PedidoClientDetailProps {
+  pedido: any;
+  partidas: any[];
+  vendedor?: {
+    id?: string;
+    nombre: string;
+    telefono: string;
+    email: string;
+  } | null;
+}
+
+export default function PedidoClientDetail({ pedido, partidas, vendedor }: PedidoClientDetailProps) {
   const folioLimpio = (pedido.numero_po || pedido.id.slice(0, 8)).replace(/^COT-/i, '');
   const esAtendida = pedido.estatus === 'atendida' || pedido.estatus === 'aprobado_por_cliente' || pedido.estatus === 'enviado';
   const whatsAppMessage = encodeURIComponent(
-    `Hola REM Industrial, me gustaría dar seguimiento a mi solicitud de cotización folio ${folioLimpio}.`
+    `Hola${vendedor ? ` ${vendedor.nombre}` : ' REM Industrial'}, me gustaría dar seguimiento a mi solicitud de cotización folio ${folioLimpio}.`
   );
+  const telefonoWhatsApp = vendedor?.telefono ? vendedor.telefono.replace(/\D/g, '') : '614815170';
+  const whatsappUrl = `https://wa.me/52${telefonoWhatsApp}?text=${whatsAppMessage}`;
 
   return (
     <div className="space-y-6">
@@ -47,15 +60,39 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
         </div>
 
         <a 
-          href={`https://wa.me/52614815170?text=${whatsAppMessage}`}
+          href={whatsappUrl}
           target="_blank"
           rel="noreferrer"
           className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-600/20 transition-colors"
         >
           <MessageCircle className="w-4 h-4" />
-          Contactar Asesor por WhatsApp
+          {vendedor ? `Contactar a ${vendedor.nombre} por WhatsApp` : 'Contactar Asesor por WhatsApp'}
         </a>
       </div>
+
+      {/* Asesor Comercial Asignado */}
+      {vendedor && (
+        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-100 text-emerald-700 rounded-xl">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase text-emerald-800 tracking-wider">Tu Asesor Comercial Asignado</p>
+              <p className="text-base font-extrabold text-slate-900">{vendedor.nombre}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <a href={`mailto:${vendedor.email}`} className="font-semibold text-emerald-800 hover:underline">
+              ✉️ {vendedor.email}
+            </a>
+            <span className="text-emerald-300 hidden sm:inline">|</span>
+            <a href={`tel:${telefonoWhatsApp}`} className="font-semibold text-emerald-800 hover:underline">
+              📞 {vendedor.telefono}
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Tarjeta de Destino de Entrega */}
       <div className="bg-white border-2 border-slate-300 rounded-2xl p-5 sm:p-6 shadow-md">
@@ -150,7 +187,10 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
         <div>
           <h3 className="font-bold text-slate-900 text-lg">¿Deseas formalizar tu compra?</h3>
           <p className="text-sm text-slate-600 mt-0.5">
-            Comunícate con nuestro equipo comercial para confirmar existencias, emitir factura y acordar la entrega.
+            {vendedor 
+              ? `Comunícate con tu asesor asignado (${vendedor.nombre}) para confirmar existencias, emitir factura y acordar la entrega.`
+              : 'Comunícate con nuestro equipo comercial para confirmar existencias, emitir factura y acordar la entrega.'
+            }
           </p>
         </div>
         
@@ -161,13 +201,13 @@ export default function PedidoClientDetail({ pedido, partidas }: { pedido: any, 
           </div>
           
           <a
-            href={`https://wa.me/52614815170?text=${whatsAppMessage}`}
+            href={whatsappUrl}
             target="_blank"
             rel="noreferrer"
             className="w-full sm:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-colors"
           >
             <MessageCircle className="w-5 h-5" />
-            Contactar a Ventas
+            {vendedor ? `Contactar a ${vendedor.nombre}` : 'Contactar a Ventas'}
           </a>
         </div>
       </div>

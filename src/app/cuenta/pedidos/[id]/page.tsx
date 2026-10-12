@@ -11,6 +11,7 @@ export default function CuentaPedidoPage() {
   const router = useRouter();
   const [pedido, setPedido] = useState<any>(null);
   const [partidas, setPartidas] = useState<any[]>([]);
+  const [vendedor, setVendedor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,32 +25,41 @@ export default function CuentaPedidoPage() {
 
       const id = params.id as string;
 
-      const { data: pedidoData, error: errPedido } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const [pedidoRes, partidasRes, perfilRes] = await Promise.all([
+        supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', id)
+          .single(),
+        supabase
+          .from('partidas_pedido')
+          .select('*')
+          .eq('pedido_id', id)
+          .order('id', { ascending: true }),
+        supabase
+          .from('perfiles_clientes')
+          .select('vendedor:vendedores(id, nombre, telefono, email, activo)')
+          .eq('id', session.user.id)
+          .single()
+      ]);
 
-      if (errPedido || !pedidoData) {
+      if (pedidoRes.error || !pedidoRes.data) {
         setError('Pedido no encontrado');
         setLoading(false);
         return;
       }
 
-      if (pedidoData.cliente_id !== session.user.id) {
+      if (pedidoRes.data.cliente_id !== session.user.id) {
         setError('No tienes permiso para ver este pedido');
         setLoading(false);
         return;
       }
 
-      const { data: partidasData } = await supabase
-        .from('partidas_pedido')
-        .select('*')
-        .eq('pedido_id', id)
-        .order('id', { ascending: true });
-
-      setPedido(pedidoData);
-      setPartidas(partidasData || []);
+      setPedido(pedidoRes.data);
+      setPartidas(partidasRes.data || []);
+      if (perfilRes.data?.vendedor && (perfilRes.data.vendedor as any).activo !== false) {
+        setVendedor(perfilRes.data.vendedor);
+      }
       setLoading(false);
     };
 
@@ -65,6 +75,7 @@ export default function CuentaPedidoPage() {
     <PedidoClientDetail 
       pedido={pedido} 
       partidas={partidas} 
+      vendedor={vendedor}
     />
   );
 }

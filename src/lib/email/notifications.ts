@@ -10,6 +10,11 @@ interface NotificacionCotizacionParams {
     telefono: string;
     direccion?: string;
   };
+  vendedor?: {
+    nombre: string;
+    email: string;
+    telefono: string;
+  } | null;
   partidas: Array<{
     cantidad: number;
     marca: string;
@@ -32,13 +37,17 @@ interface NotificacionCotizacionParams {
 export async function enviarNotificacionVentas(
   params: NotificacionCotizacionParams
 ): Promise<{ success: boolean; error?: string }> {
-  const destinatario = process.env.NOTIFICATION_EMAIL || 'ventas@remindustrial.com';
+  const destinatarioPrincipal = process.env.NOTIFICATION_EMAIL || 'ventas@remindustrial.com';
+  const destinatarios = [destinatarioPrincipal];
+  if (params.vendedor?.email && !destinatarios.includes(params.vendedor.email)) {
+    destinatarios.push(params.vendedor.email);
+  }
 
   try {
     const { data, error } = await resend.emails.send({
       from: 'REM Industrial <onboarding@resend.dev>',
-      to: [destinatario],
-      subject: `Nueva Solicitud de Cotización - #${params.folio.replace(/^COT-/i, '')} | ${params.lead.empresa}`,
+      to: destinatarios,
+      subject: `Nueva Solicitud de Cotización - #${params.folio.replace(/^COT-/i, '')} | ${params.lead.empresa}${params.vendedor ? ` [Asesor: ${params.vendedor.nombre}]` : ''}`,
       html: generarHTMLNotificacion(params),
     });
 
@@ -101,6 +110,7 @@ function generarHTMLNotificacion(params: NotificacionCotizacionParams): string {
         <p style="margin: 4px 0; font-size: 13px;"><strong>Empresa:</strong> ${params.lead.empresa}</p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Email:</strong> <a href="mailto:${params.lead.email}">${params.lead.email}</a></p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Teléfono:</strong> ${params.lead.telefono}</p>
+        ${params.vendedor ? `<p style="margin: 4px 0; font-size: 13px; color: #047857;"><strong>Asesor Comercial Asignado:</strong> ${params.vendedor.nombre} (${params.vendedor.email} / ${params.vendedor.telefono})</p>` : ''}
         ${params.lead.direccion ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Envío a:</strong> ${params.lead.direccion}</p>` : ''}
         ${params.lead.telefono ? `
         <div style="margin-top: 10px;">

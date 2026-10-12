@@ -24,7 +24,8 @@ export async function actualizarEstatusCliente(
   perfil_empresa: string,
   telefono: string,
   rfc: string,
-  pagina_web: string
+  pagina_web: string,
+  vendedor_id?: string | null
 ) {
   const supabase = createAdminClient();
 
@@ -49,7 +50,8 @@ export async function actualizarEstatusCliente(
       perfil_empresa,
       telefono,
       rfc,
-      pagina_web
+      pagina_web,
+      vendedor_id: vendedor_id || null
     })
     .eq('id', id);
 

@@ -18,6 +18,7 @@ export default function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [vendedorAsignado, setVendedorAsignado] = useState<{ nombre: string; telefono: string; email: string } | null>(null);
 
   useEffect(() => {
     async function fetchBranding() {
@@ -35,11 +36,16 @@ export default function Header() {
       if (session) {
         const { data: perfil } = await supabase
           .from('perfiles_clientes')
-          .select('estatus, rol')
+          .select('estatus, rol, vendedor:vendedores(nombre, telefono, email, activo)')
           .eq('id', session.user.id)
           .single();
           
         if (perfil) {
+          if (perfil.vendedor && (perfil.vendedor as any).activo !== false) {
+            setVendedorAsignado(perfil.vendedor as any);
+          } else {
+            setVendedorAsignado(null);
+          }
           if (perfil.rol === 'admin') {
             setIsAdmin(true);
             setIsPending(false); // Los admins nunca están "en revisión"
@@ -49,10 +55,13 @@ export default function Header() {
               setIsPending(true);
             }
           }
+        } else {
+          setVendedorAsignado(null);
         }
       } else {
         setIsAdmin(false);
         setIsPending(false);
+        setVendedorAsignado(null);
       }
     }
 
@@ -62,7 +71,10 @@ export default function Header() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
       if (session) checkAuth(); // re-check on change
-      else setIsPending(false);
+      else {
+        setIsPending(false);
+        setVendedorAsignado(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -76,8 +88,20 @@ export default function Header() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-50 h-8 bg-brand-700 text-white flex items-center justify-center text-xs sm:text-sm font-medium">
-        ¿Prefieres atención personalizada? Contáctanos: <a href="mailto:ventas3@remindustrial.mx" className="ml-1 hover:underline font-bold">ventas3@remindustrial.mx</a> <span className="mx-2">|</span> 📞 <a href="tel:614815170" className="ml-1 hover:underline font-bold">614 81 51 70</a>
+      <div className="fixed top-0 left-0 right-0 z-50 h-8 bg-brand-700 text-white flex items-center justify-center text-xs sm:text-sm font-medium px-4 truncate">
+        {vendedorAsignado ? (
+          <>
+            <span>Tu asesor asignado: <strong className="font-bold">{vendedorAsignado.nombre}</strong></span>
+            <span className="mx-2">|</span>
+            <a href={`mailto:${vendedorAsignado.email}`} className="hover:underline font-bold">{vendedorAsignado.email}</a>
+            <span className="mx-2">|</span>
+            <span>📞 <a href={`tel:${vendedorAsignado.telefono.replace(/\D/g, '')}`} className="hover:underline font-bold">{vendedorAsignado.telefono}</a></span>
+          </>
+        ) : (
+          <>
+            ¿Prefieres atención personalizada? Contáctanos: <a href="mailto:ventas3@remindustrial.mx" className="ml-1 hover:underline font-bold">ventas3@remindustrial.mx</a> <span className="mx-2">|</span> 📞 <a href="tel:614815170" className="ml-1 hover:underline font-bold">614 81 51 70</a>
+          </>
+        )}
       </div>
       <header className="fixed top-8 left-0 right-0 z-40 h-16 bg-slate-900 text-white shadow-lg border-b border-slate-800">
         <div className="max-w-[1400px] mx-auto h-full px-4 flex items-center justify-between gap-6">
