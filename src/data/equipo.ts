@@ -29,6 +29,13 @@ export interface DireccionItem {
   detalles?: string; // ej: 'Almacén y mostrador'
 }
 
+export interface PilarValorItem {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  icono: 'shield' | 'zap' | 'wrench' | 'truck';
+}
+
 export interface NosotrosConfig {
   badge: string;
   titulo_hero: string;
@@ -37,6 +44,7 @@ export interface NosotrosConfig {
   telefonos: TelefonoItem[];
   emails: EmailItem[];
   direcciones: DireccionItem[];
+  pilares: PilarValorItem[];
   texto_nosotros: string;
   vision: string;
   mision: string;
@@ -48,6 +56,33 @@ export interface NosotrosConfig {
   email?: string;
   direccion?: string;
 }
+
+export const PILARES_DEFAULT: PilarValorItem[] = [
+  {
+    id: 'pilar-1',
+    titulo: 'Calidad Certificada',
+    descripcion: 'Marcas originales de prestigio mundial con especificaciones técnicas rigurosas para la industria maquiladora.',
+    icono: 'shield',
+  },
+  {
+    id: 'pilar-2',
+    titulo: 'Respuesta Inmediata',
+    descripcion: 'Cotizaciones formales y seguimiento ágil en WhatsApp y correo para que tus líneas de producción nunca se detengan.',
+    icono: 'zap',
+  },
+  {
+    id: 'pilar-3',
+    titulo: 'Asesoría de Campo',
+    descripcion: 'Ingenieros de aplicaciones que acuden a tu planta a optimizar parámetros de maquinado y selección de herramental.',
+    icono: 'wrench',
+  },
+  {
+    id: 'pilar-4',
+    titulo: 'Logística y Envíos',
+    descripcion: 'Stock estratégico en Ciudad Juárez, El Paso TX y Chihuahua Capital, con envíos seguros y rápidos a cualquier parque industrial de México.',
+    icono: 'truck',
+  },
+];
 
 export const NOSOTROS_CONFIG_DEFAULT: NosotrosConfig = {
   badge: 'Tú Socio Industrial',
@@ -81,6 +116,7 @@ export const NOSOTROS_CONFIG_DEFAULT: NosotrosConfig = {
       detalles: 'Atención técnica y distribución para la zona centro del estado'
     }
   ],
+  pilares: PILARES_DEFAULT,
   texto_nosotros: 'En REM Industrial, nos comprometemos a ser el socio preferido y más confiable para la provisión de productos y servicios diseñados para optimizar la productividad y calidad de nuestros clientes, todo ello al costo más competitivo. Nuestra visión es ser reconocidos como la opción predilecta por nuestra capacidad de aportar soluciones efectivas y accesibles.',
   vision: 'Ser el recurso preferido y el más confiable para los productos y servicios que mejoren y faciliten la productividad y calidad de nuestros clientes al menor costo posible.',
   mision: 'Ser la empresa líder en la distribución de productos de calidad y servicios de gran valor, cuando y donde los necesite el cliente, creando relaciones positivas y duraderas con nuestros clientes.',
@@ -123,6 +159,11 @@ export function normalizarNosotrosConfig(raw?: any): NosotrosConfig {
       });
     }
     config.direcciones = dirs.length > 0 ? dirs : NOSOTROS_CONFIG_DEFAULT.direcciones;
+  }
+
+  // Normalizar pilares de valor
+  if (!Array.isArray(config.pilares) || config.pilares.length === 0) {
+    config.pilares = PILARES_DEFAULT;
   }
 
   return config;

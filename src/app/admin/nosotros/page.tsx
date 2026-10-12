@@ -235,6 +235,14 @@ export default function AdminNosotrosPage() {
     });
   };
 
+  // MANEJO DE PILARES DE VALOR
+  const actualizarPilar = (id: string, campo: 'titulo' | 'descripcion' | 'icono', valor: string) => {
+    setConfig({
+      ...config,
+      pilares: (config.pilares || []).map((p) => (p.id === id ? { ...p, [campo]: valor } : p)),
+    });
+  };
+
   // MANEJO DE MODAL DE MIEMBROS ORGANIGRAMA
   const abrirModalNuevo = () => {
     setMiembroEditando(null);
@@ -817,6 +825,67 @@ export default function AdminNosotrosPage() {
                   className="w-full text-sm border border-gray-300 rounded-xl px-4 py-2"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* RECUADROS DE PILARES DE VALOR INDUSTRIAL (POR QUÉ ELEGIRNOS) */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs space-y-4">
+            <div className="border-b pb-3">
+              <h2 className="text-lg font-bold text-gray-900">
+                Recuadros de Fortalezas y Pilares (&quot;Por Qué Elegirnos&quot;)
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Personaliza los 4 recuadros de valor que aparecen en la página pública de Sobre Nosotros.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(config.pilares || []).map((pilar, idx) => (
+                <div
+                  key={pilar.id}
+                  className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-3 hover:border-brand-400 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-gray-200/80 pb-2">
+                    <span className="text-xs font-bold text-gray-700">
+                      Recuadro #{idx + 1}
+                    </span>
+                    <select
+                      value={pilar.icono || 'shield'}
+                      onChange={(e) => actualizarPilar(pilar.id, 'icono', e.target.value)}
+                      className="text-xs border border-gray-300 rounded-lg px-2 py-1 bg-white font-medium text-gray-700"
+                    >
+                      <option value="shield">Ícono: Calidad (Escudo)</option>
+                      <option value="zap">Ícono: Rapidez (Rayo)</option>
+                      <option value="wrench">Ícono: Soporte (Herramienta)</option>
+                      <option value="truck">Ícono: Envíos (Camión)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Título del Recuadro
+                    </label>
+                    <input
+                      type="text"
+                      value={pilar.titulo}
+                      onChange={(e) => actualizarPilar(pilar.id, 'titulo', e.target.value)}
+                      className="w-full text-xs border border-gray-300 rounded-xl px-3 py-2 bg-white font-semibold focus:outline-hidden focus:ring-1 focus:ring-brand-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Descripción del Recuadro
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={pilar.descripcion}
+                      onChange={(e) => actualizarPilar(pilar.id, 'descripcion', e.target.value)}
+                      className="w-full text-xs border border-gray-300 rounded-xl px-3 py-2 bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-500 resize-none"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

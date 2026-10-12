@@ -195,45 +195,28 @@ export default async function SobreNosotrosPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <h4 className="text-base font-bold text-white mb-2">Calidad Certificada</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Marcas originales de prestigio mundial con especificaciones técnicas rigurosas para la industria maquiladora.
-                </p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
-                  <Zap className="w-6 h-6" />
-                </div>
-                <h4 className="text-base font-bold text-white mb-2">Respuesta Inmediata</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Cotizaciones formales y seguimiento ágil en WhatsApp y correo para que tus líneas de producción nunca se detengan.
-                </p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
-                  <Wrench className="w-6 h-6" />
-                </div>
-                <h4 className="text-base font-bold text-white mb-2">Asesoría de Campo</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Ingenieros de aplicaciones que acuden a tu planta a optimizar parámetros de maquinado y selección de herramental.
-                </p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
-                  <Truck className="w-6 h-6" />
-                </div>
-                <h4 className="text-base font-bold text-white mb-2">Logística y Envíos</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Stock estratégico en Ciudad Juárez y El Paso TX, con envíos seguros y rápidos a cualquier parque industrial de México.
-                </p>
-              </div>
+              {(config.pilares || []).map((pilar) => {
+                const getIcon = (ico?: string) => {
+                  switch (ico) {
+                    case 'zap': return <Zap className="w-6 h-6" />;
+                    case 'wrench': return <Wrench className="w-6 h-6" />;
+                    case 'truck': return <Truck className="w-6 h-6" />;
+                    case 'shield':
+                    default: return <ShieldCheck className="w-6 h-6" />;
+                  }
+                };
+                return (
+                  <div key={pilar.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
+                      {getIcon(pilar.icono)}
+                    </div>
+                    <h4 className="text-base font-bold text-white mb-2">{pilar.titulo}</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {pilar.descripcion}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
