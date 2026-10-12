@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const DEFAULT_FROM = process.env.FROM_EMAIL || 'REM Industrial <onboarding@resend.dev>';
 
 interface NotificacionCotizacionParams {
   lead: {
@@ -45,7 +46,7 @@ export async function enviarNotificacionVentas(
 
   try {
     const { data, error } = await resend.emails.send({
-      from: 'REM Industrial <onboarding@resend.dev>',
+      from: DEFAULT_FROM,
       to: destinatarios,
       subject: `Nueva Solicitud de Cotización - #${params.folio.replace(/^COT-/i, '')} | ${params.lead.empresa}${params.vendedor ? ` [Asesor: ${params.vendedor.nombre}]` : ''}`,
       html: generarHTMLNotificacion(params),
@@ -163,7 +164,7 @@ export async function enviarNotificacionAprobacion(
 ) {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'REM Industrial <onboarding@resend.dev>', // Importante: Configura tu dominio real en Resend
+      from: DEFAULT_FROM, // Importante: Configura tu dominio real en Resend
       to: [destinatario],
       subject: '¡Tu cuenta empresarial en REM Industrial ha sido aprobada!',
       html: `
@@ -219,7 +220,7 @@ export async function enviarNotificacionRechazo(
 ) {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'REM Industrial <onboarding@resend.dev>', // Importante: Configura tu dominio real en Resend
+      from: DEFAULT_FROM, // Importante: Configura tu dominio real en Resend
       to: [destinatario],
       subject: 'Actualización sobre tu solicitud de cuenta en REM Industrial',
       html: `
@@ -251,7 +252,7 @@ export async function enviarNotificacionRechazo(
 export async function enviarCorreoRevisionCliente(email: string, nombre: string, pedidoId: string, baseURL: string) {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'REM Industrial <onboarding@resend.dev>',
+      from: DEFAULT_FROM,
       to: [email],
       subject: `Tiempos de entrega asignados - Pedido ${pedidoId.split('-')[0]}`,
       html: `
