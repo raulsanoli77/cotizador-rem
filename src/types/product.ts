@@ -12,6 +12,7 @@ export interface Producto {
   imagen_url: string | null;
   activo: boolean;
   requiere_confirmacion?: boolean;
+  costo_actualizado_at?: string;
   created_at: string;
   updated_at: string;
 }

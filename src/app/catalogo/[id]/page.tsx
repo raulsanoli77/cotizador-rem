@@ -163,7 +163,8 @@ export default function ProductDetailPage() {
 
   const specs = producto.especificaciones_tecnicas || {};
   const specsEntries = Object.entries(specs)
-    .filter(([_, value]) => {
+    .filter(([key, value]) => {
+      if (key.toLowerCase() === 'requiere_confirmacion') return false;
       const valStr = String(value).trim().toUpperCase();
       return valStr !== '' && valStr !== 'N/A' && valStr !== '-';
     })
@@ -352,6 +353,13 @@ export default function ProductDetailPage() {
                     </div>
                   )}
                 </div>
+
+                {(producto.requiere_confirmacion || (producto.especificaciones_tecnicas as any)?.requiere_confirmacion === true || (producto.especificaciones_tecnicas as any)?.requiere_confirmacion === 'true') && (
+                  <div className="mt-4 flex items-center gap-2.5 text-xs font-semibold text-amber-300 bg-amber-950/40 border border-amber-500/30 px-4 py-3 rounded-xl">
+                    <span className="text-base leading-none">⚠️</span>
+                    <span>Precio y tiempo de entrega sujetos a confirmación de existencias con el fabricante.</span>
+                  </div>
+                )}
               </div>
 
             </div>

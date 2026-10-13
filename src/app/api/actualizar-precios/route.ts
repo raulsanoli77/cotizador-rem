@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { verificarAdmin } from '@/lib/auth/admin-auth';
 import { EventoActualizacionPrecios } from '@/types/product';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Validar autorización de administrador
+    const authCheck = await verificarAdmin(request);
+    if (!authCheck.autorizado) {
+      return authCheck.errorResponse!;
+    }
+
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from('configuracion')
@@ -28,8 +35,14 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // 1. Validar autorización de administrador
+    const authCheck = await verificarAdmin(request);
+    if (!authCheck.autorizado) {
+      return authCheck.errorResponse!;
+    }
+
     const body = await request.json();
-    const { items, marca, usuario } = body;
+    const { items, marca } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'No se recibieron artículos para actualizar.' }, { status: 400 });
@@ -37,62 +50,125 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // 1. Obtener todos los productos existentes necesarios para hacer match eficiente
-    // Traemos id, sku_interno, numero_parte, costo_base, moneda_costo, especificaciones_tecnicas
-    const { data: productosExistentes, error: queryError } = await supabase
-      .from('productos')
-      .select('id, sku_interno, numero_parte, costo_base, moneda_costo, especificaciones_tecnicas, marca');
+    // 2. Obtener TODOS los productos existentes usando paginación .range() (supera el límite de 1000 filas)
+    const productosExistentes: any[] = [];
+    const step = 1000;
+    let from = 0;
+    let hasMore = true;
 
-    if (queryError) {
-      console.error('[API/actualizar-precios] Error al consultar productos:', queryError);
-      return NextResponse.json({ error: 'Error al consultar productos existentes en la base de datos.' }, { status: 500 });
+    while (hasMore) {
+      const { data, error: queryError } = await supabase
+        .from('productos')
+        .select('id, sku_interno, numero_parte, costo_base, moneda_costo, especificaciones_tecnicas, marca')
+        .range(from, from + step - 1);
+
+      if (queryError) {
+        console.error('[API/actualizar-precios] Error al consultar productos:', queryError);
+        return NextResponse.json({ error: 'Error al consultar catálogo en la base de datos.' }, { status: 500 });
+      }
+
+      if (data && data.length > 0) {
+        productosExistentes.push(...data);
+        if (data.length < step) hasMore = false;
+        else from += step;
+      } else {
+        hasMore = false;
+      }
     }
 
-    // Indexar productos existentes por número de parte y por SKU interno (en mayúsculas y sin espacios)
-    const mapaPorParte = new Map<string, any>();
-    const mapaPorSku = new Map<string, any>();
+    // 3. Indexar productos existentes:
+    // Creamos índices por marca (si se especificó marca) y globales
+    const marcaObjetivoNorm = marca && typeof marca === 'string' && marca.trim() !== '' && marca.toLowerCase() !== 'todas'
+      ? marca.trim().toLowerCase()
+      : null;
 
-    (productosExistentes || []).forEach((prod) => {
-      if (prod.numero_parte) {
-        const keyParte = String(prod.numero_parte).trim().toUpperCase();
-        mapaPorParte.set(keyParte, prod);
+    // Mapas agrupados
+    const mapaPorParteYMarca = new Map<string, any>(); // key: "PARTE|MARCA"
+    const mapaPorParteGlobal = new Map<string, any[]>(); // key: "PARTE" -> array de productos (para detectar ambigüedades)
+    const mapaPorSkuGlobal = new Map<string, any>();     // key: "SKU"
+
+    productosExistentes.forEach((prod) => {
+      const parteNorm = prod.numero_parte ? String(prod.numero_parte).trim().toUpperCase() : null;
+      const skuNorm = prod.sku_interno ? String(prod.sku_interno).trim().toUpperCase() : null;
+      const prodMarcaNorm = prod.marca ? String(prod.marca).trim().toLowerCase() : '';
+
+      if (parteNorm) {
+        // Mapa parte + marca
+        mapaPorParteYMarca.set(`${parteNorm}|${prodMarcaNorm}`, prod);
+
+        // Mapa global de partes
+        if (!mapaPorParteGlobal.has(parteNorm)) {
+          mapaPorParteGlobal.set(parteNorm, []);
+        }
+        mapaPorParteGlobal.get(parteNorm)!.push(prod);
       }
-      if (prod.sku_interno) {
-        const keySku = String(prod.sku_interno).trim().toUpperCase();
-        mapaPorSku.set(keySku, prod);
+
+      if (skuNorm) {
+        mapaPorSkuGlobal.set(skuNorm, prod);
       }
     });
 
-    // 2. Clasificar los items del Excel
+    // 4. Clasificar y emparejar los items del Excel
     const itemsParaActualizar: Array<{
       id: string;
       costo_base: number;
       moneda_costo: 'USD' | 'MXN';
-      especificaciones_tecnicas: Record<string, any>;
+      costo_actualizado_at: string;
       updated_at: string;
+      requiere_confirmacion: boolean;
+      especificaciones_tecnicas: Record<string, any>;
     }> = [];
 
     const noEncontrados: string[] = [];
+    const ambiguos: string[] = [];
     const ahoraIso = new Date().toISOString();
 
-    items.forEach((item: { numero_parte: string; costo: number; moneda?: 'USD' | 'MXN' }) => {
+    items.forEach((item: { numero_parte: string; costo: number; moneda?: 'USD' | 'MXN' | null }) => {
       const codigoBuscado = String(item.numero_parte).trim().toUpperCase();
-      const productoMatch = mapaPorParte.get(codigoBuscado) || mapaPorSku.get(codigoBuscado);
+
+      let productoMatch: any = null;
+
+      // Prioridad 1: Si hay marca objetivo, buscar en esa marca
+      if (marcaObjetivoNorm) {
+        productoMatch = mapaPorParteYMarca.get(`${codigoBuscado}|${marcaObjetivoNorm}`);
+      }
+
+      // Prioridad 2: Buscar por SKU exacto
+      if (!productoMatch) {
+        productoMatch = mapaPorSkuGlobal.get(codigoBuscado);
+      }
+
+      // Prioridad 3: Buscar globalmente por número de parte
+      if (!productoMatch) {
+        const matchesGlobales = mapaPorParteGlobal.get(codigoBuscado) || [];
+        if (matchesGlobales.length === 1) {
+          productoMatch = matchesGlobales[0];
+        } else if (matchesGlobales.length > 1) {
+          // Si no se especificó marca y coincide con más de una marca distinta, marcar como ambiguo
+          ambiguos.push(`${item.numero_parte} (coincide con marcas: ${matchesGlobales.map((m) => m.marca).join(', ')})`);
+          return;
+        }
+      }
 
       if (productoMatch) {
-        // Limpiamos la bandera requiere_confirmacion porque acaba de ser actualizado con precio fresco
-        const specsPrevias = productoMatch.especificaciones_tecnicas || {};
-        const specsActualizadas = {
-          ...specsPrevias,
-          requiere_confirmacion: false,
-        };
+        // Moneda inteligente: si el Excel traía moneda válida, usarla; si venía vacía, conservar la del producto
+        const monedaFinal: 'USD' | 'MXN' =
+          item.moneda && (item.moneda === 'USD' || item.moneda === 'MXN')
+            ? item.moneda
+            : (productoMatch.moneda_costo === 'MXN' ? 'MXN' : 'USD');
+
+        // Limpiar la bandera requiere_confirmacion de especificaciones_tecnicas si existía allí
+        const specsPrevias = { ...(productoMatch.especificaciones_tecnicas || {}) };
+        delete specsPrevias.requiere_confirmacion;
 
         itemsParaActualizar.push({
           id: productoMatch.id,
           costo_base: item.costo,
-          moneda_costo: item.moneda || productoMatch.moneda_costo || 'USD',
-          especificaciones_tecnicas: specsActualizadas,
+          moneda_costo: monedaFinal,
+          costo_actualizado_at: ahoraIso,
           updated_at: ahoraIso,
+          requiere_confirmacion: false,
+          especificaciones_tecnicas: specsPrevias,
         });
       } else {
         noEncontrados.push(item.numero_parte);
@@ -102,54 +178,77 @@ export async function POST(request: NextRequest) {
     if (itemsParaActualizar.length === 0) {
       return NextResponse.json({
         success: false,
-        message: 'Ninguno de los números de parte del archivo coincide con el catálogo actual.',
+        error: 'Ninguno de los números de parte del archivo coincide con el catálogo actual.',
         total_procesados: items.length,
         actualizados: 0,
         no_encontrados: noEncontrados,
+        ambiguos,
       }, { status: 404 });
     }
 
-    // 3. Ejecutar las actualizaciones en la base de datos por lotes (chunks) para máximo rendimiento y seguridad
-    const CHUNK_SIZE = 50;
+    // 5. Intentar primero ejecutar vía RPC atómica `actualizar_precios_lote` si la función existe en la BD
     let actualizadosExitosos = 0;
+    let rpcExitoso = false;
 
-    for (let i = 0; i < itemsParaActualizar.length; i += CHUNK_SIZE) {
-      const chunk = itemsParaActualizar.slice(i, i + CHUNK_SIZE);
+    try {
+      const payloadRpc = itemsParaActualizar.map((i) => ({
+        id: i.id,
+        costo: i.costo_base,
+        moneda: i.moneda_costo,
+      }));
 
-      // Usamos Promise.all para actualizar concurrentemente los elementos del lote
-      const promesas = chunk.map((p) =>
-        supabase
-          .from('productos')
-          .update({
-            costo_base: p.costo_base,
-            moneda_costo: p.moneda_costo,
-            especificaciones_tecnicas: p.especificaciones_tecnicas,
-            updated_at: p.updated_at,
-          })
-          .eq('id', p.id)
-      );
-
-      const resultados = await Promise.all(promesas);
-      resultados.forEach((res) => {
-        if (!res.error) actualizadosExitosos++;
-        else console.error('[API/actualizar-precios] Error actualizando producto:', res.error);
+      const { data: countRpc, error: rpcError } = await supabase.rpc('actualizar_precios_lote', {
+        p_items: payloadRpc,
       });
+
+      if (!rpcError && typeof countRpc === 'number') {
+        actualizadosExitosos = countRpc;
+        rpcExitoso = true;
+      }
+    } catch {
+      rpcExitoso = false;
     }
 
-    // 4. Registrar evento en la Bitácora
+    // Fallback: Si el RPC aún no fue ejecutado en SQL, actualizar por lotes concurrentes en Supabase
+    if (!rpcExitoso) {
+      const CHUNK_SIZE = 50;
+      for (let i = 0; i < itemsParaActualizar.length; i += CHUNK_SIZE) {
+        const chunk = itemsParaActualizar.slice(i, i + CHUNK_SIZE);
+
+        const promesas = chunk.map((p) => {
+          const updatePayload: Record<string, any> = {
+            costo_base: p.costo_base,
+            moneda_costo: p.moneda_costo,
+            costo_actualizado_at: p.costo_actualizado_at,
+            updated_at: p.updated_at,
+            requiere_confirmacion: p.requiere_confirmacion,
+            especificaciones_tecnicas: p.especificaciones_tecnicas,
+          };
+
+          return supabase.from('productos').update(updatePayload).eq('id', p.id);
+        });
+
+        const resultados = await Promise.all(promesas);
+        resultados.forEach((res) => {
+          if (!res.error) actualizadosExitosos++;
+          else console.error('[API/actualizar-precios] Error al actualizar fila:', res.error);
+        });
+      }
+    }
+
+    // 6. Registrar evento en la Bitácora con el correo del administrador autenticado
     const eventoId = `act-${Date.now()}`;
     const nuevoEvento: EventoActualizacionPrecios = {
       id: eventoId,
       fecha: ahoraIso,
-      usuario: usuario || 'Administrador',
-      marca: marca || 'General / Múltiples',
+      usuario: authCheck.email || authCheck.nombre || 'Administrador',
+      marca: marca && marca.trim() ? marca.trim() : 'General / Múltiples',
       total_procesados: items.length,
       total_actualizados: actualizadosExitosos,
       total_no_encontrados: noEncontrados.length,
-      no_encontrados: noEncontrados.slice(0, 100), // Guardamos los primeros 100 para no sobrecargar el JSON
+      no_encontrados: noEncontrados.slice(0, 100),
     };
 
-    // Obtener bitácora previa y agregar el nuevo evento al inicio (máximo 150 registros históricos)
     try {
       const { data: bitacoraPrevData } = await supabase
         .from('configuracion')
@@ -183,6 +282,7 @@ export async function POST(request: NextRequest) {
       actualizados: actualizadosExitosos,
       total_no_encontrados: noEncontrados.length,
       no_encontrados: noEncontrados,
+      ambiguos,
       evento: nuevoEvento,
     });
   } catch (error: any) {

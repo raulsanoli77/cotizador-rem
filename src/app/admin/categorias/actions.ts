@@ -57,6 +57,7 @@ export async function autoSincronizarCamposServer(categoriaId: string, categoria
   productos.forEach(prod => {
     if (prod.especificaciones_tecnicas) {
       Object.keys(prod.especificaciones_tecnicas).forEach(key => {
+        if (key.toLowerCase() === 'requiere_confirmacion') return;
         if (!nombresActuales.has(key.toUpperCase())) {
           nuevasKeys.add(key);
         }

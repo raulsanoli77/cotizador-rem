@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 export interface ItemActualizacionPrecio {
   numero_parte: string;
   costo: number;
-  moneda: 'USD' | 'MXN';
+  moneda?: 'USD' | 'MXN' | null;
   filaOriginal: number;
 }
 
@@ -26,7 +26,7 @@ function normalizarEncabezado(col: string): string {
  * Parsea un archivo Excel o CSV de actualización de precios con 3 columnas:
  * Columna 1: numero_parte
  * Columna 2: costo
- * Columna 3: moneda (USD / MXN)
+ * Columna 3: moneda (USD / MXN o vacía para conservar)
  */
 export function parsearExcelPrecios(fileBuffer: ArrayBuffer): ParsePreciosResult {
   const items: ItemActualizacionPrecio[] = [];
@@ -42,7 +42,8 @@ export function parsearExcelPrecios(fileBuffer: ArrayBuffer): ParsePreciosResult
     }
 
     const worksheet = workbook.Sheets[firstSheetName];
-    const rows = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: null });
+    // Usamos raw: false para preservar códigos con ceros a la izquierda y evitar notación científica
+    const rows = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: null, raw: false });
 
     if (rows.length === 0) {
       errores.push('El archivo está vacío o no contiene filas de datos.');
@@ -106,21 +107,26 @@ export function parsearExcelPrecios(fileBuffer: ArrayBuffer): ParsePreciosResult
 
       // Validar número de parte
       if (parteRaw === null || parteRaw === undefined || String(parteRaw).trim() === '') {
-        // Fila vacía al final del archivo, la ignoramos silenciosamente
-        return;
+        return; // Fila vacía al final del archivo, ignorar
       }
 
-      // Auto-Trim y normalización del código de parte
+      // Auto-Trim del código de parte
       const numeroParte = String(parteRaw).trim();
 
-      // Validar costo
+      // Validar y limpiar costo (manejo de comas y puntos decimales)
       let costoNum: number | null = null;
       if (typeof costoRaw === 'number') {
         costoNum = costoRaw;
       } else if (typeof costoRaw === 'string') {
-        // Limpiar signos de dólar, comas, espacios
-        const limpio = costoRaw.replace(/[$,\s]/g, '').trim();
-        const parsed = parseFloat(limpio);
+        let str = costoRaw.replace(/[$€\s]/g, '').trim();
+        if (str.includes(',') && str.includes('.')) {
+          // Miles con coma y decimales con punto
+          str = str.replace(/,/g, '');
+        } else if (str.includes(',') && !str.includes('.')) {
+          // Coma decimal tipo "4,85"
+          str = str.replace(',', '.');
+        }
+        const parsed = parseFloat(str);
         if (!isNaN(parsed)) costoNum = parsed;
       }
 
@@ -134,18 +140,21 @@ export function parsearExcelPrecios(fileBuffer: ArrayBuffer): ParsePreciosResult
         return;
       }
 
-      // Validar moneda
-      let moneda: 'USD' | 'MXN' = 'USD';
-      if (monedaRaw) {
+      // Validar moneda: si viene vacía se deja en null (para conservar la moneda actual del catálogo)
+      let moneda: 'USD' | 'MXN' | null = null;
+      if (monedaRaw !== null && monedaRaw !== undefined && String(monedaRaw).trim() !== '') {
         const monNorm = String(monedaRaw).trim().toUpperCase();
         if (monNorm.includes('MXN') || monNorm.includes('PESO')) {
           moneda = 'MXN';
-        } else {
+        } else if (monNorm.includes('USD') || monNorm.includes('DLL') || monNorm.includes('DOL')) {
           moneda = 'USD';
+        } else {
+          advertencias.push(`Fila ${filaNum}: Moneda no válida "${monedaRaw}" en "${numeroParte}". Solo se admite USD o MXN. Se omitió.`);
+          return;
         }
       }
 
-      // Desduplicar en el mismo archivo (conservar la última o primera)
+      // Desduplicar en el mismo archivo (conservar la primera aparición)
       const parteUpper = numeroParte.toUpperCase();
       if (setPartesVistas.has(parteUpper)) {
         advertencias.push(`Fila ${filaNum}: Código duplicado "${numeroParte}" en el archivo. Se procesará la primera aparición.`);

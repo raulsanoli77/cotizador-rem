@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { UploadCloud, FileType, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { parsearExcelProductos, type ParseResult } from '@/lib/excel/parser';
 import ExcelTemplateDownloader from '@/components/admin/ExcelTemplateDownloader';
+import { supabase } from '@/lib/supabase/client';
 
 export default function AdminCargaMasiva() {
   const [file, setFile] = useState<File | null>(null);
@@ -42,9 +43,13 @@ export default function AdminCargaMasiva() {
     
     setUploading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/upload-excel', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ productos: parseResult.productos }),
       });
       

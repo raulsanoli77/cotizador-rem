@@ -24,6 +24,10 @@ import {
   EyeOff,
   RefreshCw,
   Info,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 import {
   parsearExcelPrecios,
@@ -51,6 +55,10 @@ export default function AdminActualizarPreciosPage() {
   const [filtroCategoria, setFiltroCategoria] = useState('Todas');
   const [filtroSemaforo, setFiltroSemaforo] = useState<'todos' | 'al_dia' | 'vigencia_media' | 'en_riesgo' | 'con_nota'>('todos');
 
+  // Paginación de Tabla
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [elementosPorPagina, setElementosPorPagina] = useState(50);
+
   // Selección múltiple
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set());
 
@@ -77,26 +85,47 @@ export default function AdminActualizarPreciosPage() {
   const [bitacora, setBitacora] = useState<EventoActualizacionPrecios[]>([]);
   const [cargandoBitacora, setCargandoBitacora] = useState(false);
 
-  // Cargar datos
+  // Cargar datos (Paginado para soportar catálogos grandes que superen el límite de 1000 de Supabase)
   const cargarProductos = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('productos')
-        .select('*')
-        .order('numero_parte', { ascending: true });
+      const todosLosProductos: any[] = [];
+      const PAGE_CHUNK = 1000;
+      let from = 0;
+      let hayMas = true;
 
-      if (error) throw error;
+      while (hayMas) {
+        const { data: chunk, error: chunkError } = await supabase
+          .from('productos')
+          .select('*')
+          .order('numero_parte', { ascending: true })
+          .range(from, from + PAGE_CHUNK - 1);
+
+        if (chunkError) throw chunkError;
+
+        if (chunk && chunk.length > 0) {
+          todosLosProductos.push(...chunk);
+          if (chunk.length < PAGE_CHUNK) {
+            hayMas = false;
+          } else {
+            from += PAGE_CHUNK;
+          }
+        } else {
+          hayMas = false;
+        }
+      }
 
       const ahora = new Date().getTime();
       const marcasSet = new Set<string>();
       const categoriasSet = new Set<string>();
 
-      const formateados: ProductoConSalud[] = (data || []).map((p) => {
+      const formateados: ProductoConSalud[] = todosLosProductos.map((p) => {
         if (p.marca) marcasSet.add(p.marca);
         if (p.categoria) categoriasSet.add(p.categoria);
 
-        const fechaUpd = p.updated_at ? new Date(p.updated_at).getTime() : new Date(p.created_at || ahora).getTime();
+        // Usar costo_actualizado_at preferentemente, o updated_at / created_at como fallback
+        const rawFecha = p.costo_actualizado_at || p.updated_at || p.created_at;
+        const fechaUpd = rawFecha ? new Date(rawFecha).getTime() : ahora;
         const dias = Math.floor(Math.max(0, ahora - fechaUpd) / (1000 * 60 * 60 * 24));
 
         let estado: 'al_dia' | 'vigencia_media' | 'en_riesgo' = 'al_dia';
@@ -107,7 +136,10 @@ export default function AdminActualizarPreciosPage() {
         }
 
         const specs = p.especificaciones_tecnicas || {};
-        const tieneNota = specs.requiere_confirmacion === true || specs.requiere_confirmacion === 'true';
+        const tieneNota =
+          p.requiere_confirmacion === true ||
+          specs.requiere_confirmacion === true ||
+          specs.requiere_confirmacion === 'true';
 
         return {
           ...p,
@@ -131,11 +163,16 @@ export default function AdminActualizarPreciosPage() {
     cargarProductos();
   }, []);
 
-  // Cargar Bitácora
+  // Cargar Bitácora con Token de Autorización Admin
   const cargarBitacora = async () => {
     try {
       setCargandoBitacora(true);
-      const res = await fetch('/api/actualizar-precios');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const res = await fetch('/api/actualizar-precios', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = await res.json();
       if (data.bitacora) {
         setBitacora(data.bitacora);
@@ -203,6 +240,39 @@ export default function AdminActualizarPreciosPage() {
     });
   }, [productos, busqueda, filtroMarca, filtroCategoria, filtroSemaforo]);
 
+  // Resetear a página 1 cuando cambia algún filtro o búsqueda
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [busqueda, filtroMarca, filtroCategoria, filtroSemaforo]);
+
+  // Cálculos de Paginación
+  const totalPaginas = Math.ceil(productosFiltrados.length / elementosPorPagina) || 1;
+  const paginaAjustada = Math.min(Math.max(1, paginaActual), totalPaginas);
+
+  const productosPaginados = useMemo(() => {
+    const inicio = (paginaAjustada - 1) * elementosPorPagina;
+    return productosFiltrados.slice(inicio, inicio + elementosPorPagina);
+  }, [productosFiltrados, paginaAjustada, elementosPorPagina]);
+
+  const todosEnPaginaSeleccionados =
+    productosPaginados.length > 0 && productosPaginados.every((p) => seleccionados.has(p.id));
+
+  const toggleSeleccionarPagina = () => {
+    setSeleccionados((prev) => {
+      const nuevo = new Set(prev);
+      if (todosEnPaginaSeleccionados) {
+        productosPaginados.forEach((p) => nuevo.delete(p.id));
+      } else {
+        productosPaginados.forEach((p) => nuevo.add(p.id));
+      }
+      return nuevo;
+    });
+  };
+
+  const seleccionarTodosLosFiltrados = () => {
+    setSeleccionados(new Set(productosFiltrados.map((p) => p.id)));
+  };
+
   // Mapas para cruce rápido con Excel
   const mapaProductosExistentes = useMemo(() => {
     const mapa = new Map<string, ProductoConSalud>();
@@ -222,7 +292,7 @@ export default function AdminActualizarPreciosPage() {
     const itemsComparados: Array<{
       numero_parte: string;
       nuevoCosto: number;
-      nuevaMoneda: 'USD' | 'MXN';
+      nuevaMoneda: string;
       productoActual: ProductoConSalud | null;
       variacionPorcentaje: number | null;
       esVariacionExtrema: boolean;
@@ -262,7 +332,7 @@ export default function AdminActualizarPreciosPage() {
       itemsComparados.push({
         numero_parte: item.numero_parte,
         nuevoCosto: item.costo,
-        nuevaMoneda: item.moneda,
+        nuevaMoneda: item.moneda || actual?.moneda_costo || 'USD',
         productoActual: actual,
         variacionPorcentaje: variacion,
         esVariacionExtrema: esExtrema,
@@ -297,7 +367,7 @@ export default function AdminActualizarPreciosPage() {
     }
   };
 
-  // Acciones en bloque
+  // Acciones en bloque optimizadas en un solo query .in('id', ids)
   const handleAccionEnBloque = async (accion: 'desactivar' | 'marcar_nota' | 'reactivar_normal') => {
     if (seleccionados.size === 0) return;
 
@@ -314,31 +384,27 @@ export default function AdminActualizarPreciosPage() {
     try {
       setLoading(true);
 
-      for (const id of ids) {
-        const prod = productos.find((p) => p.id === id);
-        if (!prod) continue;
-
-        const specsPrev = prod.especificaciones_tecnicas || {};
-
-        if (accion === 'desactivar') {
-          await supabase.from('productos').update({ activo: false }).eq('id', id);
-        } else if (accion === 'marcar_nota') {
-          await supabase
-            .from('productos')
-            .update({
-              activo: true,
-              especificaciones_tecnicas: { ...specsPrev, requiere_confirmacion: true },
-            })
-            .eq('id', id);
-        } else if (accion === 'reactivar_normal') {
-          await supabase
-            .from('productos')
-            .update({
-              activo: true,
-              especificaciones_tecnicas: { ...specsPrev, requiere_confirmacion: false },
-            })
-            .eq('id', id);
-        }
+      if (accion === 'desactivar') {
+        const { error } = await supabase.from('productos').update({ activo: false }).in('id', ids);
+        if (error) throw error;
+      } else if (accion === 'marcar_nota') {
+        const { error } = await supabase
+          .from('productos')
+          .update({
+            activo: true,
+            requiere_confirmacion: true,
+          })
+          .in('id', ids);
+        if (error) throw error;
+      } else if (accion === 'reactivar_normal') {
+        const { error } = await supabase
+          .from('productos')
+          .update({
+            activo: true,
+            requiere_confirmacion: false,
+          })
+          .in('id', ids);
+        if (error) throw error;
       }
 
       setSeleccionados(new Set());
@@ -377,8 +443,8 @@ export default function AdminActualizarPreciosPage() {
         .update({
           costo_base: editCosto,
           moneda_costo: editMoneda,
-          updated_at: ahoraIso,
-          especificaciones_tecnicas: { ...specs, requiere_confirmacion: false },
+          costo_actualizado_at: ahoraIso,
+          requiere_confirmacion: false,
         })
         .eq('id', prod.id);
 
@@ -418,7 +484,11 @@ export default function AdminActualizarPreciosPage() {
     let lista = bitacora;
     if (lista.length === 0) {
       try {
-        const res = await fetch('/api/actualizar-precios');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const res = await fetch('/api/actualizar-precios', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         const data = await res.json();
         if (data.bitacora) lista = data.bitacora;
       } catch (err) {
@@ -467,13 +537,19 @@ export default function AdminActualizarPreciosPage() {
 
     try {
       setAplicandoPrecios(true);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
       const res = await fetch('/api/actualizar-precios', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           items: itemsExcel,
-          marca: marcaCarga.trim() || filtroMarca !== 'Todas' ? (marcaCarga.trim() || filtroMarca) : 'General',
-          usuario: 'Administrador',
+          marca: marcaCarga.trim() || (filtroMarca !== 'Todas' ? filtroMarca : 'General'),
+          usuario: sessionData?.session?.user?.email || 'Administrador',
         }),
       });
 
@@ -726,11 +802,20 @@ export default function AdminActualizarPreciosPage() {
         {/* BARRA DE ACCIONES EN BLOQUE (Si hay elementos seleccionados) */}
         {seleccionados.size > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-200 bg-brand-50/50 p-3 rounded-xl">
-            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-brand-900">
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-bold text-brand-900">
               <span className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs">
                 {seleccionados.size}
               </span>
               <span>artículos seleccionados</span>
+              {seleccionados.size < productosFiltrados.length && (
+                <button
+                  type="button"
+                  onClick={seleccionarTodosLosFiltrados}
+                  className="ml-2 text-xs font-semibold text-brand-700 hover:text-brand-900 underline"
+                >
+                  Seleccionar los {productosFiltrados.length} productos filtrados
+                </button>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -798,9 +883,14 @@ export default function AdminActualizarPreciosPage() {
                 <th className="p-3 w-10 text-center">
                   <input
                     type="checkbox"
-                    checked={productosFiltrados.length > 0 && seleccionados.size === productosFiltrados.length}
-                    onChange={seleccionarTodos}
-                    className="rounded-sm border-gray-300 text-brand-600 focus:ring-brand-500 w-4 h-4"
+                    checked={todosEnPaginaSeleccionados}
+                    onChange={toggleSeleccionarPagina}
+                    className="rounded-sm border-gray-300 text-brand-600 focus:ring-brand-500 w-4 h-4 cursor-pointer"
+                    title={
+                      todosEnPaginaSeleccionados
+                        ? 'Deseleccionar todos en esta página'
+                        : 'Seleccionar todos en esta página'
+                    }
                   />
                 </th>
                 <th className="p-3">Número de Parte</th>
@@ -830,7 +920,7 @@ export default function AdminActualizarPreciosPage() {
                   </td>
                 </tr>
               ) : (
-                productosFiltrados.map((p) => {
+                productosPaginados.map((p) => {
                   const estaSeleccionado = seleccionados.has(p.id);
                   const estaEditando = editandoId === p.id;
 
@@ -910,7 +1000,11 @@ export default function AdminActualizarPreciosPage() {
                       {/* Última Actualización */}
                       <td className="p-3 text-center text-gray-600 font-mono text-[11px]">
                         <div>
-                          {p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-MX') : 'Sin registro'}
+                          {p.costo_actualizado_at
+                            ? new Date(p.costo_actualizado_at).toLocaleDateString('es-MX')
+                            : p.updated_at
+                            ? new Date(p.updated_at).toLocaleDateString('es-MX')
+                            : 'Sin registro'}
                         </div>
                         <div className="text-[10px] text-gray-400">hace {p.diasSinActualizar} días</div>
                       </td>
@@ -994,6 +1088,86 @@ export default function AdminActualizarPreciosPage() {
             </tbody>
           </table>
         </div>
+
+        {/* BARRA DE PAGINACIÓN */}
+        {productosFiltrados.length > 0 && (
+          <div className="p-4 border-t border-gray-200 bg-gray-50/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-600">
+            <div className="flex items-center gap-3">
+              <span>
+                Mostrando{' '}
+                <strong className="text-gray-900">
+                  {(paginaAjustada - 1) * elementosPorPagina + 1}
+                </strong>{' '}
+                -{' '}
+                <strong className="text-gray-900">
+                  {Math.min(paginaAjustada * elementosPorPagina, productosFiltrados.length)}
+                </strong>{' '}
+                de <strong className="text-gray-900">{productosFiltrados.length}</strong> productos
+              </span>
+
+              <div className="flex items-center gap-1.5 pl-3 border-l border-gray-200">
+                <span className="text-gray-500 text-[11px]">Por página:</span>
+                <select
+                  value={elementosPorPagina}
+                  onChange={(e) => {
+                    setElementosPorPagina(Number(e.target.value));
+                    setPaginaActual(1);
+                  }}
+                  className="bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs text-gray-800 font-semibold focus:outline-hidden focus:border-brand-500"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={250}>250</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setPaginaActual(1)}
+                disabled={paginaAjustada <= 1}
+                className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700"
+                title="Primera página"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
+                disabled={paginaAjustada <= 1}
+                className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700"
+                title="Página anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <span className="px-3 py-1 font-semibold text-gray-800">
+                Página {paginaAjustada} de {totalPaginas}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+                disabled={paginaAjustada >= totalPaginas}
+                className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700"
+                title="Página siguiente"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaginaActual(totalPaginas)}
+                disabled={paginaAjustada >= totalPaginas}
+                className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700"
+                title="Última página"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* MODAL: SUBIR LISTA DE PRECIOS (EXCEL 3 COLUMNAS CON ESCUDO Y PREVIEW) */}

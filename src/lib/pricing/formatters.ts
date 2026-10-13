@@ -183,9 +183,10 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
 
   let baseText = partes.join(' ').toUpperCase();
 
-  // Recolectar atributos que no fueron usados arriba y añadirlos al final
+  // Recolectar atributos que no fueron usados arriba y añadirlos al final (ignorando llaves internas)
   const extras: string[] = [];
   for (const [key, val] of Object.entries(specs)) {
+    if (key.toLowerCase() === 'requiere_confirmacion') continue;
     if (!usedKeys.has(key)) {
       const cleanVal = String(val).trim();
       if (cleanVal.toUpperCase() !== 'N/A' && cleanVal !== '-') {

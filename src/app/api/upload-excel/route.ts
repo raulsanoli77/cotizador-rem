@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { verificarAdmin } from '@/lib/auth/admin-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const authCheck = await verificarAdmin(request);
+    if (!authCheck.autorizado) {
+      return authCheck.errorResponse!;
+    }
+
     const body = await request.json();
     const { productos } = body;
 

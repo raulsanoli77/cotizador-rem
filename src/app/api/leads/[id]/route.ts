@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { verificarAdmin } from '@/lib/auth/admin-auth';
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const authCheck = await verificarAdmin(request);
+    if (!authCheck.autorizado) {
+      return authCheck.errorResponse!;
+    }
+
     const resolvedParams = await params;
     const supabase = createAdminClient();
     const { error } = await supabase

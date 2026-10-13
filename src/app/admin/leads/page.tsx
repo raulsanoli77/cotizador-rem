@@ -44,7 +44,13 @@ export default function AdminLeads() {
     
     setEliminandoId(id);
     try {
-      const response = await fetch(`/api/leads/${id}`, { method: 'DELETE' });
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`/api/leads/${id}`, {
+        method: 'DELETE',
+        headers: {
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+      });
       if (!response.ok) throw new Error('Error al borrar');
       
       // Quitar de la lista local
