@@ -11,8 +11,20 @@ export interface Producto {
   especificaciones_tecnicas: Record<string, string | number | boolean>;
   imagen_url: string | null;
   activo: boolean;
+  requiere_confirmacion?: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface EventoActualizacionPrecios {
+  id: string;
+  fecha: string;
+  usuario: string;
+  marca?: string;
+  total_procesados: number;
+  total_actualizados: number;
+  total_no_encontrados: number;
+  no_encontrados?: string[];
 }
 
 export interface Categoria {

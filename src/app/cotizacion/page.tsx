@@ -153,6 +153,13 @@ export default function CotizacionPage() {
                             <p className="text-xs text-brand-600 font-semibold">{item.producto.marca}</p>
                             <p className="text-sm font-medium text-gray-900">{item.producto.numero_parte}</p>
                             <p className="text-xs text-gray-500 mt-0.5 leading-tight">{formatearDescripcionProducto(item.producto)}</p>
+                            {((item.producto.especificaciones_tecnicas as any)?.requiere_confirmacion === true ||
+                              (item.producto.especificaciones_tecnicas as any)?.requiere_confirmacion === 'true' ||
+                              item.producto.requiere_confirmacion === true) && (
+                              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-amber-800 bg-amber-100/90 px-1.5 py-0.5 rounded border border-amber-300">
+                                ⚠️ Precio y entrega sujetos a confirmación con planta
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-center gap-2">

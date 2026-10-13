@@ -48,6 +48,10 @@ export default function PDFDownloadButton({
         descripcion: formatearDescripcionProducto(item.producto),
         precio_unitario: item.producto.precio_venta,
         total: item.producto.precio_venta * item.cantidad,
+        requiere_confirmacion:
+          (item.producto.especificaciones_tecnicas as any)?.requiere_confirmacion === true ||
+          (item.producto.especificaciones_tecnicas as any)?.requiere_confirmacion === 'true' ||
+          item.producto.requiere_confirmacion === true,
       }));
 
       // Obtener configuración

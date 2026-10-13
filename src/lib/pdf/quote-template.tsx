@@ -17,6 +17,7 @@ export interface QuotePDFProps {
     descripcion: string;
     precio_unitario: number;
     total: number;
+    requiere_confirmacion?: boolean;
   }>;
   subtotal: number;
   moneda: 'USD' | 'MXN';
@@ -290,6 +291,11 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
         <Text style={styles.disclaimerText}>
           {config.textLegal}
         </Text>
+        {partidas.some((p) => p.requiere_confirmacion) && (
+          <Text style={{ ...styles.disclaimerText, marginTop: 4, color: '#b45309', fontWeight: 'bold' }}>
+            * NOTA: Uno o más artículos en esta cotización tienen precio y tiempo de entrega sujetos a confirmación con planta.
+          </Text>
+        )}
       </View>
 
       {/* Footer */}
