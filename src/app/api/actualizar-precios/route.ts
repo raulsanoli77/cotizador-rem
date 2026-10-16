@@ -78,9 +78,11 @@ export async function POST(request: NextRequest) {
 
     // 3. Indexar productos existentes:
     // Creamos índices por marca (si se especificó marca) y globales
-    const marcaObjetivoNorm = marca && typeof marca === 'string' && marca.trim() !== '' && marca.toLowerCase() !== 'todas'
-      ? marca.trim().toLowerCase()
-      : null;
+    const marcaLimpia = marca && typeof marca === 'string' ? marca.trim().toLowerCase() : '';
+    const marcaObjetivoNorm =
+      marcaLimpia !== '' && marcaLimpia !== 'todas' && marcaLimpia !== 'general'
+        ? marcaLimpia
+        : null;
 
     // Mapas agrupados
     const mapaPorParteYMarca = new Map<string, any>(); // key: "PARTE|MARCA"

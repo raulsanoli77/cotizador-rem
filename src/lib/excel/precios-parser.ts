@@ -22,6 +22,54 @@ function normalizarEncabezado(col: string): string {
     .replace(/[^a-z0-9]/g, '');      // Solo letras y números
 }
 
+function parsearCostoSeguro(costoRaw: any, costoFmt: any): number | null {
+  // Si la celda en Excel ya es numérica nativa, usar su valor exacto
+  if (typeof costoRaw === 'number') {
+    return Number.isFinite(costoRaw) ? costoRaw : null;
+  }
+
+  const origen = costoRaw !== null && costoRaw !== undefined ? String(costoRaw) : String(costoFmt ?? '');
+  let str = origen.replace(/[$€£\s]/g, '').trim();
+  if (!str) return null;
+
+  const tieneComa = str.includes(',');
+  const tienePunto = str.includes('.');
+
+  if (tieneComa && tienePunto) {
+    // El último separador que aparece define el decimal
+    if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+      // Formato europeo: 1.250,50 -> 1250.50
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Formato estándar MX/US: 1,250.50 -> 1250.50
+      str = str.replace(/,/g, '');
+    }
+  } else if (tieneComa && !tienePunto) {
+    const partes = str.split(',');
+    if (partes.length > 2) {
+      // Múltiples comas de miles: 1,250,000 -> 1250000
+      str = str.replace(/,/g, '');
+    } else {
+      const [entero, fraccion] = partes;
+      // Si tiene 3 dígitos tras la coma y el entero no es "0" (ej. "1,250" o "12,500"), es separador de miles
+      if (fraccion.length === 3 && entero !== '0' && entero !== '-0' && /^\d{1,3}$/.test(entero.replace(/^-/, ''))) {
+        str = str.replace(',', '');
+      } else {
+        // Coma decimal tipo "4,85" o "0,125"
+        str = str.replace(',', '.');
+      }
+    }
+  }
+
+  // Validar que la cadena limpia sea un número válido
+  if (!/^-?\d+(\.\d+)?$/.test(str)) {
+    return null;
+  }
+
+  const parsed = Number(str);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 /**
  * Parsea un archivo Excel o CSV de actualización de precios con 3 columnas:
  * Columna 1: numero_parte
@@ -42,16 +90,17 @@ export function parsearExcelPrecios(fileBuffer: ArrayBuffer): ParsePreciosResult
     }
 
     const worksheet = workbook.Sheets[firstSheetName];
-    // Usamos raw: false para preservar códigos con ceros a la izquierda y evitar notación científica
-    const rows = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: null, raw: false });
+    // Leemos tanto valores formateados (para preservar ceros a la izquierda en códigos) como valores crudos (para números exactos)
+    const rowsFormatted = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: null, raw: false });
+    const rowsRaw = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: null, raw: true });
 
-    if (rows.length === 0) {
+    if (rowsFormatted.length === 0) {
       errores.push('El archivo está vacío o no contiene filas de datos.');
       return { items, errores, advertencias };
     }
 
     // Identificar columnas
-    const sampleRow = rows[0];
+    const sampleRow = rowsFormatted[0];
     const originalHeaders = Object.keys(sampleRow);
 
     let colParte: string | null = null;
@@ -61,49 +110,57 @@ export function parsearExcelPrecios(fileBuffer: ArrayBuffer): ParsePreciosResult
     originalHeaders.forEach((header) => {
       const norm = normalizarEncabezado(header);
       if (
-        norm === 'numeroparte' ||
-        norm === 'noparte' ||
-        norm === 'parte' ||
-        norm === 'codigo' ||
-        norm === 'sku' ||
-        norm === 'skuinterno'
+        !colParte &&
+        (norm === 'numeroparte' ||
+          norm === 'noparte' ||
+          norm === 'parte' ||
+          norm === 'codigo' ||
+          norm === 'sku' ||
+          norm === 'skuinterno' ||
+          norm === 'modelo')
       ) {
         colParte = header;
       } else if (
-        norm === 'costo' ||
-        norm === 'costobase' ||
-        norm === 'nuevocosto' ||
-        norm === 'precio' ||
-        norm === 'costounitario'
+        !colCosto &&
+        (norm === 'costo' ||
+          norm === 'costobase' ||
+          norm === 'nuevocosto' ||
+          norm === 'precio' ||
+          norm === 'costounitario' ||
+          norm === 'importecosto')
       ) {
         colCosto = header;
       } else if (
-        norm === 'moneda' ||
-        norm === 'monedacosto' ||
-        norm === 'divisa' ||
-        norm === 'currency'
+        !colMoneda &&
+        (norm === 'moneda' ||
+          norm === 'monedacosto' ||
+          norm === 'divisa' ||
+          norm === 'currency')
       ) {
         colMoneda = header;
       }
     });
 
-    // Fallback: si no coinciden por nombre, usar posición (Columna 0 = Parte, 1 = Costo, 2 = Moneda)
-    if (!colParte && originalHeaders.length >= 1) colParte = originalHeaders[0];
-    if (!colCosto && originalHeaders.length >= 2) colCosto = originalHeaders[1];
-    if (!colMoneda && originalHeaders.length >= 3) colMoneda = originalHeaders[2];
+    // Fallback seguro: asignar por posición únicamente usando columnas que NO hayan sido ya asignadas
+    const disponibles = originalHeaders.filter((h) => h !== colParte && h !== colCosto && h !== colMoneda);
+    if (!colParte && disponibles.length > 0) colParte = disponibles.shift()!;
+    if (!colCosto && disponibles.length > 0) colCosto = disponibles.shift()!;
+    if (!colMoneda && disponibles.length > 0) colMoneda = disponibles.shift()!;
 
-    if (!colParte || !colCosto) {
+    if (!colParte || !colCosto || colParte === colCosto) {
       errores.push('No se pudieron identificar las columnas requeridas (numero_parte y costo).');
       return { items, errores, advertencias };
     }
 
     const setPartesVistas = new Set<string>();
 
-    rows.forEach((row, index) => {
+    rowsFormatted.forEach((rowFmt, index) => {
+      const rowRaw = rowsRaw[index] || rowFmt;
       const filaNum = index + 2; // +2 porque el índice es 0 y la fila 1 son encabezados
-      const parteRaw = row[colParte!];
-      const costoRaw = row[colCosto!];
-      const monedaRaw = colMoneda ? row[colMoneda] : null;
+      const parteRaw = rowFmt[colParte!] ?? rowRaw[colParte!];
+      const costoRaw = rowRaw[colCosto!];
+      const costoFmt = rowFmt[colCosto!];
+      const monedaRaw = colMoneda ? (rowFmt[colMoneda] ?? rowRaw[colMoneda]) : null;
 
       // Validar número de parte
       if (parteRaw === null || parteRaw === undefined || String(parteRaw).trim() === '') {
@@ -113,25 +170,11 @@ export function parsearExcelPrecios(fileBuffer: ArrayBuffer): ParsePreciosResult
       // Auto-Trim del código de parte
       const numeroParte = String(parteRaw).trim();
 
-      // Validar y limpiar costo (manejo de comas y puntos decimales)
-      let costoNum: number | null = null;
-      if (typeof costoRaw === 'number') {
-        costoNum = costoRaw;
-      } else if (typeof costoRaw === 'string') {
-        let str = costoRaw.replace(/[$€\s]/g, '').trim();
-        if (str.includes(',') && str.includes('.')) {
-          // Miles con coma y decimales con punto
-          str = str.replace(/,/g, '');
-        } else if (str.includes(',') && !str.includes('.')) {
-          // Coma decimal tipo "4,85"
-          str = str.replace(',', '.');
-        }
-        const parsed = parseFloat(str);
-        if (!isNaN(parsed)) costoNum = parsed;
-      }
+      // Validar y limpiar costo (manejo seguro de números nativos, miles y decimales)
+      const costoNum = parsearCostoSeguro(costoRaw, costoFmt);
 
       if (costoNum === null || isNaN(costoNum)) {
-        advertencias.push(`Fila ${filaNum}: El costo para "${numeroParte}" no es un número válido. Se omitió.`);
+        advertencias.push(`Fila ${filaNum}: El costo "${costoFmt ?? costoRaw ?? ''}" para "${numeroParte}" no es un número válido. Se omitió.`);
         return;
       }
 
@@ -144,9 +187,9 @@ export function parsearExcelPrecios(fileBuffer: ArrayBuffer): ParsePreciosResult
       let moneda: 'USD' | 'MXN' | null = null;
       if (monedaRaw !== null && monedaRaw !== undefined && String(monedaRaw).trim() !== '') {
         const monNorm = String(monedaRaw).trim().toUpperCase();
-        if (monNorm.includes('MXN') || monNorm.includes('PESO')) {
+        if (monNorm.includes('MXN') || monNorm.includes('PESO') || monNorm === 'MN' || monNorm === 'M.N.') {
           moneda = 'MXN';
-        } else if (monNorm.includes('USD') || monNorm.includes('DLL') || monNorm.includes('DOL')) {
+        } else if (monNorm.includes('USD') || monNorm.includes('DLL') || monNorm.includes('DOL') || monNorm === 'US$') {
           moneda = 'USD';
         } else {
           advertencias.push(`Fila ${filaNum}: Moneda no válida "${monedaRaw}" en "${numeroParte}". Solo se admite USD o MXN. Se omitió.`);
@@ -220,10 +263,13 @@ export function exportarReporteSaludExcel(
     categoria: string;
     costo_base: number;
     moneda_costo: string;
-    updated_at: string;
+    costo_actualizado_at?: string;
+    updated_at?: string;
+    created_at?: string;
     diasSinActualizar: number;
     estadoSemaforo: 'al_dia' | 'vigencia_media' | 'en_riesgo';
     requiere_confirmacion?: boolean;
+    tieneNotaConfirmacion?: boolean;
     activo: boolean;
   }>
 ): Blob {
@@ -235,12 +281,13 @@ export function exportarReporteSaludExcel(
     let visibilidadTexto = 'Activo';
     if (!p.activo) {
       visibilidadTexto = 'Desactivado (Oculto)';
-    } else if (p.requiere_confirmacion) {
+    } else if (p.tieneNotaConfirmacion || p.requiere_confirmacion) {
       visibilidadTexto = 'Con Nota de Confirmación';
     }
 
-    const fechaFormateada = p.updated_at
-      ? new Date(p.updated_at).toLocaleDateString('es-MX', {
+    const fechaRaw = p.costo_actualizado_at || p.updated_at || p.created_at;
+    const fechaFormateada = fechaRaw
+      ? new Date(fechaRaw).toLocaleDateString('es-MX', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',

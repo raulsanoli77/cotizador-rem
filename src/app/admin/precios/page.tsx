@@ -64,7 +64,7 @@ export default function AdminActualizarPreciosPage() {
 
   // Edición Inline
   const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [editCosto, setEditCosto] = useState<number>(0);
+  const [editCosto, setEditCosto] = useState<string>('');
   const [editMoneda, setEditMoneda] = useState<'USD' | 'MXN'>('USD');
   const [guardandoInline, setGuardandoInline] = useState(false);
 
@@ -273,22 +273,47 @@ export default function AdminActualizarPreciosPage() {
     setSeleccionados(new Set(productosFiltrados.map((p) => p.id)));
   };
 
-  // Mapas para cruce rápido con Excel
-  const mapaProductosExistentes = useMemo(() => {
-    const mapa = new Map<string, ProductoConSalud>();
+  // Índices del catálogo sincronizados con la lógica del servidor (por parte+marca, parte global y SKU)
+  const indicesCatalogo = useMemo(() => {
+    const porParteYMarca = new Map<string, ProductoConSalud>();
+    const porParteGlobal = new Map<string, ProductoConSalud[]>();
+    const porSkuGlobal = new Map<string, ProductoConSalud>();
+
     productos.forEach((p) => {
-      if (p.numero_parte) mapa.set(p.numero_parte.trim().toUpperCase(), p);
-      if (p.sku_interno) mapa.set(p.sku_interno.trim().toUpperCase(), p);
+      const parteNorm = p.numero_parte ? p.numero_parte.trim().toUpperCase() : null;
+      const skuNorm = p.sku_interno ? p.sku_interno.trim().toUpperCase() : null;
+      const marcaNorm = p.marca ? p.marca.trim().toLowerCase() : '';
+
+      if (parteNorm) {
+        porParteYMarca.set(`${parteNorm}|${marcaNorm}`, p);
+        if (!porParteGlobal.has(parteNorm)) {
+          porParteGlobal.set(parteNorm, []);
+        }
+        porParteGlobal.get(parteNorm)!.push(p);
+      }
+
+      if (skuNorm) {
+        porSkuGlobal.set(skuNorm, p);
+      }
     });
-    return mapa;
+
+    return { porParteYMarca, porParteGlobal, porSkuGlobal };
   }, [productos]);
 
   // Análisis y comparación del archivo Excel antes de aplicar
   const analisisPrevisualizacion = useMemo(() => {
     if (itemsExcel.length === 0) return null;
 
+    const marcaEfectiva = marcaCarga.trim() || (filtroMarca !== 'Todas' ? filtroMarca : '');
+    const marcaObjetivoNorm =
+      marcaEfectiva && marcaEfectiva.toLowerCase() !== 'todas' && marcaEfectiva.toLowerCase() !== 'general'
+        ? marcaEfectiva.trim().toLowerCase()
+        : null;
+
     let encontrados = 0;
     let noEncontrados = 0;
+    let ambiguosCount = 0;
+
     const itemsComparados: Array<{
       numero_parte: string;
       nuevoCosto: number;
@@ -300,17 +325,52 @@ export default function AdminActualizarPreciosPage() {
     }> = [];
 
     itemsExcel.forEach((item) => {
-      const parteNorm = item.numero_parte.trim().toUpperCase();
-      const actual = mapaProductosExistentes.get(parteNorm) || null;
+      const codigoBuscado = item.numero_parte.trim().toUpperCase();
+      let actual: ProductoConSalud | null = null;
+      let esAmbiguo = false;
+      let marcasColision: string[] = [];
+
+      // Prioridad 1: Coincidencia exacta por parte + marca objetivo
+      if (marcaObjetivoNorm) {
+        actual = indicesCatalogo.porParteYMarca.get(`${codigoBuscado}|${marcaObjetivoNorm}`) || null;
+      }
+
+      // Prioridad 2: Coincidencia por SKU interno
+      if (!actual) {
+        actual = indicesCatalogo.porSkuGlobal.get(codigoBuscado) || null;
+      }
+
+      // Prioridad 3: Coincidencia global por número de parte
+      if (!actual) {
+        const matches = indicesCatalogo.porParteGlobal.get(codigoBuscado) || [];
+        if (matches.length === 1) {
+          actual = matches[0];
+        } else if (matches.length > 1) {
+          esAmbiguo = true;
+          marcasColision = matches.map((m) => m.marca);
+        }
+      }
 
       let variacion: number | null = null;
       let esExtrema = false;
       let adv: string | null = null;
 
-      if (actual) {
+      const monedaActual = actual?.moneda_costo || 'USD';
+      const nuevaMoneda = item.moneda || monedaActual;
+
+      if (esAmbiguo) {
+        ambiguosCount++;
+        esExtrema = true;
+        adv = `Ambiguo (${marcasColision.join(', ')}). Especifica la marca arriba.`;
+      } else if (actual) {
         encontrados++;
         const costoAnt = actual.costo_base || 0;
-        if (costoAnt > 0) {
+        const cambioMoneda = nuevaMoneda !== monedaActual;
+
+        if (cambioMoneda) {
+          esExtrema = true;
+          adv = `Cambio de moneda: ${monedaActual} → ${nuevaMoneda}`;
+        } else if (costoAnt > 0) {
           variacion = Math.round(((item.costo - costoAnt) / costoAnt) * 100);
           if (variacion >= 100) {
             esExtrema = true;
@@ -320,9 +380,10 @@ export default function AdminActualizarPreciosPage() {
             adv = `Bajada drástica de ${variacion}%`;
           }
         }
+
         if (item.costo === 0) {
           esExtrema = true;
-          adv = 'Costo en $0.00';
+          adv = adv ? `${adv} | Costo en $0.00` : 'Costo en $0.00';
         }
       } else {
         noEncontrados++;
@@ -332,7 +393,7 @@ export default function AdminActualizarPreciosPage() {
       itemsComparados.push({
         numero_parte: item.numero_parte,
         nuevoCosto: item.costo,
-        nuevaMoneda: item.moneda || actual?.moneda_costo || 'USD',
+        nuevaMoneda,
         productoActual: actual,
         variacionPorcentaje: variacion,
         esVariacionExtrema: esExtrema,
@@ -344,10 +405,11 @@ export default function AdminActualizarPreciosPage() {
       total: itemsExcel.length,
       encontrados,
       noEncontrados,
+      ambiguosCount,
       itemsComparados,
       alertasExtremas: itemsComparados.filter((i) => i.esVariacionExtrema).length,
     };
-  }, [itemsExcel, mapaProductosExistentes]);
+  }, [itemsExcel, indicesCatalogo, marcaCarga, filtroMarca]);
 
   // Manejo de Selección
   const toggleSeleccion = (id: string) => {
@@ -359,15 +421,7 @@ export default function AdminActualizarPreciosPage() {
     });
   };
 
-  const seleccionarTodos = () => {
-    if (seleccionados.size === productosFiltrados.length) {
-      setSeleccionados(new Set());
-    } else {
-      setSeleccionados(new Set(productosFiltrados.map((p) => p.id)));
-    }
-  };
-
-  // Acciones en bloque optimizadas en un solo query .in('id', ids)
+  // Acciones en bloque paginadas en lotes de 200 IDs para evitar errores HTTP 414 URI Too Long
   const handleAccionEnBloque = async (accion: 'desactivar' | 'marcar_nota' | 'reactivar_normal') => {
     if (seleccionados.size === 0) return;
 
@@ -384,27 +438,32 @@ export default function AdminActualizarPreciosPage() {
     try {
       setLoading(true);
 
-      if (accion === 'desactivar') {
-        const { error } = await supabase.from('productos').update({ activo: false }).in('id', ids);
-        if (error) throw error;
-      } else if (accion === 'marcar_nota') {
-        const { error } = await supabase
-          .from('productos')
-          .update({
-            activo: true,
-            requiere_confirmacion: true,
-          })
-          .in('id', ids);
-        if (error) throw error;
-      } else if (accion === 'reactivar_normal') {
-        const { error } = await supabase
-          .from('productos')
-          .update({
-            activo: true,
-            requiere_confirmacion: false,
-          })
-          .in('id', ids);
-        if (error) throw error;
+      const BATCH_SIZE = 200;
+      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+        const loteIds = ids.slice(i, i + BATCH_SIZE);
+
+        if (accion === 'desactivar') {
+          const { error } = await supabase.from('productos').update({ activo: false }).in('id', loteIds);
+          if (error) throw error;
+        } else if (accion === 'marcar_nota') {
+          const { error } = await supabase
+            .from('productos')
+            .update({
+              activo: true,
+              requiere_confirmacion: true,
+            })
+            .in('id', loteIds);
+          if (error) throw error;
+        } else if (accion === 'reactivar_normal') {
+          const { error } = await supabase
+            .from('productos')
+            .update({
+              activo: true,
+              requiere_confirmacion: false,
+            })
+            .in('id', loteIds);
+          if (error) throw error;
+        }
       }
 
       setSeleccionados(new Set());
@@ -419,7 +478,7 @@ export default function AdminActualizarPreciosPage() {
   // Edición Inline Rápida
   const iniciarEdicionInline = (prod: ProductoConSalud) => {
     setEditandoId(prod.id);
-    setEditCosto(prod.costo_base);
+    setEditCosto(String(prod.costo_base ?? 0));
     setEditMoneda(prod.moneda_costo);
   };
 
@@ -428,20 +487,20 @@ export default function AdminActualizarPreciosPage() {
   };
 
   const guardarEdicionInline = async (prod: ProductoConSalud) => {
-    if (isNaN(editCosto) || editCosto < 0) {
+    const costoNum = parseFloat(editCosto);
+    if (editCosto.trim() === '' || isNaN(costoNum) || !Number.isFinite(costoNum) || costoNum < 0) {
       alert('Por favor ingresa un costo numérico válido mayor o igual a 0.');
       return;
     }
 
     try {
       setGuardandoInline(true);
-      const specs = prod.especificaciones_tecnicas || {};
       const ahoraIso = new Date().toISOString();
 
       const { error } = await supabase
         .from('productos')
         .update({
-          costo_base: editCosto,
+          costo_base: costoNum,
           moneda_costo: editMoneda,
           costo_actualizado_at: ahoraIso,
           requiere_confirmacion: false,
@@ -961,8 +1020,9 @@ export default function AdminActualizarPreciosPage() {
                           <input
                             type="number"
                             step="0.01"
+                            min="0"
                             value={editCosto}
-                            onChange={(e) => setEditCosto(parseFloat(e.target.value) || 0)}
+                            onChange={(e) => setEditCosto(e.target.value)}
                             className="w-24 text-right px-2 py-1 text-xs border border-brand-500 rounded-lg focus:outline-hidden font-mono font-bold"
                             autoFocus
                             onKeyDown={(e) => {
@@ -1255,6 +1315,20 @@ export default function AdminActualizarPreciosPage() {
                     </p>
                   </div>
 
+                  {resultadoCarga.ambiguos && resultadoCarga.ambiguos.length > 0 && (
+                    <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-left max-w-lg mx-auto">
+                      <div className="text-xs font-bold text-rose-800 mb-1 flex items-center gap-1.5">
+                        <ShieldAlert className="w-4 h-4 text-rose-600" />
+                        <span>{resultadoCarga.ambiguos.length} códigos omitidos por coincidir con múltiples marcas:</span>
+                      </div>
+                      <div className="max-h-32 overflow-y-auto text-[11px] font-mono text-rose-700 space-y-0.5">
+                        {resultadoCarga.ambiguos.map((c: string, idx: number) => (
+                          <div key={idx}>• {c}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {resultadoCarga.no_encontrados && resultadoCarga.no_encontrados.length > 0 && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left max-w-lg mx-auto">
                       <div className="text-xs font-bold text-amber-800 mb-1 flex items-center gap-1.5">
@@ -1281,11 +1355,43 @@ export default function AdminActualizarPreciosPage() {
               ) : (
                 /* PREVISUALIZACIÓN Y ESCUDO PROTECTOR ANTES DE APLICAR */
                 <div className="space-y-4">
+                  {/* Errores fatales de lectura del archivo */}
+                  {erroresExcel.length > 0 && (
+                    <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-xs text-rose-800 space-y-1.5">
+                      <div className="font-bold flex items-center gap-1.5 text-rose-900">
+                        <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>No se pudo procesar el archivo:</span>
+                      </div>
+                      <ul className="list-disc pl-5 space-y-0.5">
+                        {erroresExcel.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Advertencias de filas omitidas o duplicadas en el Excel */}
+                  {advertenciasExcel.length > 0 && (
+                    <details className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900">
+                      <summary className="font-bold cursor-pointer flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>
+                          {advertenciasExcel.length} advertencia(s) en el archivo (filas omitidas o duplicadas)
+                        </span>
+                      </summary>
+                      <div className="mt-2 max-h-28 overflow-y-auto font-mono text-[11px] text-amber-800 space-y-0.5 pl-5">
+                        {advertenciasExcel.map((adv, i) => (
+                          <div key={i}>• {adv}</div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+
                   {/* Resumen del cruce */}
                   {analisisPrevisualizacion && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl text-center">
-                        <span className="text-[11px] font-semibold text-gray-500 block">Total en Excel</span>
+                        <span className="text-[11px] font-semibold text-gray-500 block">Total Válidos</span>
                         <span className="text-lg font-black text-gray-900">
                           {analisisPrevisualizacion.total}
                         </span>
@@ -1303,7 +1409,7 @@ export default function AdminActualizarPreciosPage() {
                         </span>
                       </div>
                       <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl text-center">
-                        <span className="text-[11px] font-semibold text-rose-700 block">Variaciones Extremas</span>
+                        <span className="text-[11px] font-semibold text-rose-700 block">Alertas / Ambiguos</span>
                         <span className="text-lg font-black text-rose-700">
                           {analisisPrevisualizacion.alertasExtremas}
                         </span>
@@ -1329,86 +1435,90 @@ export default function AdminActualizarPreciosPage() {
                       <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                       <div>
                         <span className="font-bold">¡Escudo Protector de Precios activado!</span> Se detectaron{' '}
-                        {analisisPrevisualizacion.alertasExtremas} artículos con cambios drásticos (+100%, -50% o $0).
+                        {analisisPrevisualizacion.alertasExtremas} artículos con alertas (+100%, -50%, $0, cambio de moneda o ambigüedad de marca).
                         Verifica las filas resaltadas en rojo abajo antes de confirmar.
                       </div>
                     </div>
                   )}
 
                   {/* Tabla de Previsualización */}
-                  <div className="border border-gray-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead className="bg-gray-100 text-gray-600 font-bold sticky top-0 text-[11px]">
-                        <tr>
-                          <th className="p-2.5">No. Parte</th>
-                          <th className="p-2.5">Marca</th>
-                          <th className="p-2.5 text-right">Costo Anterior</th>
-                          <th className="p-2.5 text-right">Nuevo Costo</th>
-                          <th className="p-2.5 text-center">Moneda</th>
-                          <th className="p-2.5 text-center">Variación</th>
-                          <th className="p-2.5">Estado / Alerta</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {analisisPrevisualizacion?.itemsComparados.map((item, idx) => (
-                          <tr
-                            key={idx}
-                            className={
-                              item.esVariacionExtrema
-                                ? 'bg-rose-50/60'
-                                : !item.productoActual
-                                ? 'bg-amber-50/40'
-                                : 'hover:bg-gray-50'
-                            }
-                          >
-                            <td className="p-2 font-mono font-bold text-gray-800">{item.numero_parte}</td>
-                            <td className="p-2 text-gray-600">{item.productoActual?.marca || '-'}</td>
-                            <td className="p-2 text-right font-mono text-gray-500">
-                              {item.productoActual ? `$${(item.productoActual.costo_base || 0).toFixed(2)}` : '-'}
-                            </td>
-                            <td className="p-2 text-right font-mono font-bold text-gray-900">
-                              ${item.nuevoCosto.toFixed(2)}
-                            </td>
-                            <td className="p-2 text-center font-mono text-gray-600">{item.nuevaMoneda}</td>
-                            <td className="p-2 text-center font-mono font-bold">
-                              {item.variacionPorcentaje !== null ? (
-                                <span
-                                  className={
-                                    item.variacionPorcentaje > 0
-                                      ? 'text-rose-600'
-                                      : item.variacionPorcentaje < 0
-                                      ? 'text-emerald-600'
-                                      : 'text-gray-400'
-                                  }
-                                >
-                                  {item.variacionPorcentaje > 0 ? `+${item.variacionPorcentaje}%` : `${item.variacionPorcentaje}%`}
-                                </span>
-                              ) : (
-                                '-'
-                              )}
-                            </td>
-                            <td className="p-2">
-                              {item.advertencia ? (
-                                <span
-                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm ${
-                                    item.esVariacionExtrema
-                                      ? 'bg-rose-200 text-rose-900'
-                                      : 'bg-amber-200 text-amber-900'
-                                  }`}
-                                >
-                                  {item.advertencia}
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-sm">
-                                  Listo
-                                </span>
-                              )}
-                            </td>
+                  {analisisPrevisualizacion && (
+                    <div className="border border-gray-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead className="bg-gray-100 text-gray-600 font-bold sticky top-0 text-[11px]">
+                          <tr>
+                            <th className="p-2.5">No. Parte</th>
+                            <th className="p-2.5">Marca</th>
+                            <th className="p-2.5 text-right">Costo Anterior</th>
+                            <th className="p-2.5 text-right">Nuevo Costo</th>
+                            <th className="p-2.5 text-center">Moneda</th>
+                            <th className="p-2.5 text-center">Variación</th>
+                            <th className="p-2.5">Estado / Alerta</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {analisisPrevisualizacion.itemsComparados.map((item, idx) => (
+                            <tr
+                              key={idx}
+                              className={
+                                item.esVariacionExtrema
+                                  ? 'bg-rose-50/60'
+                                  : !item.productoActual
+                                  ? 'bg-amber-50/40'
+                                  : 'hover:bg-gray-50'
+                              }
+                            >
+                              <td className="p-2 font-mono font-bold text-gray-800">{item.numero_parte}</td>
+                              <td className="p-2 text-gray-600">{item.productoActual?.marca || '-'}</td>
+                              <td className="p-2 text-right font-mono text-gray-500">
+                                {item.productoActual
+                                  ? `$${(item.productoActual.costo_base || 0).toFixed(2)} ${item.productoActual.moneda_costo || 'USD'}`
+                                  : '-'}
+                              </td>
+                              <td className="p-2 text-right font-mono font-bold text-gray-900">
+                                ${item.nuevoCosto.toFixed(2)}
+                              </td>
+                              <td className="p-2 text-center font-mono text-gray-600">{item.nuevaMoneda}</td>
+                              <td className="p-2 text-center font-mono font-bold">
+                                {item.variacionPorcentaje !== null ? (
+                                  <span
+                                    className={
+                                      item.variacionPorcentaje > 0
+                                        ? 'text-rose-600'
+                                        : item.variacionPorcentaje < 0
+                                        ? 'text-emerald-600'
+                                        : 'text-gray-400'
+                                    }
+                                  >
+                                    {item.variacionPorcentaje > 0 ? `+${item.variacionPorcentaje}%` : `${item.variacionPorcentaje}%`}
+                                  </span>
+                                ) : (
+                                  '-'
+                                )}
+                              </td>
+                              <td className="p-2">
+                                {item.advertencia ? (
+                                  <span
+                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm ${
+                                      item.esVariacionExtrema
+                                        ? 'bg-rose-200 text-rose-900'
+                                        : 'bg-amber-200 text-amber-900'
+                                    }`}
+                                  >
+                                    {item.advertencia}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-sm">
+                                    Listo
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1421,6 +1531,9 @@ export default function AdminActualizarPreciosPage() {
                   onClick={() => {
                     setArchivoExcel(null);
                     setItemsExcel([]);
+                    setErroresExcel([]);
+                    setAdvertenciasExcel([]);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
                   }}
                   className="px-4 py-2 text-xs font-semibold text-gray-600 hover:text-gray-800"
                 >
@@ -1437,7 +1550,7 @@ export default function AdminActualizarPreciosPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={aplicandoPrecios || itemsExcel.length === 0}
+                    disabled={aplicandoPrecios || itemsExcel.length === 0 || (analisisPrevisualizacion?.encontrados ?? 0) === 0}
                     onClick={handleAplicarPreciosExcel}
                     className="px-5 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50"
                   >
