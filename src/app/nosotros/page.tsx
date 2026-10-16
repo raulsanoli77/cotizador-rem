@@ -361,20 +361,26 @@ export default async function SobreNosotrosPage() {
                     <Mail className="w-4 h-4" />
                     <span>Correos Oficiales</span>
                   </h4>
-                  <div className="space-y-2">
-                    {config.emails.map((e) => (
-                      <div key={e.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 bg-slate-800/60 px-3.5 py-2.5 rounded-xl border border-slate-700/60">
-                        <span className="text-sm font-semibold text-slate-300">
-                          {e.titulo}:
-                        </span>
-                        <a
-                          href={`mailto:${e.email}`}
-                          className="text-sm sm:text-base font-bold text-cyan-400 hover:underline break-all"
+                  <div className="space-y-2.5">
+                    {config.emails.map((e) => {
+                      const tituloLimpio = e.titulo ? e.titulo.trim().replace(/[.:]+$/, '') : '';
+                      return (
+                        <div
+                          key={e.id}
+                          className="flex flex-col gap-1 bg-slate-800/60 px-4 py-3 rounded-xl border border-slate-700/60 hover:border-slate-600 transition-colors"
                         >
-                          {e.email}
-                        </a>
-                      </div>
-                    ))}
+                          <span className="text-xs sm:text-sm font-semibold text-slate-300">
+                            {tituloLimpio ? `${tituloLimpio}:` : 'Correo:'}
+                          </span>
+                          <a
+                            href={`mailto:${e.email}`}
+                            className="text-sm sm:text-base font-bold text-cyan-400 hover:text-cyan-300 hover:underline transition-colors break-normal"
+                          >
+                            {e.email}
+                          </a>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
