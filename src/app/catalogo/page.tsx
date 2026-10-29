@@ -221,7 +221,10 @@ export default function CatalogoPage() {
                 (prod.marca?.toLowerCase().includes(terminoBusqueda) || false) ||
                 (prod.categoria?.toLowerCase().includes(terminoBusqueda) || false) ||
                 (prod.sku_interno?.toLowerCase().includes(terminoBusqueda) || false) ||
-                descFormateada.includes(terminoBusqueda);
+                descFormateada.includes(terminoBusqueda) ||
+                Object.entries(prod.especificaciones_tecnicas || {}).some(
+                  ([k, v]) => k.toLowerCase() !== 'requiere_confirmacion' && String(v).toLowerCase().includes(terminoBusqueda)
+                );
                 
              if (!matchBusqueda) return false;
           }

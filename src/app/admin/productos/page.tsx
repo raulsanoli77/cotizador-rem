@@ -171,7 +171,10 @@ export default function AdminProductos() {
       (p.sku_interno?.toLowerCase().includes(termino) || false) ||
       (p.numero_parte?.toLowerCase().includes(termino) || false) ||
       (p.marca?.toLowerCase().includes(termino) || false) ||
-      (descFormateada.includes(termino));
+      (descFormateada.includes(termino)) ||
+      Object.entries((p as any).especificaciones_tecnicas || {}).some(
+        ([k, v]) => k.toLowerCase() !== 'requiere_confirmacion' && String(v).toLowerCase().includes(termino)
+      );
     
     const matchEstado = 
       filtroEstado === 'Todos' ? true : 

@@ -167,7 +167,84 @@ export function formatearDescripcionProducto(producto: ProductoConPrecio): strin
   }
 
   // ----------------------------------------------------
-  // LOGICA 3: MOTOR GENERICO (Insertos, Medición, etc.)
+  // LOGICA 3: INSTRUMENTOS DE MEDICIÓN
+  // Orden: Tipo de instrumento, Tipo, Rango, Salida de datos,
+  // Certificado de calibración, Resistencia, Característica.
+  // (El resto de specs se consulta en la tabla técnica del producto.)
+  // ----------------------------------------------------
+  const categoriaNorm = rawCategoria.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const esMedicion =
+    categoriaNorm.includes('MEDICION') ||
+    categoriaNorm.includes('METROLOG') ||
+    Object.keys(specs).some((k) => k.toLowerCase().includes('tipo de instrumento'));
+
+  if (esMedicion) {
+    // Variante de getSpec que nunca reutiliza una llave ya leída
+    // (evita que "tipo" vuelva a tomar "tipo de instrumento").
+    const getSpecMed = (keys: string[], permitirParcial = true): { key: string; val: string } | null => {
+      const disponibles = Object.keys(specs).filter((k) => !usedKeys.has(k) && k.toLowerCase() !== 'requiere_confirmacion');
+      let foundKey = disponibles.find((k) => keys.some((s) => k.toLowerCase().trim() === s.toLowerCase()));
+      if (!foundKey && permitirParcial) {
+        foundKey = disponibles.find((k) => keys.some((s) => k.toLowerCase().includes(s.toLowerCase())));
+      }
+      if (!foundKey) return null;
+      usedKeys.add(foundKey);
+      const val = String(specs[foundKey] ?? '').trim();
+      if (!val || val.toUpperCase() === 'N/A' || val === '-') return null;
+      return { key: foundKey, val };
+    };
+
+    const esSi = (v: string) => ['SI', 'SÍ', 'YES', 'TRUE', '1', 'CON'].includes(v.trim().toUpperCase());
+    const esNo = (v: string) => ['NO', 'FALSE', '0', 'SIN', 'NINGUNA', 'NINGUNO'].includes(v.trim().toUpperCase());
+
+    const tipoInstrumento = getSpecMed(['tipo de instrumento', 'instrumento']);
+    const tipo = getSpecMed(['tipo'], false);
+    const rango = getSpecMed(['rango', 'capacidad']);
+    const salidaDatos = getSpecMed(['salida de datos', 'salida']);
+    const certificado = getSpecMed(['certificado', 'calibracion', 'calibración', 'nist']);
+    const resistencia =
+      getSpecMed(['resistencia', 'proteccion', 'protección']) ||
+      getSpecMed(['ip', 'grado ip', 'clasificacion ip', 'clasificación ip'], false);
+    const caracteristica = getSpecMed(['caracteristica', 'característica', 'caracteristicas', 'características']);
+
+    const partes: string[] = [];
+
+    const nombreInstrumento = tipoInstrumento?.val || 'INSTRUMENTO DE MEDICIÓN';
+    partes.push(nombreInstrumento);
+
+    // Evitar duplicar si el "tipo" ya viene dentro del nombre (ej. "VERNIER DIGITAL" + "DIGITAL")
+    if (tipo && !nombreInstrumento.toUpperCase().includes(tipo.val.toUpperCase())) {
+      partes.push(tipo.val);
+    }
+
+    if (rango) partes.push(rango.val);
+
+    if (salidaDatos && !esNo(salidaDatos.val)) {
+      partes.push(esSi(salidaDatos.val) ? 'C/SALIDA DE DATOS' : `SALIDA DE DATOS ${salidaDatos.val}`);
+    }
+
+    if (certificado && !esNo(certificado.val)) {
+      if (esSi(certificado.val)) {
+        partes.push(certificado.key.toUpperCase().includes('NIST') ? 'C/CERTIFICADO NIST' : 'C/CERTIFICADO DE CALIBRACIÓN');
+      } else {
+        partes.push(`CERTIFICADO ${certificado.val}`);
+      }
+    }
+
+    if (resistencia && !esNo(resistencia.val)) {
+      // "SI" -> se usa el nombre del campo (ej. "RESISTENCIA AL AGUA"); otro valor -> el valor (ej. "IP67")
+      partes.push(esSi(resistencia.val) ? resistencia.key : resistencia.val);
+    }
+
+    if (caracteristica && !esNo(caracteristica.val)) {
+      partes.push(caracteristica.val);
+    }
+
+    return partes.join(' ').replace(/\s+/g, ' ').trim().toUpperCase();
+  }
+
+  // ----------------------------------------------------
+  // LOGICA 4: MOTOR GENERICO (Insertos, etc.)
   // ----------------------------------------------------
   let categoriaStr = rawCategoria || 'HERRAMIENTA';
   const diametro = getSpec(['diametro', 'diámetro']);
