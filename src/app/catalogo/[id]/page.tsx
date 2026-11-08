@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { ShoppingCart, Plus, Minus, ChevronRight, ArrowLeft, Loader2, Package } from 'lucide-react';
-import type { Producto, ProductoConPrecio } from '@/types';
-import { formatearPrecio, calcularPrecioVenta } from '@/lib/pricing/engine';
+import type { ProductoConPrecio } from '@/types';
+import { formatearPrecio } from '@/lib/pricing/engine';
 import { formatearDescripcionProducto, obtenerMultiploVenta } from '@/lib/pricing/formatters';
 import { useCartStore } from '@/stores/cart-store';
-import { supabase } from '@/lib/supabase/client';
-import { obtenerTipoCambio } from '@/lib/pricing/exchange-rate';
+import { supabase, syncAuthCookie } from '@/lib/supabase/client';
+import { obtenerDetalleProductoPublico } from '@/app/catalogo/actions';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -28,107 +28,34 @@ export default function ProductDetailPage() {
   const [isB2B, setIsB2B] = useState(false);
 
   useEffect(() => {
-    async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: perfil } = await supabase
-          .from('perfiles_clientes')
-          .select('estatus')
-          .eq('id', session.user.id)
-          .single();
-        if (perfil?.estatus === 'aprobado') {
-          setIsB2B(true);
-        } else {
-          setIsB2B(false);
-        }
-      }
-    }
-    checkSession();
-
     async function loadProduct() {
       try {
         setLoading(true);
-        // Obtener producto
-        const { data: prodData, error } = await supabase
-          .from('productos')
-          .select('*')
-          .eq('id', id)
-          .single();
-          
-        if (error) throw error;
-        if (!prodData) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          syncAuthCookie(session.access_token);
+        }
+
+        const res = await obtenerDetalleProductoPublico(id, session?.access_token || null);
+
+        if (!res.producto) {
           router.push('/catalogo');
           return;
         }
 
-        // Obtener logo de marca si existe
-        const { data: configData } = await supabase.from('configuracion').select('valor').eq('clave', 'marcas_logos').single();
-        if (configData?.valor && configData.valor[prodData.marca]) {
-          setMarcaLogoUrl(configData.valor[prodData.marca]);
-        }
+        setIsB2B(res.isB2B);
+        setMarcaLogoUrl(res.marcaLogoUrl);
 
-        // Obtener margen personalizado y configuración de cruce
-        let margenMarcaUSA: number | undefined;
-        let aplicaCruce: boolean = false;
-        let margenPublico: number = 1.35;
-
-        if (prodData.marca) {
-          const [margenRes, cruceRes, margenPubRes] = await Promise.all([
-            supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle(),
-            supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle(),
-            supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes_publico').maybeSingle()
-          ]);
-
-          const marcaKey = prodData.marca.toUpperCase();
-          if (margenRes.data?.valor && margenRes.data.valor[marcaKey]) {
-            margenMarcaUSA = Number(margenRes.data.valor[marcaKey]);
-          }
-          if (cruceRes.data?.valor && cruceRes.data.valor[marcaKey]) {
-            aplicaCruce = Boolean(cruceRes.data.valor[marcaKey]);
-          }
-          if (margenPubRes.data?.valor && margenPubRes.data.valor[marcaKey]) {
-            margenPublico = Number(margenPubRes.data.valor[marcaKey]);
-          }
-        }
-
-        // Calcular precio final
-        const tipoCambioCache = await obtenerTipoCambio();
-        const resultado = calcularPrecioVenta(
-          prodData.costo_base, 
-          prodData.moneda_costo as any, 
-          'MXN',
-          tipoCambioCache.valor,
-          margenMarcaUSA,
-          aplicaCruce,
-          margenPublico
-        );
-
-        // Obtener el orden de los campos desde la categoría para ordenar las cajas
-        const { data: catData } = await supabase
-          .from('categorias')
-          .select('campos_filtro')
-          .ilike('nombre', prodData.categoria)
-          .single();
-          
-        let mapOrden: Record<string, number> = {};
-        if (catData?.campos_filtro) {
-          catData.campos_filtro.forEach((campo: any, index: number) => {
+        const mapOrden: Record<string, number> = {};
+        if (res.camposFiltro) {
+          res.camposFiltro.forEach((campo, index) => {
             mapOrden[campo.nombre.toUpperCase()] = index;
           });
         }
         setOrdenCampos(mapOrden);
 
-        const prodConPrecio: ProductoConPrecio = {
-          ...(prodData as Producto),
-          precio_venta: resultado.precioVenta,
-          precio_publico: resultado.precioPublico,
-          moneda_venta: resultado.monedaVenta,
-          formula_aplicada: resultado.formulaAplicada,
-          _campos_categoria: catData?.campos_filtro,
-        };
-
-        setProducto(prodConPrecio);
-        const multiploInicial = obtenerMultiploVenta(prodConPrecio);
+        setProducto(res.producto);
+        const multiploInicial = obtenerMultiploVenta(res.producto);
         setCantidad(multiploInicial);
       } catch (err) {
         console.error('Error cargando producto:', err);

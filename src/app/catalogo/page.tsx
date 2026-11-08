@@ -1,79 +1,61 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductGrid from '@/components/catalogo/ProductGrid';
 import SearchBar from '@/components/catalogo/SearchBar';
 import FilterSidebar from '@/components/catalogo/FilterSidebar';
-import { supabase } from '@/lib/supabase/client';
-import { calcularPrecioVenta } from '@/lib/pricing/engine';
-import { obtenerTipoCambio } from '@/lib/pricing/exchange-rate';
+import { supabase, syncAuthCookie } from '@/lib/supabase/client';
 import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
-import type { Producto, ProductoConPrecio, Categoria, CampoFiltro } from '@/types';
+import { obtenerCatalogoPublico } from '@/app/catalogo/actions';
+import type { ProductoConPrecio, Categoria, CampoFiltro } from '@/types';
+
+interface ProductoConCacheBusqueda extends ProductoConPrecio {
+  _desc_busqueda?: string;
+}
+
+// Helper case-insensitive para extraer especificaciones técnicas
+function getSpecValue(specs: Record<string, any> | undefined, key: string) {
+  if (!specs) return undefined;
+
+  let val: any;
+  if (specs[key] !== undefined) {
+    val = specs[key];
+  } else {
+    const lowerKey = key.toLowerCase();
+    const foundKey = Object.keys(specs).find((k) => k.toLowerCase() === lowerKey);
+    val = foundKey ? specs[foundKey] : undefined;
+  }
+
+  // Sanitize wire/letter drill sizes (e.g., #1" -> #1, H" -> H)
+  if (typeof val === 'string') {
+    const cleanVal = val.trim();
+    if ((cleanVal.startsWith('#') || /^[A-Za-z]"$/.test(cleanVal)) && cleanVal.endsWith('"')) {
+      val = cleanVal.slice(0, -1);
+    }
+  }
+
+  return val;
+}
 
 export default function CatalogoPage() {
-  const [productos, setProductos] = useState<ProductoConPrecio[]>([]);
+  const [productosBase, setProductosBase] = useState<ProductoConCacheBusqueda[]>([]);
   const [paginaActual, setPaginaActual] = useState(1);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [marcasLogos, setMarcasLogos] = useState<Record<string, string>>({});
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
+  const [urlInicializada, setUrlInicializada] = useState(false);
   const [filtrosActivos, setFiltrosActivos] = useState<Record<string, string[]>>({});
   const [busqueda, setBusqueda] = useState('');
   const [orden, setOrden] = useState('relevancia');
   const [loading, setLoading] = useState(true);
-  const [tipoCambio, setTipoCambio] = useState(20.0);
-  const [camposFiltro, setCamposFiltro] = useState<CampoFiltro[]>([]);
-  const [marcasDisponibles, setMarcasDisponibles] = useState<string[]>([]);
-  const [opcionesDinamicas, setOpcionesDinamicas] = useState<Record<string, string[]>>({});
-
-  // Moneda de venta por defecto MXN
-  const monedaVenta = 'MXN' as const;
-  const autoCheckDone = useRef(false);
-
   const [isB2B, setIsB2B] = useState(false);
 
-  // Cargar categorías al montar
+  const autoCheckDone = useRef(false);
+
+  // 1. Leer parámetros iniciales de la URL una sola vez al montar
   useEffect(() => {
-    async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: perfil } = await supabase
-          .from('perfiles_clientes')
-          .select('estatus')
-          .eq('id', session.user.id)
-          .single();
-        if (perfil?.estatus === 'aprobado') {
-          setIsB2B(true);
-        } else {
-          // Si no está aprobado (ej. pendiente), lo tratamos como público 
-          setIsB2B(false);
-        }
-      }
-    }
-    checkSession();
-
-    async function cargarCategorias() {
-      const { data } = await supabase
-        .from('categorias')
-        .select('*')
-        .order('nombre');
-      if (data) setCategorias(data as Categoria[]);
-    }
-    
-    async function cargarMarcasLogos() {
-      const { data } = await supabase
-        .from('configuracion')
-        .select('valor')
-        .eq('clave', 'marcas_logos')
-        .single();
-      if (data?.valor) setMarcasLogos(data.valor);
-    }
-
-    cargarCategorias();
-    cargarMarcasLogos();
-
-    // Leer la categoría, búsqueda inicial y filtros dinámicos de la URL
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlCategoria = params.get('categoria');
@@ -84,8 +66,7 @@ export default function CatalogoPage() {
       if (urlSearch) {
         setBusqueda(urlSearch);
       }
-      
-      // Extraer filtros dinámicos (empiezan con f_)
+
       const initialFiltros: Record<string, string[]> = {};
       params.forEach((value, key) => {
         if (key.startsWith('f_')) {
@@ -93,305 +74,255 @@ export default function CatalogoPage() {
           initialFiltros[filterName] = [value];
         }
       });
-      
+
       if (Object.keys(initialFiltros).length > 0) {
         setFiltrosActivos(initialFiltros);
       }
     }
-
-    // Obtener tipo de cambio
-    obtenerTipoCambio().then((tc) => setTipoCambio(tc.valor));
+    setUrlInicializada(true);
   }, []);
 
-  // Cargar productos cuando cambian filtros
+  // 2. Descargar productos del servidor ÚNICAMENTE cuando cambia la categoría activa
   useEffect(() => {
+    if (!urlInicializada) return;
     let isMounted = true;
 
-    async function cargarProductos() {
+    async function cargarDatosServidor() {
       setLoading(true);
-
-      let allData: any[] = [];
-      let from = 0;
-      const step = 1000;
-      let hasMore = true;
-
-      while (hasMore) {
-        let query = supabase
-          .from('productos')
-          .select('*')
-          .eq('activo', true)
-          .order('marca')
-          .range(from, from + step - 1);
-
-        if (categoriaActiva) {
-          query = query.ilike('categoria', categoriaActiva);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          syncAuthCookie(session.access_token);
         }
 
-        const { data, error } = await query;
+        const res = await obtenerCatalogoPublico(
+          categoriaActiva,
+          session?.access_token || null
+        );
 
         if (!isMounted) return;
 
-        if (error) {
-          console.error('Error cargando productos:', error);
+        // Pre-calcular la descripción formateada en minúsculas una sola vez por carga
+        const conCache: ProductoConCacheBusqueda[] = res.productos.map((prod) => ({
+          ...prod,
+          _desc_busqueda: formatearDescripcionProducto(prod).toLowerCase(),
+        }));
+
+        setCategorias(res.categorias);
+        setMarcasLogos(res.marcasLogos);
+        setIsB2B(res.isB2B);
+        setProductosBase(conCache);
+      } catch (err) {
+        console.error('Error cargando catálogo:', err);
+      } finally {
+        if (isMounted) {
           setLoading(false);
-          return;
         }
-
-        if (data && data.length > 0) {
-          allData = [...allData, ...data];
-          if (data.length < step) hasMore = false;
-          else from += step;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      const data = allData;
-
-      if (data) {
-        // Obtener configuración de marcas desde Supabase
-        const [resMargenes, resCruces, resMargenesPub] = await Promise.all([
-          supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle(),
-          supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle(),
-          supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes_publico').maybeSingle()
-        ]);
-        
-        const margenesMap: Record<string, number> = resMargenes.data?.valor || {};
-        const crucesMap: Record<string, boolean> = resCruces.data?.valor || {};
-        const margenesPubMap: Record<string, number> = resMargenesPub.data?.valor || {};
-
-        // Calcular precios de venta
-        const productosConPrecio: ProductoConPrecio[] = (data as Producto[]).map((prod) => {
-          const marcaKey = prod.marca ? prod.marca.toUpperCase() : '';
-          const margenPersonalizado = marcaKey ? margenesMap[marcaKey] : undefined;
-          const margenPublico = marcaKey && margenesPubMap[marcaKey] ? margenesPubMap[marcaKey] : 1.35;
-          const aplicaCruce = marcaKey ? crucesMap[marcaKey] : false;
-          
-          const resultado = calcularPrecioVenta(
-            prod.costo_base,
-            prod.moneda_costo,
-            monedaVenta,
-            tipoCambio,
-            margenPersonalizado,
-            aplicaCruce,
-            margenPublico
-          );
-          const catObj = categorias.find(
-            (c) => c.nombre.toLowerCase().trim() === (prod.categoria || '').toLowerCase().trim()
-          );
-
-          return {
-            ...prod,
-            precio_venta: resultado.precioVenta,
-            precio_publico: resultado.precioPublico,
-            moneda_venta: resultado.monedaVenta,
-            formula_aplicada: resultado.formulaAplicada,
-            _campos_categoria: catObj?.campos_filtro,
-          };
-        });
-
-        const terminoBusqueda = busqueda.toLowerCase().trim();
-
-        // Helper case-insensitive para extraer especificaciones técnicas
-        const getSpecValue = (specs: Record<string, any> | undefined, key: string) => {
-          if (!specs) return undefined;
-          
-          let val: any;
-          if (specs[key] !== undefined) {
-            val = specs[key];
-          } else {
-            const lowerKey = key.toLowerCase();
-            const foundKey = Object.keys(specs).find(k => k.toLowerCase() === lowerKey);
-            val = foundKey ? specs[foundKey] : undefined;
-          }
-
-          // Sanitize wire/letter drill sizes (e.g., #1" -> #1, H" -> H)
-          if (typeof val === 'string') {
-            const cleanVal = val.trim();
-            if ((cleanVal.startsWith('#') || /^[A-Za-z]"$/.test(cleanVal)) && cleanVal.endsWith('"')) {
-              val = cleanVal.slice(0, -1);
-            }
-          }
-
-          return val;
-        };
-
-        // Helper para evaluar si un producto cumple con los filtros activos y búsqueda
-        const cumpleFiltrosCruzados = (prod: ProductoConPrecio, llaveAIgnorar: string | null = null) => {
-          // 1. Búsqueda profunda (Texto)
-          if (terminoBusqueda) {
-             const descFormateada = formatearDescripcionProducto(prod as any).toLowerCase();
-             const matchBusqueda = 
-                (prod.numero_parte?.toLowerCase().includes(terminoBusqueda) || false) ||
-                (prod.marca?.toLowerCase().includes(terminoBusqueda) || false) ||
-                (prod.categoria?.toLowerCase().includes(terminoBusqueda) || false) ||
-                (prod.sku_interno?.toLowerCase().includes(terminoBusqueda) || false) ||
-                descFormateada.includes(terminoBusqueda) ||
-                Object.entries(prod.especificaciones_tecnicas || {}).some(
-                  ([k, v]) => k.toLowerCase() !== 'requiere_confirmacion' && String(v).toLowerCase().includes(terminoBusqueda)
-                );
-                
-             if (!matchBusqueda) return false;
-          }
-
-          // 2. Filtros dinámicos de sidebar
-          return Object.entries(filtrosActivos).every(([key, valores]) => {
-            if (key === llaveAIgnorar || !valores || valores.length === 0) return true;
-            
-            if (key === 'marca') {
-              return valores.some(v => prod.marca.toLowerCase() === v.toLowerCase());
-            }
-
-            if (key === 'Categoría') {
-              return valores.some(v => (prod.categoria || '').toLowerCase() === v.toLowerCase());
-            }
-
-            const specValue = getSpecValue(prod.especificaciones_tecnicas, key);
-            if (specValue === undefined || specValue === null) return false;
-            return valores.some(v => String(specValue).toLowerCase() === v.toLowerCase());
-          });
-        };
-
-        // 1. Filtrar productos finales (se muestran en el grid)
-        let productosFiltrados = productosConPrecio.filter(prod => cumpleFiltrosCruzados(prod));
-        
-        // 1.5 Aplicar ordenamiento
-        if (orden === 'precio_asc') {
-          productosFiltrados.sort((a, b) => a.precio_venta - b.precio_venta);
-        } else if (orden === 'precio_desc') {
-          productosFiltrados.sort((a, b) => b.precio_venta - a.precio_venta);
-        } else {
-          productosFiltrados.sort((a, b) => a.marca.localeCompare(b.marca) || a.numero_parte.localeCompare(b.numero_parte));
-        }
-
-        setProductos(productosFiltrados);
-        setPaginaActual(1);
-
-        // 2. Extraer marcas únicas (Filtro cruzado: ignoramos el filtro de marca actual)
-        const marcasUnicas = new Set<string>();
-        productosConPrecio.forEach(prod => {
-          if (cumpleFiltrosCruzados(prod, 'marca')) {
-            marcasUnicas.add(prod.marca);
-          }
-        });
-        setMarcasDisponibles(Array.from(marcasUnicas).sort());
-        
-        // 3. Extraer opciones dinámicas en cascada (Filtros cruzados)
-        const opcionesExtraidas: Record<string, string[]> = {};
-        
-        // Determinar qué campos de filtro usar
-        let camposParaFiltrar: CampoFiltro[] = [];
-        if (categoriaActiva) {
-          const cat = categorias.find((c) => c.nombre.toLowerCase() === categoriaActiva.toLowerCase());
-          camposParaFiltrar = (cat?.campos_filtro || []).filter(c => c.visible_en_filtros !== false);
-        } else {
-          // "Todas": extraer campos dinámicamente de TODOS los productos
-          // Pero solo permitir los que están marcados como visibles en sus categorías
-          const allowedKeys = new Set<string>();
-          categorias.forEach(cat => {
-            (cat.campos_filtro || []).forEach(c => {
-              if (c.visible_en_filtros !== false) allowedKeys.add(c.nombre);
-            });
-          });
-
-          const clavesUnicas = new Set<string>();
-          productosConPrecio.forEach(prod => {
-            if (prod.especificaciones_tecnicas) {
-              Object.keys(prod.especificaciones_tecnicas).forEach(k => {
-                if (allowedKeys.has(k)) clavesUnicas.add(k);
-              });
-            }
-          });
-          camposParaFiltrar = [
-            { nombre: 'Categoría', tipo: 'seleccion' as const, opciones: [] },
-            ...Array.from(clavesUnicas).sort().map(k => ({
-              nombre: k,
-              tipo: 'seleccion' as const,
-              opciones: [],
-            }))
-          ];
-        }
-
-        // Actualizar camposFiltro
-        setCamposFiltro(camposParaFiltrar);
-
-        // Extraer opciones para cada campo
-        camposParaFiltrar.forEach(campo => {
-          const valoresUnicos = new Set<string>();
-          productosConPrecio.forEach(prod => {
-            if (cumpleFiltrosCruzados(prod, campo.nombre)) {
-              if (campo.nombre === 'Categoría') {
-                if (prod.categoria) valoresUnicos.add(prod.categoria);
-              } else {
-                const specValue = getSpecValue(prod.especificaciones_tecnicas, campo.nombre);
-                if (specValue !== undefined && specValue !== null) {
-                  valoresUnicos.add(String(specValue));
-                }
-              }
-            }
-          });
-          opcionesExtraidas[campo.nombre] = Array.from(valoresUnicos).sort();
-        });
-
-        setOpcionesDinamicas(opcionesExtraidas);
-
-        // 4. Auto-seleccionar filtros coincidentes desde la búsqueda
-        if (terminoBusqueda && !autoCheckDone.current) {
-          const nuevosChecks: Record<string, string[]> = { ...filtrosActivos };
-          let huboCoincidencia = false;
-
-          camposParaFiltrar.forEach(campo => {
-            const opciones = opcionesExtraidas[campo.nombre] || [];
-            opciones.forEach(op => {
-              if (op.toLowerCase() === terminoBusqueda) {
-                const actuales = nuevosChecks[campo.nombre] || [];
-                if (!actuales.includes(op)) {
-                  nuevosChecks[campo.nombre] = [...actuales, op];
-                  huboCoincidencia = true;
-                }
-              }
-            });
-          });
-
-          // También verificar marcas
-          Array.from(marcasUnicas).forEach(marca => {
-            if (marca.toLowerCase() === terminoBusqueda) {
-              const actuales = nuevosChecks['marca'] || [];
-              if (!actuales.includes(marca)) {
-                nuevosChecks['marca'] = [...actuales, marca];
-                huboCoincidencia = true;
-              }
-            }
-          });
-
-          if (huboCoincidencia) {
-            autoCheckDone.current = true;
-            setFiltrosActivos(nuevosChecks);
-            setBusqueda('');
-          }
-        }
-      }
-
-      if (isMounted) {
-        setLoading(false);
       }
     }
 
-    cargarProductos();
-    
+    cargarDatosServidor();
+
     return () => {
       isMounted = false;
     };
-  }, [categoriaActiva, busqueda, filtrosActivos, tipoCambio, monedaVenta, categorias, orden]);
+  }, [categoriaActiva, urlInicializada]);
+
+  // 3. Filtrado cruzado, ordenamiento y facetas 100% en memoria (instantáneo, 0 llamadas a DB)
+  const {
+    productos,
+    marcasDisponibles,
+    camposFiltro,
+    opcionesDinamicas,
+  } = useMemo(() => {
+    const terminoBusqueda = busqueda.toLowerCase().trim();
+
+    const cumpleFiltrosCruzados = (
+      prod: ProductoConCacheBusqueda,
+      llaveAIgnorar: string | null = null
+    ) => {
+      if (terminoBusqueda) {
+        const descFormateada = prod._desc_busqueda || '';
+        const matchBusqueda =
+          (prod.numero_parte?.toLowerCase().includes(terminoBusqueda) || false) ||
+          (prod.marca?.toLowerCase().includes(terminoBusqueda) || false) ||
+          (prod.categoria?.toLowerCase().includes(terminoBusqueda) || false) ||
+          (prod.sku_interno?.toLowerCase().includes(terminoBusqueda) || false) ||
+          descFormateada.includes(terminoBusqueda) ||
+          Object.entries(prod.especificaciones_tecnicas || {}).some(
+            ([k, v]) =>
+              k.toLowerCase() !== 'requiere_confirmacion' &&
+              String(v).toLowerCase().includes(terminoBusqueda)
+          );
+
+        if (!matchBusqueda) return false;
+      }
+
+      return Object.entries(filtrosActivos).every(([key, valores]) => {
+        if (key === llaveAIgnorar || !valores || valores.length === 0) return true;
+
+        if (key === 'marca') {
+          return valores.some((v) => prod.marca.toLowerCase() === v.toLowerCase());
+        }
+
+        if (key === 'Categoría') {
+          return valores.some(
+            (v) => (prod.categoria || '').toLowerCase() === v.toLowerCase()
+          );
+        }
+
+        const specValue = getSpecValue(prod.especificaciones_tecnicas, key);
+        if (specValue === undefined || specValue === null) return false;
+        return valores.some((v) => String(specValue).toLowerCase() === v.toLowerCase());
+      });
+    };
+
+    // Filtrar productos que cumplen todo
+    const filtrados = productosBase.filter((prod) => cumpleFiltrosCruzados(prod));
+
+    // Ordenar copia
+    if (orden === 'precio_asc') {
+      filtrados.sort((a, b) => a.precio_venta - b.precio_venta);
+    } else if (orden === 'precio_desc') {
+      filtrados.sort((a, b) => b.precio_venta - a.precio_venta);
+    } else {
+      filtrados.sort(
+        (a, b) =>
+          a.marca.localeCompare(b.marca) ||
+          a.numero_parte.localeCompare(b.numero_parte)
+      );
+    }
+
+    // Marcas disponibles (ignorando filtro 'marca')
+    const marcasUnicas = new Set<string>();
+    productosBase.forEach((prod) => {
+      if (cumpleFiltrosCruzados(prod, 'marca')) {
+        marcasUnicas.add(prod.marca);
+      }
+    });
+
+    // Determinar campos de filtro de la categoría activa (o Todas)
+    let camposParaFiltrar: CampoFiltro[] = [];
+    if (categoriaActiva) {
+      const cat = categorias.find(
+        (c) => c.nombre.toLowerCase() === categoriaActiva.toLowerCase()
+      );
+      camposParaFiltrar = (cat?.campos_filtro || []).filter(
+        (c) => c.visible_en_filtros !== false
+      );
+    } else {
+      const allowedKeys = new Set<string>();
+      categorias.forEach((cat) => {
+        (cat.campos_filtro || []).forEach((c) => {
+          if (c.visible_en_filtros !== false) allowedKeys.add(c.nombre);
+        });
+      });
+
+      const clavesUnicas = new Set<string>();
+      productosBase.forEach((prod) => {
+        if (prod.especificaciones_tecnicas) {
+          Object.keys(prod.especificaciones_tecnicas).forEach((k) => {
+            if (allowedKeys.has(k)) clavesUnicas.add(k);
+          });
+        }
+      });
+
+      camposParaFiltrar = [
+        { nombre: 'Categoría', tipo: 'seleccion' as const, opciones: [] },
+        ...Array.from(clavesUnicas)
+          .sort()
+          .map((k) => ({
+            nombre: k,
+            tipo: 'seleccion' as const,
+            opciones: [],
+          })),
+      ];
+    }
+
+    // Extraer opciones dinámicas por campo
+    const opcionesExtraidas: Record<string, string[]> = {};
+    camposParaFiltrar.forEach((campo) => {
+      const valoresUnicos = new Set<string>();
+      productosBase.forEach((prod) => {
+        if (cumpleFiltrosCruzados(prod, campo.nombre)) {
+          if (campo.nombre === 'Categoría') {
+            if (prod.categoria) valoresUnicos.add(prod.categoria);
+          } else {
+            const specValue = getSpecValue(
+              prod.especificaciones_tecnicas,
+              campo.nombre
+            );
+            if (specValue !== undefined && specValue !== null) {
+              valoresUnicos.add(String(specValue));
+            }
+          }
+        }
+      });
+      opcionesExtraidas[campo.nombre] = Array.from(valoresUnicos).sort();
+    });
+
+    return {
+      productos: filtrados,
+      marcasDisponibles: Array.from(marcasUnicas).sort(),
+      camposFiltro: camposParaFiltrar,
+      opcionesDinamicas: opcionesExtraidas,
+    };
+  }, [productosBase, busqueda, filtrosActivos, orden, categoriaActiva, categorias]);
+
+  // Reiniciar a página 1 cuando cambian filtros, búsqueda o categoría
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [busqueda, filtrosActivos, categoriaActiva, orden]);
+
+  // Auto-seleccionar filtros coincidentes desde la búsqueda cuando coincide exactamente con una opción/marca
+  useEffect(() => {
+    const terminoBusqueda = busqueda.toLowerCase().trim();
+    if (!terminoBusqueda || autoCheckDone.current || productosBase.length === 0) {
+      return;
+    }
+
+    const nuevosChecks: Record<string, string[]> = { ...filtrosActivos };
+    let huboCoincidencia = false;
+
+    camposFiltro.forEach((campo) => {
+      const opciones = opcionesDinamicas[campo.nombre] || [];
+      opciones.forEach((op) => {
+        if (op.toLowerCase() === terminoBusqueda) {
+          const actuales = nuevosChecks[campo.nombre] || [];
+          if (!actuales.includes(op)) {
+            nuevosChecks[campo.nombre] = [...actuales, op];
+            huboCoincidencia = true;
+          }
+        }
+      });
+    });
+
+    marcasDisponibles.forEach((marca) => {
+      if (marca.toLowerCase() === terminoBusqueda) {
+        const actuales = nuevosChecks['marca'] || [];
+        if (!actuales.includes(marca)) {
+          nuevosChecks['marca'] = [...actuales, marca];
+          huboCoincidencia = true;
+        }
+      }
+    });
+
+    if (huboCoincidencia) {
+      autoCheckDone.current = true;
+      setFiltrosActivos(nuevosChecks);
+      setBusqueda('');
+    }
+  }, [busqueda, camposFiltro, opcionesDinamicas, marcasDisponibles, filtrosActivos, productosBase.length]);
 
   const handleFiltroChange = (nombre: string, valor: string) => {
     setFiltrosActivos((prev) => {
       const actuales = prev[nombre] || [];
       const yaExiste = actuales.includes(valor);
-      
+
       if (yaExiste) {
-        // Toggle off: quitar del array
-        const nuevos = actuales.filter(v => v !== valor);
+        const nuevos = actuales.filter((v) => v !== valor);
         if (nuevos.length === 0) {
           const next = { ...prev };
           delete next[nombre];
@@ -399,47 +330,63 @@ export default function CatalogoPage() {
         }
         return { ...prev, [nombre]: nuevos };
       } else {
-        // Toggle on: agregar al array
         return { ...prev, [nombre]: [...actuales, valor] };
-        }
-      });
-    };
+      }
+    });
+  };
 
-    const renderPagination = (isTop: boolean = false) => {
+  const renderPagination = (isTop: boolean = false) => {
     if (isTop) {
       return (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b-2 border-slate-300 pb-6 mb-4">
           <div className="text-sm text-slate-600 font-medium">
             {productos.length > 0 ? (
-              <>Mostrando <span className="font-extrabold text-slate-900">{((paginaActual - 1) * 50) + 1}</span> a <span className="font-extrabold text-slate-900">{Math.min(paginaActual * 50, productos.length)}</span> de <span className="font-extrabold text-slate-900">{productos.length}</span> resultados</>
+              <>
+                Mostrando{' '}
+                <span className="font-extrabold text-slate-900">
+                  {(paginaActual - 1) * 50 + 1}
+                </span>{' '}
+                a{' '}
+                <span className="font-extrabold text-slate-900">
+                  {Math.min(paginaActual * 50, productos.length)}
+                </span>{' '}
+                de{' '}
+                <span className="font-extrabold text-slate-900">
+                  {productos.length}
+                </span>{' '}
+                resultados
+              </>
             ) : (
               <span>No se encontraron resultados</span>
             )}
           </div>
           <div className="flex items-center gap-3">
-             <span className="text-sm font-bold text-slate-800">Ordenar por:</span>
-             <select 
-               value={orden} 
-               onChange={(e) => { setOrden(e.target.value); setPaginaActual(1); }} 
-               className="border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 rounded-xl text-sm font-bold text-slate-900 py-2 pl-3.5 pr-8 bg-white shadow-sm transition-all focus:outline-none cursor-pointer"
-             >
-               <option value="relevancia">Relevancia</option>
-               <option value="precio_asc">Precio: Menor a Mayor</option>
-               <option value="precio_desc">Precio: Mayor a Menor</option>
-             </select>
+            <span className="text-sm font-bold text-slate-800">Ordenar por:</span>
+            <select
+              value={orden}
+              onChange={(e) => {
+                setOrden(e.target.value);
+                setPaginaActual(1);
+              }}
+              className="border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 rounded-xl text-sm font-bold text-slate-900 py-2 pl-3.5 pr-8 bg-white shadow-sm transition-all focus:outline-none cursor-pointer"
+            >
+              <option value="relevancia">Relevancia</option>
+              <option value="precio_asc">Precio: Menor a Mayor</option>
+              <option value="precio_desc">Precio: Mayor a Menor</option>
+            </select>
           </div>
         </div>
       );
     }
 
     if (productos.length <= 50) return null;
-    
+
     return (
       <div className="flex flex-col sm:flex-row items-center justify-end gap-4 border-t-2 border-slate-300 pt-6 mt-6">
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => {
-              setPaginaActual(prev => Math.max(prev - 1, 1));
+              setPaginaActual((prev) => Math.max(prev - 1, 1));
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             disabled={paginaActual === 1}
@@ -447,25 +394,30 @@ export default function CatalogoPage() {
           >
             Anterior
           </button>
-            
-            <div className="hidden md:flex items-center gap-1">
-              {Array.from({ length: Math.ceil(productos.length / 50) }).map((_, i) => {
+
+          <div className="hidden md:flex items-center gap-1">
+            {Array.from({ length: Math.ceil(productos.length / 50) }).map(
+              (_, i) => {
                 const p = i + 1;
                 const totalPages = Math.ceil(productos.length / 50);
-                
+
                 if (totalPages > 7) {
                   if (
-                    p !== 1 && 
+                    p !== 1 &&
                     p !== totalPages &&
                     Math.abs(p - paginaActual) > 1
                   ) {
                     if (p === paginaActual - 2 || p === paginaActual + 2) {
-                      return <span key={p} className="px-2 text-slate-500 font-bold">...</span>;
+                      return (
+                        <span key={p} className="px-2 text-slate-500 font-bold">
+                          ...
+                        </span>
+                      );
                     }
                     return null;
                   }
                 }
-                
+
                 return (
                   <button
                     key={p}
@@ -474,41 +426,52 @@ export default function CatalogoPage() {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className={`w-10 h-10 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${
-                      paginaActual === p 
-                        ? 'bg-brand-600 text-white shadow-md' 
+                      paginaActual === p
+                        ? 'bg-brand-600 text-white shadow-md'
                         : 'text-slate-800 hover:bg-slate-200 border-2 border-slate-300 bg-white'
                     }`}
                   >
                     {p}
                   </button>
                 );
-              })}
-            </div>
-
-            <button 
-              onClick={() => {
-                setPaginaActual(prev => Math.min(prev + 1, Math.ceil(productos.length / 50)));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              disabled={paginaActual === Math.ceil(productos.length / 50)}
-              className="px-4 py-2 border-2 border-slate-300 hover:border-slate-400 rounded-xl text-sm font-bold text-slate-800 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-            >
-              Siguiente
-            </button>
+              }
+            )}
           </div>
-        </div>
-      );
-    };
 
-    return (
+          <button
+            onClick={() => {
+              setPaginaActual((prev) =>
+                Math.min(prev + 1, Math.ceil(productos.length / 50))
+              );
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={paginaActual === Math.ceil(productos.length / 50)}
+            className="px-4 py-2 border-2 border-slate-300 hover:border-slate-400 rounded-xl text-sm font-bold text-slate-800 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
     <>
       <Header />
       <main className="min-h-screen bg-slate-100 pt-28 pb-12">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Título y búsqueda */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-4">Catálogo de Herramientas</h1>
-            <SearchBar onSearch={(q) => { setBusqueda(q); autoCheckDone.current = false; }} initialValue={busqueda} />
+            <h1 className="text-2xl font-bold text-slate-900 mb-4">
+              Catálogo de Herramientas
+            </h1>
+            <SearchBar
+              onSearch={(q) => {
+                setBusqueda(q);
+                autoCheckDone.current = false;
+              }}
+              initialValue={busqueda}
+            />
           </div>
 
           {/* Categorías (Píldoras) */}
@@ -532,12 +495,16 @@ export default function CatalogoPage() {
             {categorias.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => { 
-                  setCategoriaActiva(cat.nombre); 
-                  setFiltrosActivos({}); 
+                onClick={() => {
+                  setCategoriaActiva(cat.nombre);
+                  setFiltrosActivos({});
                   setBusqueda('');
                   autoCheckDone.current = false;
-                  window.history.pushState(null, '', `/catalogo?categoria=${encodeURIComponent(cat.nombre)}`);
+                  window.history.pushState(
+                    null,
+                    '',
+                    `/catalogo?categoria=${encodeURIComponent(cat.nombre)}`
+                  );
                 }}
                 className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
                   categoriaActiva?.toLowerCase() === cat.nombre.toLowerCase()
@@ -553,23 +520,45 @@ export default function CatalogoPage() {
           {/* Chips de Filtros Activos */}
           {(Object.keys(filtrosActivos).length > 0 || busqueda) && (
             <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider mr-1">Filtros:</span>
+              <span className="text-xs font-bold text-slate-600 uppercase tracking-wider mr-1">
+                Filtros:
+              </span>
               {busqueda && (
                 <span className="inline-flex items-center gap-1.5 bg-brand-50 text-brand-800 border-2 border-brand-300 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
                   Búsqueda: &quot;{busqueda}&quot;
-                  <button onClick={() => { setBusqueda(''); autoCheckDone.current = false; }} className="ml-1 text-brand-600 hover:text-brand-900 font-bold text-sm">×</button>
+                  <button
+                    onClick={() => {
+                      setBusqueda('');
+                      autoCheckDone.current = false;
+                    }}
+                    className="ml-1 text-brand-600 hover:text-brand-900 font-bold text-sm"
+                  >
+                    ×
+                  </button>
                 </span>
               )}
               {Object.entries(filtrosActivos).map(([key, valores]) =>
-                valores.map(v => (
-                  <span key={`${key}-${v}`} className="inline-flex items-center gap-1.5 bg-white text-slate-900 border-2 border-slate-300 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                valores.map((v) => (
+                  <span
+                    key={`${key}-${v}`}
+                    className="inline-flex items-center gap-1.5 bg-white text-slate-900 border-2 border-slate-300 px-3 py-1 rounded-full text-xs font-bold shadow-sm"
+                  >
                     {key.replace(/_/g, ' ')}: {v}
-                    <button onClick={() => handleFiltroChange(key, v)} className="ml-1 text-slate-500 hover:text-slate-900 font-bold text-sm">×</button>
+                    <button
+                      onClick={() => handleFiltroChange(key, v)}
+                      className="ml-1 text-slate-500 hover:text-slate-900 font-bold text-sm"
+                    >
+                      ×
+                    </button>
                   </span>
                 ))
               )}
-              <button 
-                onClick={() => { setFiltrosActivos({}); setBusqueda(''); autoCheckDone.current = false; }}
+              <button
+                onClick={() => {
+                  setFiltrosActivos({});
+                  setBusqueda('');
+                  autoCheckDone.current = false;
+                }}
                 className="text-xs font-bold text-red-600 hover:text-red-800 uppercase tracking-wider ml-2 hover:underline"
               >
                 Limpiar Todo
@@ -579,13 +568,16 @@ export default function CatalogoPage() {
 
           {/* Contenido: Filtros + Grid */}
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Sidebar de filtros (siempre visible cuando hay campos) */}
             {camposFiltro.length > 0 && (
               <FilterSidebar
                 campos={camposFiltro}
                 filtrosActivos={filtrosActivos}
                 onFiltroChange={handleFiltroChange}
-                onLimpiarFiltros={() => { setFiltrosActivos({}); setBusqueda(''); autoCheckDone.current = false; }}
+                onLimpiarFiltros={() => {
+                  setFiltrosActivos({});
+                  setBusqueda('');
+                  autoCheckDone.current = false;
+                }}
                 marcas={marcasDisponibles}
                 opcionesDinamicas={opcionesDinamicas}
               />
@@ -600,13 +592,16 @@ export default function CatalogoPage() {
               ) : (
                 <div className="flex flex-col gap-6">
                   {renderPagination(true)}
-                  
-                  <ProductGrid 
-                    productos={productos.slice((paginaActual - 1) * 50, paginaActual * 50)} 
+
+                  <ProductGrid
+                    productos={productos.slice(
+                      (paginaActual - 1) * 50,
+                      paginaActual * 50
+                    )}
                     marcasLogos={marcasLogos}
                     isB2B={isB2B}
                   />
-                  
+
                   {renderPagination(false)}
                 </div>
               )}
