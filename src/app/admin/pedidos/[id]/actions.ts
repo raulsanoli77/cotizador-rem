@@ -215,7 +215,11 @@ export async function actualizarPedido(
         .from('pedidos')
         .select(`
           id,
-          perfil:perfiles_clientes(email, nombre_completo)
+          perfil:perfiles_clientes(
+            email,
+            nombre_completo,
+            vendedor:vendedores(nombre, email, telefono, activo)
+          )
         `)
         .eq('id', pedidoId)
         .single();
@@ -224,12 +228,18 @@ export async function actualizarPedido(
         const perfilObj: any = Array.isArray(pedidoData.perfil) ? pedidoData.perfil[0] : pedidoData.perfil;
         
         if (perfilObj && perfilObj.email) {
-          const baseURL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cotizador-rem.vercel.app';
+          const vendRaw = Array.isArray(perfilObj.vendedor) ? perfilObj.vendedor[0] : perfilObj.vendedor;
+          const vendedorAsignado = vendRaw && vendRaw.activo !== false ? vendRaw : null;
+          const baseURL =
+            process.env.NEXT_PUBLIC_APP_URL ||
+            process.env.NEXT_PUBLIC_SITE_URL ||
+            'https://www.remindustrial.mx';
           await enviarCorreoRevisionCliente(
             perfilObj.email, 
             perfilObj.nombre_completo, 
             pedidoId, 
-            baseURL
+            baseURL,
+            vendedorAsignado
           );
         }
       }

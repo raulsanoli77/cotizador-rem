@@ -69,10 +69,10 @@ export default function PDFDownloadButton({
         });
       }
 
-      // Asesor Comercial por defecto (Raúl Sánchez - ventas3@remindustrial.com / 614 181 5170)
+      // Asesor Comercial por defecto (Raúl Sánchez - ventas3@remindustrial.mx / 614 181 5170)
       let vendedor = {
         nombre: 'Raúl Sánchez',
-        email: 'ventas3@remindustrial.com',
+        email: 'ventas3@remindustrial.mx',
         telefono: '614 181 5170',
       };
 
@@ -102,7 +102,7 @@ export default function PDFDownloadButton({
       const sitioWebActual =
         typeof window !== 'undefined' && window.location?.host
           ? window.location.host
-          : process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') || 'cotizador-rem.vercel.app';
+          : process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') || 'www.remindustrial.mx';
 
       // Generar PDF blob en el cliente
       const blob = await pdf(

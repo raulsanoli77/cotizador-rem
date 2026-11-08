@@ -76,17 +76,34 @@ export async function actualizarEstatusCliente(
     throw new Error(error.message);
   }
 
-  // 2. Enviar correo dependiendo del nuevo estatus
+  // 2. Enviar correo dependiendo del nuevo estatus (incluyendo asesor asignado si aplica)
+  const vendedorIdFinal = rol === 'admin' ? null : (vendedor_id || null);
+  let vendedorAsignado: { nombre: string; email: string; telefono?: string } | null = null;
+  if (vendedorIdFinal && (estatus === 'aprobado' || estatus === 'rechazado')) {
+    const { data: vend } = await supabase
+      .from('vendedores')
+      .select('nombre, email, telefono, activo')
+      .eq('id', vendedorIdFinal)
+      .maybeSingle();
+    if (vend && vend.activo !== false) {
+      vendedorAsignado = {
+        nombre: vend.nombre,
+        email: vend.email,
+        telefono: vend.telefono,
+      };
+    }
+  }
+
   if (estatus === 'aprobado') {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tu-sitio.com';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.remindustrial.mx';
     try {
-      await enviarNotificacionAprobacion(email, nombre, appUrl, terminos_pago);
+      await enviarNotificacionAprobacion(email, nombre, appUrl, terminos_pago, vendedorAsignado);
     } catch (emailError) {
       console.error('Error al enviar correo de aprobación:', emailError);
     }
   } else if (estatus === 'rechazado') {
     try {
-      await enviarNotificacionRechazo(email, nombre);
+      await enviarNotificacionRechazo(email, nombre, vendedorAsignado);
     } catch (emailError) {
       console.error('Error al enviar correo de rechazo:', emailError);
     }
@@ -273,11 +290,26 @@ export async function crearClienteAdmin(input: CrearClienteAdminInput) {
     throw new Error('Error al guardar el perfil del cliente: ' + profileError.message);
   }
 
-  // 3. Opcionalmente enviar correo de notificación si está aprobado
+  // 3. Opcionalmente enviar correo de notificación si está aprobado (incluyendo asesor asignado)
   if (input.enviar_correo && estatusFinal === 'aprobado') {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cotizador-rem.vercel.app';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.remindustrial.mx';
+    let vendedorAsignado: { nombre: string; email: string; telefono?: string } | null = null;
+    if (input.vendedor_id && rolFinal !== 'admin') {
+      const { data: vend } = await supabase
+        .from('vendedores')
+        .select('nombre, email, telefono, activo')
+        .eq('id', input.vendedor_id)
+        .maybeSingle();
+      if (vend && vend.activo !== false) {
+        vendedorAsignado = {
+          nombre: vend.nombre,
+          email: vend.email,
+          telefono: vend.telefono,
+        };
+      }
+    }
     try {
-      await enviarNotificacionAprobacion(emailLimpio, nombreLimpio, appUrl, terminosFinal);
+      await enviarNotificacionAprobacion(emailLimpio, nombreLimpio, appUrl, terminosFinal, vendedorAsignado);
     } catch (emailError) {
       console.error('Error al enviar correo de bienvenida:', emailError);
     }

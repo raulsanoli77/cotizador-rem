@@ -1,7 +1,69 @@
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const DEFAULT_FROM = process.env.FROM_EMAIL || 'REM Industrial <onboarding@resend.dev>';
+const DEFAULT_FROM =
+  process.env.FROM_EMAIL || 'Raúl Sánchez - REM Industrial <ventas3@remindustrial.mx>';
+
+export interface VendedorEmailInfo {
+  nombre: string;
+  email: string;
+  telefono?: string;
+}
+
+const DEFAULT_ASESOR: VendedorEmailInfo = {
+  nombre: 'Raúl Sánchez',
+  email: 'ventas3@remindustrial.mx',
+  telefono: '614 181 5170',
+};
+
+function extraerEmailDeFrom(fromStr: string): string {
+  const match = fromStr.match(/<([^>]+)>/);
+  const candidato = (match ? match[1] : fromStr).trim().toLowerCase();
+  if (candidato.includes('@') && !candidato.endsWith('@resend.dev')) {
+    return candidato;
+  }
+  return DEFAULT_ASESOR.email;
+}
+
+/**
+ * Resuelve dinámicamente el remitente (From), el correo de respuesta (Reply-To)
+ * y los datos del asesor comercial asignado al cliente.
+ * - Si el cliente tiene vendedor asignado con correo @remindustrial.mx, envía directo desde su cuenta.
+ * - Si el vendedor tiene un correo externo (ej. gmail/outlook), envía usando el nombre del vendedor
+ *   bajo el dominio verificado @remindustrial.mx y configura Reply-To al correo del vendedor.
+ * - Si el cliente no tiene vendedor asignado, utiliza por defecto a Raúl Sánchez (ventas3@remindustrial.mx).
+ */
+export function resolverRemitenteVendedor(vendedor?: VendedorEmailInfo | null): {
+  from: string;
+  replyTo: string;
+  asesor: VendedorEmailInfo;
+} {
+  const emailCorporativoBase = extraerEmailDeFrom(DEFAULT_FROM);
+  const dominioVerificado = emailCorporativoBase.split('@')[1] || 'remindustrial.mx';
+
+  const asesorActivo: VendedorEmailInfo =
+    vendedor && vendedor.nombre?.trim() && vendedor.email?.trim()
+      ? {
+          nombre: vendedor.nombre.trim(),
+          email: vendedor.email.trim().toLowerCase(),
+          telefono: vendedor.telefono?.trim() || DEFAULT_ASESOR.telefono,
+        }
+      : DEFAULT_ASESOR;
+
+  const nombreSeguro = asesorActivo.nombre.replace(/[<>"]/g, '').trim();
+  const etiquetaRemitente = nombreSeguro.toLowerCase().includes('rem industrial')
+    ? nombreSeguro
+    : `${nombreSeguro} - REM Industrial`;
+
+  const esDominioVerificado = asesorActivo.email.endsWith(`@${dominioVerificado}`);
+  const emailFrom = esDominioVerificado ? asesorActivo.email : emailCorporativoBase;
+
+  return {
+    from: `${etiquetaRemitente} <${emailFrom}>`,
+    replyTo: asesorActivo.email,
+    asesor: asesorActivo,
+  };
+}
 
 function escapeHtml(val: unknown): string {
   if (val === null || val === undefined) return '';
@@ -48,15 +110,22 @@ interface NotificacionCotizacionParams {
 export async function enviarNotificacionVentas(
   params: NotificacionCotizacionParams
 ): Promise<{ success: boolean; error?: string }> {
-  const destinatarioPrincipal = process.env.NOTIFICATION_EMAIL || 'ventas@remindustrial.com';
+  const destinatarioPrincipal = process.env.NOTIFICATION_EMAIL || 'ventas3@remindustrial.mx';
   const destinatarios = [destinatarioPrincipal];
   if (params.vendedor?.email && !destinatarios.includes(params.vendedor.email)) {
     destinatarios.push(params.vendedor.email);
   }
 
+  const { from } = resolverRemitenteVendedor(params.vendedor);
+  const replyToCliente =
+    params.lead.email && !params.lead.email.includes('no-email.rem')
+      ? params.lead.email
+      : undefined;
+
   try {
     const { data, error } = await resend.emails.send({
-      from: DEFAULT_FROM,
+      from,
+      replyTo: replyToCliente,
       to: destinatarios,
       subject: `Nueva Solicitud de Cotización - #${params.folio.replace(/^COT-/i, '')} | ${params.lead.empresa}${params.vendedor ? ` [Asesor: ${params.vendedor.nombre}]` : ''}`,
       html: generarHTMLNotificacion(params),
@@ -204,15 +273,19 @@ export async function enviarNotificacionAprobacion(
   destinatario: string,
   nombre: string,
   appUrl: string,
-  terminosPago: string
+  terminosPago: string,
+  vendedor?: VendedorEmailInfo | null
 ) {
   try {
     const safeNombre = escapeHtml(nombre);
     const safeTerminos = escapeHtml(terminosPago);
     const safeDest = escapeHtml(destinatario);
     const safeUrl = escapeHtml(appUrl);
+    const { from, replyTo, asesor } = resolverRemitenteVendedor(vendedor);
+
     const { data, error } = await resend.emails.send({
-      from: DEFAULT_FROM, // Importante: Configura tu dominio real en Resend
+      from,
+      replyTo,
       to: [destinatario],
       subject: '¡Tu cuenta empresarial en REM Industrial ha sido aprobada!',
       html: `
@@ -222,6 +295,14 @@ export async function enviarNotificacionAprobacion(
           
           <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0;"><strong>Tus términos comerciales:</strong> ${safeTerminos}</p>
+          </div>
+
+          <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 14px; border-radius: 8px; margin: 18px 0;">
+            <p style="margin: 0 0 4px; font-size: 11px; text-transform: uppercase; font-weight: bold; color: #047857;">Tu Asesor Comercial Asignado</p>
+            <p style="margin: 0; font-size: 14px; font-weight: bold; color: #065f46;">${escapeHtml(asesor.nombre)}</p>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #047857;">
+              ✉️ ${escapeHtml(asesor.email)}${asesor.telefono ? ` &nbsp;|&nbsp; 💬 WhatsApp: ${escapeHtml(asesor.telefono)}` : ''}
+            </p>
           </div>
 
           <p>A partir de este momento puedes iniciar sesión para acceder a tu catálogo con precios especiales y gestionar tus cotizaciones formales.</p>
@@ -241,7 +322,7 @@ export async function enviarNotificacionAprobacion(
 
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
           <p style="font-size: 12px; color: #666;">
-            *Por motivos de seguridad, nosotros no tenemos acceso a tu contraseña. Si no la recuerdas, podrás usar la opción de "Recuperar Contraseña" en la pantalla de inicio de sesión próximamente.
+            *Por motivos de seguridad, nosotros no tenemos acceso a tu contraseña. Si tienes cualquier duda puedes responder directamente a este correo para contactar a tu asesor asignado (${escapeHtml(asesor.nombre)}).
           </p>
         </div>
       `
@@ -264,12 +345,15 @@ export async function enviarNotificacionAprobacion(
  */
 export async function enviarNotificacionRechazo(
   destinatario: string,
-  nombre: string
+  nombre: string,
+  vendedor?: VendedorEmailInfo | null
 ) {
   try {
     const safeNombre = escapeHtml(nombre);
+    const { from, replyTo } = resolverRemitenteVendedor(vendedor);
     const { data, error } = await resend.emails.send({
-      from: DEFAULT_FROM, // Importante: Configura tu dominio real en Resend
+      from,
+      replyTo,
       to: [destinatario],
       subject: 'Actualización sobre tu solicitud de cuenta en REM Industrial',
       html: `
@@ -298,14 +382,23 @@ export async function enviarNotificacionRechazo(
 }
 
 
-export async function enviarCorreoRevisionCliente(email: string, nombre: string, pedidoId: string, baseURL: string) {
+export async function enviarCorreoRevisionCliente(
+  email: string,
+  nombre: string,
+  pedidoId: string,
+  baseURL: string,
+  vendedor?: VendedorEmailInfo | null
+) {
   try {
     const safeNombre = escapeHtml(nombre);
     const safePedidoCorto = escapeHtml(pedidoId.split('-')[0]);
     const safePedidoId = escapeHtml(pedidoId);
     const safeBaseURL = escapeHtml(baseURL);
+    const { from, replyTo, asesor } = resolverRemitenteVendedor(vendedor);
+
     const { data, error } = await resend.emails.send({
-      from: DEFAULT_FROM,
+      from,
+      replyTo,
       to: [email],
       subject: `Tiempos de entrega asignados - Pedido ${pedidoId.split('-')[0]}`,
       html: `
@@ -322,6 +415,14 @@ export async function enviarCorreoRevisionCliente(email: string, nombre: string,
           <p>Hemos revisado tu orden <strong>${safePedidoCorto}</strong> y le hemos asignado los tiempos de entrega (ETA).</p>
           <p>En caso de no contar con existencia de algún producto original, nuestro equipo te ha sugerido una alternativa de catálogo equivalente.</p>
           <p>Por favor, entra a tu portal para revisar estos detalles y aprobar tu orden para que podamos procesarla inmediatamente.</p>
+
+          <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 14px; border-radius: 8px; margin: 18px 0;">
+            <p style="margin: 0 0 4px; font-size: 11px; text-transform: uppercase; font-weight: bold; color: #047857;">Tu Asesor Comercial Asignado</p>
+            <p style="margin: 0; font-size: 14px; font-weight: bold; color: #065f46;">${escapeHtml(asesor.nombre)}</p>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #047857;">
+              ✉️ ${escapeHtml(asesor.email)}${asesor.telefono ? ` &nbsp;|&nbsp; 💬 WhatsApp: ${escapeHtml(asesor.telefono)}` : ''}
+            </p>
+          </div>
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="${safeBaseURL}/cuenta/pedidos/${safePedidoId}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
@@ -330,7 +431,7 @@ export async function enviarCorreoRevisionCliente(email: string, nombre: string,
           </div>
 
           <p style="color: #64748b; font-size: 13px; margin-top: 30px;">
-            Si tienes alguna duda, puedes contactar a tu asesor de ventas respondiendo a este correo.
+            Si tienes alguna duda, puedes contactar a tu asesor de ventas (${escapeHtml(asesor.nombre)}) respondiendo directamente a este correo.
           </p>
         </div>
       </body>
@@ -385,7 +486,8 @@ export async function enviarConfirmacionPedidoCliente(params: {
   const safeNombre = escapeHtml(params.cliente.nombre_completo);
   const safeEmpresa = escapeHtml(params.cliente.empresa);
   const safeMoneda = escapeHtml(params.moneda);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cotizador-rem.vercel.app';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.remindustrial.mx';
+  const { from, replyTo, asesor } = resolverRemitenteVendedor(params.vendedor);
 
   const filasHtml = params.partidas
     .map(
@@ -416,18 +518,13 @@ export async function enviarConfirmacionPedidoCliente(params: {
         Hemos recibido correctamente tu solicitud de cotización formal con el folio <strong>#${folioLimpio}</strong>. Nuestro equipo comercial ya está revisando existencias, tiempos de entrega y costos de flete para tu ubicación.
       </p>
 
-      ${
-        params.vendedor
-          ? `
       <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 14px; border-radius: 8px; margin: 16px 0;">
         <p style="margin: 0 0 4px; font-size: 11px; text-transform: uppercase; font-weight: bold; color: #047857;">Tu Asesor Comercial Asignado</p>
-        <p style="margin: 0; font-size: 14px; font-weight: bold; color: #065f46;">${escapeHtml(params.vendedor.nombre)}</p>
+        <p style="margin: 0; font-size: 14px; font-weight: bold; color: #065f46;">${escapeHtml(asesor.nombre)}</p>
         <p style="margin: 4px 0 0; font-size: 13px; color: #047857;">
-          ✉️ ${escapeHtml(params.vendedor.email)} &nbsp;|&nbsp; 💬 WhatsApp: ${escapeHtml(params.vendedor.telefono)}
+          ✉️ ${escapeHtml(asesor.email)}${asesor.telefono ? ` &nbsp;|&nbsp; 💬 WhatsApp: ${escapeHtml(asesor.telefono)}` : ''}
         </p>
-      </div>`
-          : ''
-      }
+      </div>
 
       <table style="width: 100%; border-collapse: collapse; margin: 18px 0; border: 1px solid #e2e8f0;">
         <thead>
@@ -469,7 +566,8 @@ export async function enviarConfirmacionPedidoCliente(params: {
 
   try {
     const { error } = await resend.emails.send({
-      from: DEFAULT_FROM,
+      from,
+      replyTo,
       to: [params.cliente.email],
       subject: `Confirmación de Solicitud #${params.folio.replace(/^COT-/i, '')} - REM Industrial`,
       html: htmlBody,

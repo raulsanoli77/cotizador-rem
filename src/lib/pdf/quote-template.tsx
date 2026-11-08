@@ -391,14 +391,14 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
   // Asesor por defecto si no viene especificado
   const asesorFinal = {
     nombre: vendedor?.nombre || 'Raúl Sánchez',
-    email: vendedor?.email || 'ventas3@remindustrial.com',
+    email: vendedor?.email || 'ventas3@remindustrial.mx',
     telefono: vendedor?.telefono || '614 181 5170',
   };
 
   const sitioWebFinal =
     config.sitioWeb ||
     config.empresa.pagina_web ||
-    'cotizador-rem.vercel.app';
+    'www.remindustrial.mx';
 
   return (
     <Document>

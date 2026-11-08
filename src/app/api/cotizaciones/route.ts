@@ -124,9 +124,33 @@ export async function POST(request: NextRequest) {
         day: 'numeric',
       });
 
+      let vendedorAsignado: { nombre: string; email: string; telefono: string } | null = null;
+      if (lead_info.email && !lead_info.email.includes('no-email.rem')) {
+        try {
+          const { data: perfil } = await supabase
+            .from('perfiles_clientes')
+            .select('vendedor:vendedores(nombre, email, telefono, activo)')
+            .ilike('email', String(lead_info.email).trim())
+            .maybeSingle();
+          const vendRaw = Array.isArray((perfil as any)?.vendedor)
+            ? (perfil as any).vendedor[0]
+            : (perfil as any)?.vendedor;
+          if (vendRaw && vendRaw.activo !== false) {
+            vendedorAsignado = {
+              nombre: vendRaw.nombre,
+              email: vendRaw.email,
+              telefono: vendRaw.telefono,
+            };
+          }
+        } catch {
+          // Si no se encuentra perfil, continuar con asesor por defecto
+        }
+      }
+
       try {
         await enviarNotificacionVentas({
           lead: lead_info,
+          vendedor: vendedorAsignado,
           partidas: partidasFinales,
           subtotal: subtotalFinal,
           moneda: monedaFinal,
