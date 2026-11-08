@@ -77,3 +77,46 @@ export async function actualizarEstatusCliente(
 
   return { success: true };
 }
+
+export async function eliminarCliente(id: string, currentUserId?: string) {
+  if (!id) {
+    throw new Error('ID de cliente inválido.');
+  }
+
+  if (currentUserId && id === currentUserId) {
+    throw new Error('Por seguridad, no puedes eliminar tu propia cuenta de administrador activa.');
+  }
+
+  const supabase = createAdminClient();
+
+  // 1. Limpiar pedidos y partidas asociadas a este cliente (para evitar bloqueo por llaves foráneas)
+  const { data: pedidosCliente } = await supabase
+    .from('pedidos')
+    .select('id')
+    .eq('cliente_id', id);
+
+  if (pedidosCliente && pedidosCliente.length > 0) {
+    const pedidoIds = pedidosCliente.map((p) => p.id);
+    await supabase.from('partidas_pedido').delete().in('pedido_id', pedidoIds);
+    await supabase.from('pedidos').delete().eq('cliente_id', id);
+  }
+
+  // 2. Eliminar perfil de la tabla perfiles_clientes
+  const { error: errorPerfil } = await supabase
+    .from('perfiles_clientes')
+    .delete()
+    .eq('id', id);
+
+  if (errorPerfil) {
+    throw new Error('Error al eliminar el perfil del cliente: ' + errorPerfil.message);
+  }
+
+  // 3. Eliminar usuario de Supabase Auth para liberar su correo electrónico
+  try {
+    await supabase.auth.admin.deleteUser(id);
+  } catch (authErr) {
+    console.warn('Aviso al eliminar usuario de Auth (puede no existir):', authErr);
+  }
+
+  return { success: true };
+}

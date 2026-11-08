@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Loader2, Users, Building, Mail, Phone, Calendar, Edit2, ShieldAlert, ShieldCheck, UserCheck } from 'lucide-react';
+import { Loader2, Users, Building, Mail, Phone, Calendar, Edit2, ShieldAlert, ShieldCheck, UserCheck, Trash2 } from 'lucide-react';
 
 type Vendedor = {
   id: string;
@@ -44,13 +44,15 @@ type PerfilCliente = {
   } | null;
 };
 
-import { actualizarEstatusCliente } from './actions';
+import { actualizarEstatusCliente, eliminarCliente } from './actions';
 
 export default function ClientesB2BPage() {
   const [clientes, setClientes] = useState<PerfilCliente[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [eliminandoId, setEliminandoId] = useState<string | null>(null);
   
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -83,6 +85,9 @@ export default function ClientesB2BPage() {
   const [editPaginaWeb, setEditPaginaWeb] = useState('');
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setCurrentUserId(data.session?.user?.id || null);
+    });
     cargarClientes();
   }, []);
 
@@ -174,6 +179,34 @@ export default function ClientesB2BPage() {
       alert('Error al actualizar: ' + error.message);
     }
     setGuardando(false);
+  };
+
+  const handleDelete = async (c: PerfilCliente) => {
+    if (currentUserId && c.id === currentUserId) {
+      alert('Por seguridad, no puedes eliminar tu propia cuenta de administrador activa.');
+      return;
+    }
+
+    const nombreMostrar = c.empresa || c.nombre_completo || c.email;
+    const avisoRol = c.rol === 'admin' ? '\n\n⚠️ ATENCIÓN: Este usuario tiene rol de ADMINISTRADOR.' : '';
+    const confirmar = confirm(
+      `¿Estás seguro de eliminar permanentemente al cliente "${nombreMostrar}" (${c.email})?${avisoRol}\n\nSe eliminará su perfil, acceso y solicitudes asociadas.`
+    );
+    if (!confirmar) return;
+
+    setEliminandoId(c.id);
+    try {
+      await eliminarCliente(c.id, currentUserId || undefined);
+      setClientes((prev) => prev.filter((item) => item.id !== c.id));
+      if (clienteSelect?.id === c.id) {
+        setModalOpen(false);
+        setClienteSelect(null);
+      }
+    } catch (error: any) {
+      alert('Error al eliminar cliente: ' + error.message);
+    } finally {
+      setEliminandoId(null);
+    }
   };
 
   const filtrados = clientes.filter(c => 
@@ -300,12 +333,31 @@ export default function ClientesB2BPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-center whitespace-nowrap">
-                      <button 
-                        onClick={() => handleEdit(c)}
-                        className="p-2 hover:bg-slate-200 rounded-lg text-slate-500 hover:text-brand-600 transition-colors inline-flex items-center gap-2 text-xs font-bold"
-                      >
-                        <Edit2 className="h-4 w-4" /> Administrar
-                      </button>
+                      <div className="inline-flex items-center gap-1">
+                        <button 
+                          onClick={() => handleEdit(c)}
+                          className="p-2 hover:bg-slate-200 rounded-lg text-slate-500 hover:text-brand-600 transition-colors inline-flex items-center gap-2 text-xs font-bold"
+                        >
+                          <Edit2 className="h-4 w-4" /> Administrar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(c)}
+                          disabled={eliminandoId === c.id || (currentUserId !== null && c.id === currentUserId)}
+                          title={
+                            currentUserId && c.id === currentUserId
+                              ? 'No puedes eliminar tu propia cuenta activa'
+                              : 'Eliminar cliente'
+                          }
+                          className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors inline-flex items-center disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          {eliminandoId === c.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-red-600" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -523,21 +575,40 @@ export default function ClientesB2BPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 mt-8">
-                  <button
-                    type="button"
-                    onClick={() => setModalOpen(false)}
-                    className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={guardando}
-                    className="px-4 py-2 text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors flex items-center gap-2"
-                  >
-                    {guardando ? <><Loader2 className="h-4 w-4 animate-spin" /> Guardando...</> : 'Guardar Cambios'}
-                  </button>
+                <div className="flex items-center justify-between gap-3 mt-8 pt-4 border-t border-slate-100">
+                  {(!currentUserId || clienteSelect.id !== currentUserId) ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(clienteSelect)}
+                      disabled={eliminandoId === clienteSelect.id || guardando}
+                      className="px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {eliminandoId === clienteSelect.id ? (
+                        <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Eliminando...</>
+                      ) : (
+                        <><Trash2 className="h-3.5 w-3.5" /> Eliminar Cliente</>
+                      )}
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-slate-400">Tu cuenta actual</span>
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setModalOpen(false)}
+                      className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={guardando}
+                      className="px-4 py-2 text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      {guardando ? <><Loader2 className="h-4 w-4 animate-spin" /> Guardando...</> : 'Guardar Cambios'}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
