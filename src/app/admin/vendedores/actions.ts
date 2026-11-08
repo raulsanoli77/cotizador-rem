@@ -17,11 +17,18 @@ export type Vendedor = {
 export async function obtenerVendedores(): Promise<{ success: boolean; data?: Vendedor[]; error?: string }> {
   const supabase = createAdminClient();
   try {
+    // Asegurar que las cuentas de administrador no tengan vendedor asignado como si fueran clientes
+    await supabase
+      .from('perfiles_clientes')
+      .update({ vendedor_id: null })
+      .eq('rol', 'admin')
+      .not('vendedor_id', 'is', null);
+
     const { data: vendedores, error } = await supabase
       .from('vendedores')
       .select(`
         *,
-        clientes:perfiles_clientes(id)
+        clientes:perfiles_clientes(id, rol)
       `)
       .order('nombre', { ascending: true });
 
@@ -35,7 +42,9 @@ export async function obtenerVendedores(): Promise<{ success: boolean; data?: Ve
       foto_url: v.foto_url || null,
       activo: v.activo,
       created_at: v.created_at,
-      clientes_count: Array.isArray(v.clientes) ? v.clientes.length : 0,
+      clientes_count: Array.isArray(v.clientes)
+        ? v.clientes.filter((c: any) => c.rol !== 'admin').length
+        : 0,
     }));
 
     return { success: true, data: mapeados };

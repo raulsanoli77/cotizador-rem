@@ -63,7 +63,7 @@ type PerfilCliente = {
   } | null;
 };
 
-import { actualizarEstatusCliente, eliminarCliente, crearClienteAdmin } from './actions';
+import { actualizarEstatusCliente, eliminarCliente, crearClienteAdmin, limpiarVendedorDeAdmins } from './actions';
 
 type CredencialesCreadas = {
   nombre: string;
@@ -80,6 +80,7 @@ export default function ClientesB2BPage() {
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
+  const [mostrarAdmins, setMostrarAdmins] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [eliminandoId, setEliminandoId] = useState<string | null>(null);
   
@@ -159,6 +160,10 @@ export default function ClientesB2BPage() {
 
   const cargarClientes = async () => {
     setLoading(true);
+    try {
+      await limpiarVendedorDeAdmins();
+    } catch (_) {}
+
     const [clientesRes, vendedoresRes] = await Promise.all([
       supabase
         .from('perfiles_clientes')
@@ -403,11 +408,16 @@ export default function ClientesB2BPage() {
     }
   };
 
-  const filtrados = clientes.filter(c => 
-    c.empresa?.toLowerCase().includes(busqueda.toLowerCase()) || 
-    c.nombre_completo?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    c.email?.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const totalAdmins = clientes.filter((c) => c.rol === 'admin').length;
+
+  const filtrados = clientes
+    .filter((c) => (mostrarAdmins ? c.rol === 'admin' : c.rol !== 'admin'))
+    .filter(
+      (c) =>
+        c.empresa?.toLowerCase().includes(busqueda.toLowerCase()) ||
+        c.nombre_completo?.toLowerCase().includes(busqueda.toLowerCase()) ||
+        c.email?.toLowerCase().includes(busqueda.toLowerCase())
+    );
 
   return (
     <div className="w-full space-y-6">
@@ -415,14 +425,29 @@ export default function ClientesB2BPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Users className="h-6 w-6 text-brand-600" />
-            Clientes Registrados
+            {mostrarAdmins ? 'Cuentas de Administrador' : 'Clientes Registrados'}
           </h1>
           <p className="text-slate-500 text-sm mt-1">
-            Gestiona aprobaciones, accesos y términos de pago de tus clientes.
+            {mostrarAdmins
+              ? 'Cuentas con acceso administrativo al panel de REM Industrial.'
+              : 'Gestiona aprobaciones, accesos y términos de pago de tus clientes.'}
           </p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
+          {totalAdmins > 0 && (
+            <button
+              type="button"
+              onClick={() => setMostrarAdmins((v) => !v)}
+              className={`text-xs font-semibold px-3 py-2 rounded-lg border transition-colors ${
+                mostrarAdmins
+                  ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                  : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {mostrarAdmins ? '← Volver a Clientes' : `Ver Admins (${totalAdmins})`}
+            </button>
+          )}
           <input
             type="text"
             placeholder="Buscar empresa, nombre..."

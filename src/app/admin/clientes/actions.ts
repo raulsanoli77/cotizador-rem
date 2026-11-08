@@ -66,7 +66,7 @@ export async function actualizarEstatusCliente(
       telefono,
       rfc,
       pagina_web,
-      vendedor_id: vendedor_id || null
+      vendedor_id: rol === 'admin' ? null : (vendedor_id || null)
     })
     .eq('id', id);
 
@@ -283,4 +283,13 @@ export async function crearClienteAdmin(input: CrearClienteAdminInput) {
     success: true,
     userId,
   };
+}
+
+export async function limpiarVendedorDeAdmins() {
+  const supabase = createAdminClient();
+  await supabase
+    .from('perfiles_clientes')
+    .update({ vendedor_id: null })
+    .eq('rol', 'admin')
+    .not('vendedor_id', 'is', null);
 }

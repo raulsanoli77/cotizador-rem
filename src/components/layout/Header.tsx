@@ -42,7 +42,7 @@ export default function Header() {
           .single();
           
         if (perfil) {
-          if (perfil.vendedor && (perfil.vendedor as any).activo !== false) {
+          if (perfil.rol !== 'admin' && perfil.vendedor && (perfil.vendedor as any).activo !== false) {
             setVendedorAsignado(perfil.vendedor as any);
           } else {
             setVendedorAsignado(null);
