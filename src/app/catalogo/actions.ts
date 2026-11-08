@@ -8,12 +8,170 @@ import { formatearDescripcionProducto, obtenerMultiploVenta } from '@/lib/pricin
 import type { Producto, ProductoConPrecio, Categoria, CampoFiltro } from '@/types';
 
 /**
+ * Caché en memoria de corta duración (45s) para evitar descargar miles de productos
+ * en cada pulsación de tecla del buscador instantáneo.
+ */
+interface ProductoIndexado {
+  raw: Producto;
+  camposCategoria?: CampoFiltro[];
+  descripcionFormateada: string;
+  textoBusqueda: string;
+  numParteLower: string;
+  skuLower: string;
+  marcaLower: string;
+  catLower: string;
+  descFormLower: string;
+}
+
+interface CatalogoBaseCache {
+  timestamp: number;
+  productosIndexados: ProductoIndexado[];
+  categorias: Categoria[];
+  marcasLogos: Record<string, string>;
+  margenesMap: Record<string, number>;
+  crucesMap: Record<string, boolean>;
+  margenesPubMap: Record<string, number>;
+}
+
+const CATALOGO_CACHE_TTL_MS = 45_000;
+let catalogoBaseCache: CatalogoBaseCache | null = null;
+let catalogoBasePromise: Promise<CatalogoBaseCache> | null = null;
+
+async function cargarCatalogoBaseCacheado(): Promise<CatalogoBaseCache> {
+  const now = Date.now();
+  if (catalogoBaseCache && now - catalogoBaseCache.timestamp < CATALOGO_CACHE_TTL_MS) {
+    return catalogoBaseCache;
+  }
+
+  if (catalogoBasePromise) {
+    return catalogoBasePromise;
+  }
+
+  catalogoBasePromise = (async () => {
+    try {
+      const supabase = createAdminClient();
+      const [categoriasRes, configsRes] = await Promise.all([
+        supabase.from('categorias').select('*').order('nombre'),
+        supabase
+          .from('configuracion')
+          .select('clave, valor')
+          .in('clave', [
+            'marcas_logos',
+            'marcas_margenes',
+            'marcas_cruce_volumen',
+            'marcas_margenes_publico',
+          ]),
+      ]);
+
+      const categorias: Categoria[] = (categoriasRes.data as Categoria[]) || [];
+      const configMap: Record<string, any> = {};
+      (configsRes.data || []).forEach((row: { clave: string; valor: any }) => {
+        configMap[row.clave] = row.valor;
+      });
+
+      const marcasLogos: Record<string, string> = configMap['marcas_logos'] || {};
+      const margenesMap: Record<string, number> = configMap['marcas_margenes'] || {};
+      const crucesMap: Record<string, boolean> = configMap['marcas_cruce_volumen'] || {};
+      const margenesPubMap: Record<string, number> = configMap['marcas_margenes_publico'] || {};
+
+      let allData: Producto[] = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('productos')
+          .select('*')
+          .eq('activo', true)
+          .order('marca')
+          .range(from, from + step - 1);
+
+        if (error) {
+          console.error('[CatalogoActions] Error cargando productos:', error);
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...(data as Producto[])];
+          if (data.length < step) hasMore = false;
+          else from += step;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const catByLowerName = new Map<string, Categoria>();
+      categorias.forEach((c) => {
+        catByLowerName.set(c.nombre.toLowerCase().trim(), c);
+      });
+
+      const productosIndexados: ProductoIndexado[] = allData.map((prod) => {
+        const catObj = catByLowerName.get((prod.categoria || '').toLowerCase().trim());
+        const tempProd = {
+          ...prod,
+          precio_venta: 0,
+          moneda_venta: 'MXN' as const,
+          formula_aplicada: '',
+          _campos_categoria: catObj?.campos_filtro,
+        };
+        const descripcionFormateada = formatearDescripcionProducto(tempProd, catObj?.campos_filtro);
+        const numParteLower = (prod.numero_parte || '').toLowerCase();
+        const skuLower = (prod.sku_interno || '').toLowerCase();
+        const marcaLower = (prod.marca || '').toLowerCase();
+        const catLower = (prod.categoria || '').toLowerCase();
+        const descFormLower = descripcionFormateada.toLowerCase();
+
+        let specsText = '';
+        if (prod.especificaciones_tecnicas) {
+          specsText = Object.values(prod.especificaciones_tecnicas)
+            .map((v) => String(v ?? '').toLowerCase())
+            .join(' ');
+        }
+
+        return {
+          raw: prod,
+          camposCategoria: catObj?.campos_filtro,
+          descripcionFormateada,
+          textoBusqueda: `${numParteLower} ${skuLower} ${marcaLower} ${catLower} ${descFormLower} ${specsText}`,
+          numParteLower,
+          skuLower,
+          marcaLower,
+          catLower,
+          descFormLower,
+        };
+      });
+
+      const nuevoCache: CatalogoBaseCache = {
+        timestamp: Date.now(),
+        productosIndexados,
+        categorias,
+        marcasLogos,
+        margenesMap,
+        crucesMap,
+        margenesPubMap,
+      };
+      catalogoBaseCache = nuevoCache;
+      return nuevoCache;
+    } finally {
+      catalogoBasePromise = null;
+    }
+  })();
+
+  return catalogoBasePromise;
+}
+
+/**
  * Verifica en el servidor si el usuario actual tiene sesión válida
  * y cuenta con un perfil de cliente aprobado (B2B).
  */
 async function verificarClienteB2B(accessToken?: string | null): Promise<boolean> {
   try {
-    let token = accessToken || null;
+    let token: string | null = null;
+
+    // Priorizar siempre la cookie y header del servidor
+    const cookieStore = await cookies();
+    token = cookieStore.get('rem-auth-token')?.value || null;
 
     if (!token) {
       const headerStore = await headers();
@@ -23,9 +181,8 @@ async function verificarClienteB2B(accessToken?: string | null): Promise<boolean
       }
     }
 
-    if (!token) {
-      const cookieStore = await cookies();
-      token = cookieStore.get('rem-auth-token')?.value || null;
+    if (!token && accessToken) {
+      token = accessToken;
     }
 
     if (!token) return false;
@@ -46,6 +203,43 @@ async function verificarClienteB2B(accessToken?: string | null): Promise<boolean
   }
 }
 
+function sanitizarProductoConPrecio(
+  item: ProductoIndexado,
+  tipoCambio: number,
+  isB2B: boolean,
+  margenesMap: Record<string, number>,
+  crucesMap: Record<string, boolean>,
+  margenesPubMap: Record<string, number>
+): ProductoConPrecio {
+  const prod = item.raw;
+  const marcaKey = prod.marca ? prod.marca.toUpperCase() : '';
+  const margenPersonalizado = marcaKey ? margenesMap[marcaKey] : undefined;
+  const margenPublico = marcaKey && margenesPubMap[marcaKey] ? margenesPubMap[marcaKey] : 1.35;
+  const aplicaCruce = marcaKey ? Boolean(crucesMap[marcaKey]) : false;
+
+  const resultado = calcularPrecioVenta(
+    prod.costo_base,
+    prod.moneda_costo,
+    'MXN',
+    tipoCambio,
+    margenPersonalizado,
+    aplicaCruce,
+    margenPublico
+  );
+
+  const precioPublicoFinal = resultado.precioPublico ?? resultado.precioVenta;
+
+  return {
+    ...prod,
+    costo_base: 0,
+    precio_venta: isB2B ? resultado.precioVenta : precioPublicoFinal,
+    precio_publico: precioPublicoFinal,
+    moneda_venta: resultado.monedaVenta,
+    formula_aplicada: '',
+    _campos_categoria: item.camposCategoria,
+  };
+}
+
 /**
  * Obtiene el catálogo público calculando los precios en el servidor
  * y ocultando costos base y márgenes confidenciales al navegador.
@@ -59,117 +253,32 @@ export async function obtenerCatalogoPublico(
   marcasLogos: Record<string, string>;
   isB2B: boolean;
 }> {
-  const supabase = createAdminClient();
-
-  // Ejecutar consultas de metadatos, sesión y tipo de cambio en paralelo
-  const [
-    isB2B,
-    tcCache,
-    categoriasRes,
-    configsRes,
-  ] = await Promise.all([
+  const [isB2B, tcCache, base] = await Promise.all([
     verificarClienteB2B(accessToken),
     obtenerTipoCambio(),
-    supabase.from('categorias').select('*').order('nombre'),
-    supabase
-      .from('configuracion')
-      .select('clave, valor')
-      .in('clave', [
-        'marcas_logos',
-        'marcas_margenes',
-        'marcas_cruce_volumen',
-        'marcas_margenes_publico',
-      ]),
+    cargarCatalogoBaseCacheado(),
   ]);
 
-  const categorias: Categoria[] = (categoriasRes.data as Categoria[]) || [];
-  const configMap: Record<string, any> = {};
-  (configsRes.data || []).forEach((row: { clave: string; valor: any }) => {
-    configMap[row.clave] = row.valor;
-  });
+  const catFilterLower = categoriaActiva ? categoriaActiva.toLowerCase().trim() : null;
+  const listaFiltrada = catFilterLower
+    ? base.productosIndexados.filter((item) => item.catLower === catFilterLower)
+    : base.productosIndexados;
 
-  const marcasLogos: Record<string, string> = configMap['marcas_logos'] || {};
-  const margenesMap: Record<string, number> = configMap['marcas_margenes'] || {};
-  const crucesMap: Record<string, boolean> = configMap['marcas_cruce_volumen'] || {};
-  const margenesPubMap: Record<string, number> = configMap['marcas_margenes_publico'] || {};
-
-  // Descargar productos activos en lotes desde el servidor
-  let allData: Producto[] = [];
-  let from = 0;
-  const step = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    let query = supabase
-      .from('productos')
-      .select('*')
-      .eq('activo', true)
-      .order('marca')
-      .range(from, from + step - 1);
-
-    if (categoriaActiva) {
-      query = query.ilike('categoria', categoriaActiva);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      console.error('[CatalogoActions] Error cargando productos:', error);
-      break;
-    }
-
-    if (data && data.length > 0) {
-      allData = [...allData, ...(data as Producto[])];
-      if (data.length < step) hasMore = false;
-      else from += step;
-    } else {
-      hasMore = false;
-    }
-  }
-
-  // Mapa rápido de categorías por nombre en minúsculas
-  const catByLowerName = new Map<string, Categoria>();
-  categorias.forEach((c) => {
-    catByLowerName.set(c.nombre.toLowerCase().trim(), c);
-  });
-
-  const monedaVenta = 'MXN' as const;
-  const tipoCambio = tcCache.valor;
-
-  const productosSanitizados: ProductoConPrecio[] = allData.map((prod) => {
-    const marcaKey = prod.marca ? prod.marca.toUpperCase() : '';
-    const margenPersonalizado = marcaKey ? margenesMap[marcaKey] : undefined;
-    const margenPublico = marcaKey && margenesPubMap[marcaKey] ? margenesPubMap[marcaKey] : 1.35;
-    const aplicaCruce = marcaKey ? Boolean(crucesMap[marcaKey]) : false;
-
-    const resultado = calcularPrecioVenta(
-      prod.costo_base,
-      prod.moneda_costo,
-      monedaVenta,
-      tipoCambio,
-      margenPersonalizado,
-      aplicaCruce,
-      margenPublico
-    );
-
-    const catObj = catByLowerName.get((prod.categoria || '').toLowerCase().trim());
-    const precioPublicoFinal = resultado.precioPublico ?? resultado.precioVenta;
-
-    return {
-      ...prod,
-      // Ocultar costo_base y fórmula interna al navegador
-      costo_base: 0,
-      precio_venta: isB2B ? resultado.precioVenta : precioPublicoFinal,
-      precio_publico: precioPublicoFinal,
-      moneda_venta: resultado.monedaVenta,
-      formula_aplicada: '',
-      _campos_categoria: catObj?.campos_filtro,
-    };
-  });
+  const productosSanitizados = listaFiltrada.map((item) =>
+    sanitizarProductoConPrecio(
+      item,
+      tcCache.valor,
+      isB2B,
+      base.margenesMap,
+      base.crucesMap,
+      base.margenesPubMap
+    )
+  );
 
   return {
     productos: productosSanitizados,
-    categorias,
-    marcasLogos,
+    categorias: base.categorias,
+    marcasLogos: base.marcasLogos,
     isB2B,
   };
 }
@@ -283,7 +392,7 @@ export async function sincronizarPreciosCarrito(
 ): Promise<ProductoConPrecio[]> {
   if (!productoIds || productoIds.length === 0) return [];
 
-  const uniqueIds = Array.from(new Set(productoIds.filter(Boolean)));
+  const uniqueIds = Array.from(new Set(productoIds.filter(Boolean))).slice(0, 300);
   if (uniqueIds.length === 0) return [];
 
   const supabase = createAdminClient();
@@ -355,8 +464,7 @@ export async function sincronizarPreciosCarrito(
 
 /**
  * Buscador rápido con vista previa instantánea para el Header.
- * Soporta búsqueda por código exacto/parcial, marca, categoría, descripción y especificaciones
- * (incluyendo búsquedas multi-palabra como "broca 1/2" o "inserto tpu").
+ * Utiliza el índice precalculado en memoria para responder en milisegundos sin saturar Supabase.
  */
 export async function buscarVistaPreviaRapida(
   terminoRaw: string,
@@ -365,99 +473,103 @@ export async function buscarVistaPreviaRapida(
 ): Promise<{
   productos: (ProductoConPrecio & { descripcion_formateada: string })[];
   categorias: { nombre: string; cantidad: number; imagen_url: string | null }[];
+  totalCategorias: number;
   totalCoincidencias: number;
   isB2B: boolean;
 }> {
-  const q = (terminoRaw || '').trim().toLowerCase();
+  const q = (terminoRaw || '').trim().toLowerCase().slice(0, 120);
   if (q.length < 2) {
     return {
       productos: [],
       categorias: [],
+      totalCategorias: 0,
       totalCoincidencias: 0,
       isB2B: false,
     };
   }
 
-  const { productos, categorias, isB2B } = await obtenerCatalogoPublico(null, accessToken);
+  const limiteSeguro = Math.min(Math.max(1, Math.floor(Number(limiteProductos) || 6)), 50);
 
-  const tokens = q.split(/\s+/).filter(Boolean);
+  const [isB2B, tcCache, base] = await Promise.all([
+    verificarClienteB2B(accessToken),
+    obtenerTipoCambio(),
+    cargarCatalogoBaseCacheado(),
+  ]);
+
+  const tokens = q.split(/\s+/).filter(Boolean).slice(0, 10);
   const imagenesCatMap = new Map<string, string | null>();
-  categorias.forEach((c) => {
+  base.categorias.forEach((c) => {
     imagenesCatMap.set(c.nombre.toLowerCase().trim(), c.imagen_url || null);
   });
 
   const conteoCategorias: Record<string, number> = {};
   const coincidencias: {
-    prod: ProductoConPrecio & { descripcion_formateada: string };
+    item: ProductoIndexado;
     score: number;
   }[] = [];
 
-  for (const prod of productos) {
-    const numParte = (prod.numero_parte || '').toLowerCase();
-    const sku = (prod.sku_interno || '').toLowerCase();
-    const marca = (prod.marca || '').toLowerCase();
-    const cat = (prod.categoria || '').toLowerCase();
-    const descFormateada = formatearDescripcionProducto(prod);
-    const descFormLower = descFormateada.toLowerCase();
-
-    let specsText = '';
-    if (prod.especificaciones_tecnicas) {
-      specsText = Object.values(prod.especificaciones_tecnicas)
-        .map((v) => String(v ?? '').toLowerCase())
-        .join(' ');
-    }
-
-    const textoCompleto = `${numParte} ${sku} ${marca} ${cat} ${descFormLower} ${specsText}`;
-
-    // Todos los tokens deben coincidir en alguna parte del producto
-    const cumpleTokens = tokens.every((tk) => textoCompleto.includes(tk));
+  for (const item of base.productosIndexados) {
+    const cumpleTokens = tokens.every((tk) => item.textoBusqueda.includes(tk));
     if (!cumpleTokens) continue;
 
-    const catNombre = prod.categoria ? prod.categoria.trim() : 'General';
+    const catNombre = item.raw.categoria ? item.raw.categoria.trim() : 'General';
     conteoCategorias[catNombre] = (conteoCategorias[catNombre] || 0) + 1;
 
-    // Calcular relevancia para ordenar los mejores resultados arriba
     let score = 10;
-    if (numParte === q || sku === q) {
+    if (item.numParteLower === q || item.skuLower === q) {
       score = 100;
-    } else if (numParte.startsWith(q) || sku.startsWith(q)) {
+    } else if (item.numParteLower.startsWith(q) || item.skuLower.startsWith(q)) {
       score = 85;
-    } else if (numParte.includes(q) || sku.includes(q)) {
+    } else if (item.numParteLower.includes(q) || item.skuLower.includes(q)) {
       score = 70;
-    } else if (marca === q || cat === q) {
+    } else if (item.marcaLower === q || item.catLower === q) {
       score = 55;
-    } else if (descFormLower.startsWith(q) || marca.startsWith(q) || cat.startsWith(q)) {
+    } else if (
+      item.descFormLower.startsWith(q) ||
+      item.marcaLower.startsWith(q) ||
+      item.catLower.startsWith(q)
+    ) {
       score = 40;
-    } else if (descFormLower.includes(q)) {
+    } else if (item.descFormLower.includes(q)) {
       score = 25;
     }
 
-    coincidencias.push({
-      prod: {
-        ...prod,
-        descripcion_formateada: descFormateada,
-      },
-      score,
-    });
+    coincidencias.push({ item, score });
   }
 
   coincidencias.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
-    return (a.prod.numero_parte || '').localeCompare(b.prod.numero_parte || '');
+    return a.item.numParteLower.localeCompare(b.item.numParteLower);
   });
 
-  const categoriasOrdenadas = Object.entries(conteoCategorias)
+  const todasLasCategorias = Object.entries(conteoCategorias)
     .map(([nombre, cantidad]) => ({
       nombre,
       cantidad,
       imagen_url: imagenesCatMap.get(nombre.toLowerCase()) || null,
     }))
-    .sort((a, b) => b.cantidad - a.cantidad)
-    .slice(0, 4);
+    .sort((a, b) => b.cantidad - a.cantidad);
+
+  // Solo calcular precio para los top N productos que realmente se enviarán al cliente
+  const topProductos = coincidencias.slice(0, limiteSeguro).map(({ item }) => {
+    const prodSanitizado = sanitizarProductoConPrecio(
+      item,
+      tcCache.valor,
+      isB2B,
+      base.margenesMap,
+      base.crucesMap,
+      base.margenesPubMap
+    );
+    return {
+      ...prodSanitizado,
+      descripcion_formateada: item.descripcionFormateada,
+    };
+  });
 
   return {
-    productos: coincidencias.slice(0, limiteProductos).map((item) => item.prod),
-    categorias: categoriasOrdenadas,
+    productos: topProductos,
+    categorias: todasLasCategorias.slice(0, limiteSeguro > 6 ? 24 : 4),
+    totalCategorias: todasLasCategorias.length,
     totalCoincidencias: coincidencias.length,
     isB2B,
   };
@@ -466,6 +578,7 @@ export async function buscarVistaPreviaRapida(
 /**
  * Resuelve una lista de códigos y cantidades pegados desde Excel o texto libre
  * para la función de Carga Rápida de Pedido B2B.
+ * Incluye límites de seguridad y detección de códigos ambiguos entre múltiples marcas.
  */
 export async function resolverCargaRapidaCodigos(
   entradas: { codigo: string; cantidad: number }[],
@@ -477,29 +590,51 @@ export async function resolverCargaRapidaCodigos(
     cantidadFinal: number;
     multiplo: number;
   }[];
+  ambiguos?: {
+    codigo: string;
+    cantidadSolicitada: number;
+    opciones: ProductoConPrecio[];
+  }[];
   noEncontrados: string[];
 }> {
-  if (!entradas || entradas.length === 0) {
-    return { encontrados: [], noEncontrados: [] };
+  if (!entradas || !Array.isArray(entradas) || entradas.length === 0) {
+    return { encontrados: [], ambiguos: [], noEncontrados: [] };
   }
 
-  const { productos } = await obtenerCatalogoPublico(null, accessToken);
+  const entradasLimitadas = entradas.slice(0, 300);
 
-  // Construir mapas por numero_parte y sku_interno normalizados
-  const mapaExacto = new Map<string, ProductoConPrecio>();
-  const mapaSinGuiones = new Map<string, ProductoConPrecio>();
+  const [isB2B, tcCache, base] = await Promise.all([
+    verificarClienteB2B(accessToken),
+    obtenerTipoCambio(),
+    cargarCatalogoBaseCacheado(),
+  ]);
 
-  for (const prod of productos) {
-    const np = (prod.numero_parte || '').trim().toUpperCase();
-    const sku = (prod.sku_interno || '').trim().toUpperCase();
+  // Agrupar en listas para no sobrescribir códigos que existan en más de una marca
+  const mapaNumParteExacto = new Map<string, ProductoIndexado[]>();
+  const mapaSkuExacto = new Map<string, ProductoIndexado[]>();
+  const mapaSinGuiones = new Map<string, ProductoIndexado[]>();
+
+  const agregarAlMapa = (mapa: Map<string, ProductoIndexado[]>, key: string, item: ProductoIndexado) => {
+    const actual = mapa.get(key);
+    if (actual) {
+      if (!actual.some((x) => x.raw.id === item.raw.id)) {
+        actual.push(item);
+      }
+    } else {
+      mapa.set(key, [item]);
+    }
+  };
+
+  for (const item of base.productosIndexados) {
+    const np = (item.raw.numero_parte || '').trim().toUpperCase();
+    const sku = (item.raw.sku_interno || '').trim().toUpperCase();
     if (np) {
-      mapaExacto.set(np, prod);
-      mapaSinGuiones.set(np.replace(/[\s\-_]/g, ''), prod);
+      agregarAlMapa(mapaNumParteExacto, np, item);
+      agregarAlMapa(mapaSinGuiones, np.replace(/[\s\-_]/g, ''), item);
     }
     if (sku) {
-      if (!mapaExacto.has(sku)) mapaExacto.set(sku, prod);
-      const skuClean = sku.replace(/[\s\-_]/g, '');
-      if (!mapaSinGuiones.has(skuClean)) mapaSinGuiones.set(skuClean, prod);
+      agregarAlMapa(mapaSkuExacto, sku, item);
+      agregarAlMapa(mapaSinGuiones, sku.replace(/[\s\-_]/g, ''), item);
     }
   }
 
@@ -509,35 +644,77 @@ export async function resolverCargaRapidaCodigos(
     cantidadFinal: number;
     multiplo: number;
   }[] = [];
+  const ambiguos: {
+    codigo: string;
+    cantidadSolicitada: number;
+    opciones: ProductoConPrecio[];
+  }[] = [];
   const noEncontrados: string[] = [];
 
-  for (const item of entradas) {
-    const rawCodigo = (item.codigo || '').trim();
+  for (const item of entradasLimitadas) {
+    const rawCodigo = String(item?.codigo || '').trim().slice(0, 64);
     if (!rawCodigo) continue;
+
+    const cantRaw = Math.floor(Number(item?.cantidad) || 1);
+    const cantSol = Math.min(Math.max(1, isNaN(cantRaw) ? 1 : cantRaw), 100_000);
 
     const upper = rawCodigo.toUpperCase();
     const clean = upper.replace(/[\s\-_]/g, '');
 
-    const prod = mapaExacto.get(upper) || mapaSinGuiones.get(clean);
-    if (!prod) {
+    // Prioridad 1: Coincidencia exacta en numero_parte
+    // Prioridad 2: Coincidencia exacta en sku_interno
+    // Prioridad 3: Coincidencia normalizada sin guiones (solo si no hubo coincidencia exacta)
+    let candidatos =
+      mapaNumParteExacto.get(upper) ||
+      mapaSkuExacto.get(upper) ||
+      mapaSinGuiones.get(clean) ||
+      [];
+
+    if (candidatos.length === 0) {
       noEncontrados.push(rawCodigo);
       continue;
     }
 
-    const cantSol = Math.max(1, Math.floor(Number(item.cantidad) || 1));
-    const multiplo = obtenerMultiploVenta(prod);
+    if (candidatos.length > 1) {
+      // Múltiples marcas tienen el mismo código: devolver en `ambiguos` para que el usuario elija la marca
+      ambiguos.push({
+        codigo: rawCodigo,
+        cantidadSolicitada: cantSol,
+        opciones: candidatos.map((c) =>
+          sanitizarProductoConPrecio(
+            c,
+            tcCache.valor,
+            isB2B,
+            base.margenesMap,
+            base.crucesMap,
+            base.margenesPubMap
+          )
+        ),
+      });
+      continue;
+    }
+
+    const prodSanitizado = sanitizarProductoConPrecio(
+      candidatos[0],
+      tcCache.valor,
+      isB2B,
+      base.margenesMap,
+      base.crucesMap,
+      base.margenesPubMap
+    );
+    const multiplo = obtenerMultiploVenta(prodSanitizado);
     const cantFinal =
       multiplo > 1
         ? Math.max(multiplo, Math.ceil(cantSol / multiplo) * multiplo)
         : cantSol;
 
     encontrados.push({
-      producto: prod,
+      producto: prodSanitizado,
       cantidadSolicitada: cantSol,
       cantidadFinal: cantFinal,
       multiplo,
     });
   }
 
-  return { encontrados, noEncontrados };
+  return { encontrados, ambiguos, noEncontrados };
 }

@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { exigirSesionUsuarioServerAction } from '@/lib/auth/admin-auth';
 import { sincronizarPreciosCarrito, resolverCargaRapidaCodigos } from '@/app/catalogo/actions';
+import { generarUrlFirmadaPdfBind } from '@/lib/storage/pdf-bind';
 import type { ProductoConPrecio } from '@/types';
 
 export async function aprobarPedidoAdmin(
@@ -45,12 +46,51 @@ export async function aprobarPedidoAdmin(
 }
 
 /**
+ * Genera una URL firmada temporal para que el dueño del pedido o un Administrador
+ * pueda ver/descargar el PDF oficial de Bind ERP desde el bucket privado.
+ */
+export async function obtenerUrlDescargaPdfBind(
+  pedidoId: string
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const sesion = await exigirSesionUsuarioServerAction();
+    const supabase = createAdminClient();
+
+    const { data: pedido, error } = await supabase
+      .from('pedidos')
+      .select('id, cliente_id, po_url')
+      .eq('id', pedidoId)
+      .single();
+
+    if (error || !pedido || !pedido.po_url) {
+      throw new Error('El documento PDF no se encuentra disponible.');
+    }
+
+    if (pedido.cliente_id !== sesion.user.id && !sesion.esAdmin) {
+      throw new Error('No tienes permiso para descargar este documento.');
+    }
+
+    const signedUrl = await generarUrlFirmadaPdfBind(pedido.po_url);
+    if (!signedUrl) {
+      throw new Error('No se pudo generar el enlace seguro de descarga.');
+    }
+
+    return { success: true, url: signedUrl };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Error al obtener el PDF de la cotización.',
+    };
+  }
+}
+
+/**
  * Obtiene las partidas de un pedido anterior del cliente y las sincroniza con
  * los productos y precios vigentes del catálogo para volver a cotizar con un clic.
+ * Usa exclusivamente la sesión autenticada del servidor.
  */
 export async function obtenerPartidasParaRepetirPedido(
-  pedidoId: string,
-  accessToken?: string | null
+  pedidoId: string
 ): Promise<{
   success: boolean;
   error?: string;
@@ -85,9 +125,9 @@ export async function obtenerPartidasParaRepetirPedido(
       throw new Error('Esta cotización no contiene partidas registradas.');
     }
 
-    // 1. Intentar resolver primero por producto_id vigente
+    // 1. Intentar resolver primero por producto_id vigente usando la cookie del servidor (null)
     const ids = partidas.map((p) => p.producto_id).filter(Boolean);
-    const prodsPorId = await sincronizarPreciosCarrito(ids, accessToken);
+    const prodsPorId = await sincronizarPreciosCarrito(ids, null);
     const mapaPorId = new Map<string, ProductoConPrecio>();
     prodsPorId.forEach((p) => mapaPorId.set(p.id, p));
 
@@ -107,7 +147,7 @@ export async function obtenerPartidasParaRepetirPedido(
     }
 
     if (faltantesPorCodigo.length > 0) {
-      const resCodigos = await resolverCargaRapidaCodigos(faltantesPorCodigo, accessToken);
+      const resCodigos = await resolverCargaRapidaCodigos(faltantesPorCodigo, null);
       for (const enc of resCodigos.encontrados) {
         itemsFinales.push({ producto: enc.producto, cantidad: enc.cantidadFinal });
       }

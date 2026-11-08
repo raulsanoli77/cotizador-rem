@@ -240,16 +240,18 @@ export default function Header() {
                 const multiplo = obtenerMultiploVenta(prod);
 
                 return (
-                  <Link
+                  <div
                     key={prod.id}
-                    href={`/catalogo/${prod.id}`}
-                    onClick={() => {
-                      setMostrarPreview(false);
-                      setMenuAbierto(false);
-                    }}
                     className="flex items-center justify-between gap-3 p-3.5 hover:bg-slate-800/80 transition-colors group"
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Link
+                      href={`/catalogo/${prod.id}`}
+                      onClick={() => {
+                        setMostrarPreview(false);
+                        setMenuAbierto(false);
+                      }}
+                      className="flex items-center gap-3 min-w-0 flex-1"
+                    >
                       {/* Miniatura */}
                       <div className="w-12 h-12 rounded-xl bg-white border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden p-1">
                         {prod.imagen_url ? (
@@ -284,7 +286,7 @@ export default function Header() {
                           {prod.descripcion_formateada}
                         </p>
                       </div>
-                    </div>
+                    </Link>
 
                     {/* Precio y Botón Rápido de Cotizar */}
                     <div className="flex items-center gap-3 shrink-0">
@@ -320,7 +322,7 @@ export default function Header() {
                         )}
                       </button>
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>

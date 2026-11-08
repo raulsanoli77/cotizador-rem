@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Package, Calendar, Trash2, MessageSquare, FileText, Upload, ExternalLink, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
-import { supabase } from '@/lib/supabase/client';
-import { actualizarPedido, eliminarPedido } from '@/app/admin/pedidos/[id]/actions';
+import { actualizarPedido, eliminarPedido, subirPdfBindPedido } from '@/app/admin/pedidos/[id]/actions';
+import { obtenerUrlDescargaPdfBind } from '@/app/cuenta/pedidos/[id]/actions';
+import { esReferenciaPdfBindSegura, PDF_BIND_MAX_BYTES } from '@/lib/storage/pdf-bind-shared';
 
 export default function PedidoDetailAdmin({ pedido, partidas }: { pedido: any; partidas: any[]; productosOriginales?: any[] }) {
   const router = useRouter();
@@ -19,8 +20,11 @@ export default function PedidoDetailAdmin({ pedido, partidas }: { pedido: any; p
 
   const [estatus, setEstatus] = useState(normalizarEstatus(pedido.estatus));
   const [cotizacionBind, setCotizacionBind] = useState(pedido.cotizacion_bind || '');
-  const [pdfBindUrl, setPdfBindUrl] = useState<string | null>(pedido.po_url || null);
+  const [pdfBindUrl, setPdfBindUrl] = useState<string | null>(
+    esReferenciaPdfBindSegura(pedido.po_url) ? pedido.po_url : null
+  );
   const [subiendoPdf, setSubiendoPdf] = useState(false);
+  const [abriendoPdf, setAbriendoPdf] = useState(false);
   const [notasCliente, setNotasCliente] = useState(pedido.notas_cliente || '');
   const [loading, setLoading] = useState(false);
   const [partidasState, setPartidasState] = useState(partidas);
@@ -84,26 +88,47 @@ export default function PedidoDetailAdmin({ pedido, partidas }: { pedido: any; p
       return;
     }
 
+    if (file.size > PDF_BIND_MAX_BYTES) {
+      setErrorStr('El archivo PDF no debe superar los 15 MB.');
+      return;
+    }
+
     setSubiendoPdf(true);
     setErrorStr(null);
+    setSuccessStr(null);
     try {
-      const safeFolio = folioLimpio.replace(/[^a-zA-Z0-9_-]/g, '');
-      const filePath = `cotizaciones_bind/Cotizacion_REM_${safeFolio}_${Date.now()}.pdf`;
+      const formData = new FormData();
+      formData.append('file', file);
 
-      const { error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(filePath, file, { contentType: 'application/pdf', upsert: true });
+      const res = await subirPdfBindPedido(pedido.id, folioLimpio, formData);
+      if (!res.success || !res.po_url) {
+        throw new Error(res.error || 'No se pudo subir el PDF.');
+      }
 
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from('media').getPublicUrl(filePath);
-      setPdfBindUrl(data.publicUrl);
-      setSuccessStr('PDF adjuntado. Recuerda hacer clic en "Guardar Cambios" para confirmar.');
+      setPdfBindUrl(res.po_url);
+      setSuccessStr('PDF adjuntado y guardado en el pedido correctamente.');
+      router.refresh();
     } catch (err: any) {
       setErrorStr(`Error al subir el PDF: ${err.message || 'Intenta de nuevo'}`);
     } finally {
       setSubiendoPdf(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleVerPdfBind = async () => {
+    if (!pdfBindUrl) return;
+    setAbriendoPdf(true);
+    try {
+      const res = await obtenerUrlDescargaPdfBind(pedido.id);
+      if (!res.success || !res.url) {
+        throw new Error(res.error || 'No se pudo abrir el PDF.');
+      }
+      window.open(res.url, '_blank', 'noopener,noreferrer');
+    } catch (err: any) {
+      setErrorStr(err.message || 'Error al abrir el PDF.');
+    } finally {
+      setAbriendoPdf(false);
     }
   };
 
@@ -324,21 +349,25 @@ export default function PedidoDetailAdmin({ pedido, partidas }: { pedido: any; p
 
                 {pdfBindUrl ? (
                   <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between gap-2">
-                    <a
-                      href={pdfBindUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-800 hover:text-indigo-950 hover:underline truncate"
+                    <button
+                      type="button"
+                      onClick={handleVerPdfBind}
+                      disabled={abriendoPdf}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-800 hover:text-indigo-950 hover:underline truncate cursor-pointer disabled:opacity-50"
                     >
-                      <FileText className="w-4 h-4 shrink-0 text-indigo-600" />
+                      {abriendoPdf ? (
+                        <Loader2 className="w-4 h-4 shrink-0 animate-spin text-indigo-600" />
+                      ) : (
+                        <FileText className="w-4 h-4 shrink-0 text-indigo-600" />
+                      )}
                       <span className="truncate">Ver PDF Oficial Adjunto</span>
                       <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                    </a>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setPdfBindUrl(null)}
-                      title="Quitar PDF adjunto"
-                      className="p-1 text-indigo-500 hover:text-red-600 hover:bg-white rounded-lg transition-colors shrink-0"
+                      title="Quitar PDF adjunto (haz clic en Guardar Cambios para confirmar)"
+                      className="p-1 text-indigo-500 hover:text-red-600 hover:bg-white rounded-lg transition-colors shrink-0 cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>

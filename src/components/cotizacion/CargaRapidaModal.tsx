@@ -6,6 +6,8 @@ import { resolverCargaRapidaCodigos } from '@/app/catalogo/actions';
 import { useCartStore } from '@/stores/cart-store';
 import { supabase } from '@/lib/supabase/client';
 import { formatearPrecio } from '@/lib/pricing/engine';
+import { obtenerMultiploVenta } from '@/lib/pricing/formatters';
+import type { ProductoConPrecio } from '@/types';
 
 interface CargaRapidaModalProps {
   isOpen: boolean;
@@ -17,19 +19,24 @@ interface LineaParseada {
   cantidad: number;
 }
 
+function parsearCantidadSegura(rawQty: string): number {
+  const sinComasMiles = rawQty.replace(/,/g, '').trim();
+  const num = parseFloat(sinComasMiles);
+  if (isNaN(num) || !isFinite(num) || num <= 0) return 1;
+  return Math.min(Math.max(1, Math.floor(num)), 100_000);
+}
+
 /**
  * Parsea texto pegado desde Excel, CSV o lista manual:
- * Soporta formatos:
- * - CODIGO [TAB] CANTIDAD
- * - CODIGO, CANTIDAD
- * - CODIGO; CANTIDAD
- * - CODIGO CANTIDAD
- * - CODIGO (cantidad = 1 por defecto)
+ * - Si hay tabulador (\t) o punto y coma (;), separa por esa columna (respetando comas de miles como 1,000).
+ * - Soporta CODIGO, CANTIDAD.
+ * - Preserva códigos con espacio tipo ANSI (ej. "TPU 322", "CNMG 432") como código único con cantidad 1,
+ *   mientras que "41694 10" o "TPU 322 x 10" detecta cantidad 10.
  */
 function parsearLineasTexto(raw: string): LineaParseada[] {
   if (!raw || !raw.trim()) return [];
 
-  const lineas = raw.split(/\r?\n/);
+  const lineas = raw.split(/\r?\n/).slice(0, 300);
   const mapaAcumulado = new Map<string, LineaParseada>();
 
   const palabrasEncabezado = new Set([
@@ -41,37 +48,52 @@ function parsearLineasTexto(raw: string): LineaParseada[] {
     const linea = lineaRaw.trim();
     if (!linea) continue;
 
-    // Separar por tabulador, coma o punto y coma primero
-    let partes = linea.split(/[\t,;]+/).map((s) => s.trim()).filter(Boolean);
-
-    // Si no había tabulador ni coma, intentar separar si termina en espacio + número (ej. "41694 5" o "41694 x 5")
-    if (partes.length === 1) {
-      const matchEspacio = linea.match(/^(\S+?)(?:\s+[xX*]?\s+|\s+)(\d+)$/);
-      if (matchEspacio) {
-        partes = [matchEspacio[1].trim(), matchEspacio[2].trim()];
-      }
-    }
-
-    const col1 = (partes[0] || '').trim();
-    if (!col1) continue;
-
-    // Ignorar fila de encabezado si viene de Excel
-    if (palabrasEncabezado.has(col1.toLowerCase())) continue;
-
+    let codigo = '';
     let cantidad = 1;
-    if (partes.length >= 2) {
-      const numParsed = parseInt(partes[1].replace(/[^\d]/g, ''), 10);
-      if (!isNaN(numParsed) && numParsed > 0) {
-        cantidad = numParsed;
+
+    if (linea.includes('\t') || linea.includes(';')) {
+      const partes = linea.split(/[\t;]+/).map((s) => s.trim()).filter(Boolean);
+      codigo = partes[0] || '';
+      if (partes.length >= 2) {
+        cantidad = parsearCantidadSegura(partes[1]);
+      }
+    } else {
+      // Verificar formato "CODIGO, CANTIDAD" (ej. "41694, 10" o "41694, 1,000")
+      const matchComa = linea.match(/^([^,]+),\s*([\d,]+(?:\.\d+)?)$/);
+      if (matchComa) {
+        codigo = matchComa[1].trim();
+        cantidad = parsearCantidadSegura(matchComa[2]);
+      } else {
+        // Verificar multiplicador explícito "CODIGO x CANTIDAD" (ej. "TPU 322 x 10")
+        const matchPor = linea.match(/^(.+?)\s+[xX*]\s*(\d[\d,]*(?:\.\d+)?)$/);
+        if (matchPor) {
+          codigo = matchPor[1].trim();
+          cantidad = parsearCantidadSegura(matchPor[2]);
+        } else {
+          // Si son 2 tokens y el primero ya contiene dígitos (ej. "41694 10" o "500-196-30 2"), separar.
+          // Si el primero son solo letras (ej. "TPU 322"), mantener como un solo código "TPU 322".
+          const matchEspacio = linea.match(/^(\S+)\s+(\d[\d,]*(?:\.\d+)?)$/);
+          if (matchEspacio && /\d/.test(matchEspacio[1])) {
+            codigo = matchEspacio[1].trim();
+            cantidad = parsearCantidadSegura(matchEspacio[2]);
+          } else {
+            codigo = linea;
+            cantidad = 1;
+          }
+        }
       }
     }
 
-    const key = col1.toUpperCase();
+    codigo = codigo.trim().slice(0, 64);
+    if (!codigo) continue;
+    if (palabrasEncabezado.has(codigo.toLowerCase())) continue;
+
+    const key = codigo.toUpperCase();
     const existente = mapaAcumulado.get(key);
     if (existente) {
-      existente.cantidad += cantidad;
+      existente.cantidad = Math.min(existente.cantidad + cantidad, 100_000);
     } else {
-      mapaAcumulado.set(key, { codigo: col1, cantidad });
+      mapaAcumulado.set(key, { codigo, cantidad });
     }
   }
 
@@ -90,6 +112,11 @@ export default function CargaRapidaModal({ isOpen, onClose }: CargaRapidaModalPr
       multiplo: number;
       precio_venta: number;
       moneda_venta: 'USD' | 'MXN';
+    }[];
+    ambiguos: {
+      codigo: string;
+      cantidadSolicitada: number;
+      opciones: ProductoConPrecio[];
     }[];
     noEncontrados: string[];
   } | null>(null);
@@ -124,10 +151,11 @@ export default function CargaRapidaModal({ isOpen, onClose }: CargaRapidaModalPr
           precio_venta: e.producto.precio_venta,
           moneda_venta: e.producto.moneda_venta,
         })),
+        ambiguos: res.ambiguos || [],
         noEncontrados: res.noEncontrados,
       });
 
-      if (res.noEncontrados.length === 0) {
+      if (res.noEncontrados.length === 0 && (!res.ambiguos || res.ambiguos.length === 0)) {
         setTexto('');
       }
     } catch (err) {
@@ -136,6 +164,36 @@ export default function CargaRapidaModal({ isOpen, onClose }: CargaRapidaModalPr
     } finally {
       setProcesando(false);
     }
+  };
+
+  const handleElegirAmbiguo = (codigoOriginal: string, prod: ProductoConPrecio, cantSolicitada: number) => {
+    const multiplo = obtenerMultiploVenta(prod);
+    const cantFinal =
+      multiplo > 1
+        ? Math.max(multiplo, Math.ceil(cantSolicitada / multiplo) * multiplo)
+        : cantSolicitada;
+
+    agregarItem(prod, cantFinal);
+
+    setResultado((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        agregados: [
+          ...prev.agregados,
+          {
+            numero_parte: prod.numero_parte,
+            marca: prod.marca,
+            cantidadSolicitada: cantSolicitada,
+            cantidadFinal: cantFinal,
+            multiplo,
+            precio_venta: prod.precio_venta,
+            moneda_venta: prod.moneda_venta,
+          },
+        ],
+        ambiguos: prev.ambiguos.filter((a) => a.codigo !== codigoOriginal),
+      };
+    });
   };
 
   const handleReiniciar = () => {
@@ -250,8 +308,8 @@ export default function CargaRapidaModal({ isOpen, onClose }: CargaRapidaModalPr
                     </span>
                   </div>
                   <div className="max-h-40 overflow-y-auto divide-y divide-emerald-200/60 text-xs">
-                    {resultado.agregados.map((item) => (
-                      <div key={item.numero_parte} className="py-1.5 flex items-center justify-between gap-2">
+                    {resultado.agregados.map((item, idx) => (
+                      <div key={`${item.numero_parte}-${item.marca}-${idx}`} className="py-1.5 flex items-center justify-between gap-2">
                         <div>
                           <span className="font-mono font-extrabold text-slate-900">{item.numero_parte}</span>
                           <span className="ml-2 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-white text-slate-700 border border-emerald-200">
@@ -274,6 +332,33 @@ export default function CargaRapidaModal({ isOpen, onClose }: CargaRapidaModalPr
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {resultado.ambiguos.length > 0 && (
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 space-y-2.5">
+                  <p className="text-xs font-bold text-blue-900">
+                    Selecciona la marca para los siguientes códigos que existen en más de un fabricante:
+                  </p>
+                  {resultado.ambiguos.map((amb) => (
+                    <div key={amb.codigo} className="bg-white border border-blue-200 rounded-lg p-2.5">
+                      <p className="text-xs font-mono font-bold text-slate-800 mb-1.5">
+                        Código: {amb.codigo} (Cant: {amb.cantidadSolicitada})
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {amb.opciones.map((op) => (
+                          <button
+                            key={op.id}
+                            type="button"
+                            onClick={() => handleElegirAmbiguo(amb.codigo, op, amb.cantidadSolicitada)}
+                            className="px-2.5 py-1.5 rounded-lg bg-brand-50 hover:bg-brand-600 text-brand-800 hover:text-white border border-brand-200 text-xs font-bold transition-colors cursor-pointer"
+                          >
+                            + {op.marca} ({formatearPrecio(op.precio_venta, op.moneda_venta)})
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 

@@ -1,5 +1,6 @@
 'use server';
 
+import { after } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { exigirSesionUsuarioServerAction } from '@/lib/auth/admin-auth';
 import { enviarNotificacionVentas, enviarConfirmacionPedidoCliente } from '@/lib/email/notifications';
@@ -7,9 +8,7 @@ import { recalcularPartidasServidor, generarSufijoFolio } from '@/lib/pricing/se
 
 export async function crearPedidoB2B({
   cliente_id,
-  numero_po,
   es_po_verbal,
-  po_url,
   calle,
   num_exterior,
   num_interior,
@@ -25,7 +24,6 @@ export async function crearPedidoB2B({
   cliente_id: string;
   numero_po?: string;
   es_po_verbal?: boolean;
-  po_url?: string;
   calle?: string;
   num_exterior?: string;
   num_interior?: string;
@@ -101,7 +99,7 @@ export async function crearPedidoB2B({
       cliente_id,
       numero_po: folioGenerado,
       es_po_verbal: es_po_verbal || false,
-      po_url: po_url || null,
+      po_url: null,
       calle: calle || null,
       num_exterior: num_exterior || null,
       num_interior: num_interior || null,
@@ -146,76 +144,79 @@ export async function crearPedidoB2B({
     throw new Error('Error al guardar los productos del pedido: ' + errorPartidas.message);
   }
 
-  // 7. Enviar notificación por correo con precios verificados
-  try {
-    const direccionCompleta = [
-      calle ? `${calle} ${num_exterior || ''}`.trim() : null,
-      colonia ? `Col. ${colonia}` : null,
-      `${ciudad}, ${estado}`,
-      `CP ${codigo_postal}`,
-      flete_urgente ? '⚡ SOLICITÓ FLETE URGENTE' : null,
-    ]
-      .filter(Boolean)
-      .join(' | ');
+  // 7. Enviar notificaciones por correo en segundo plano (sin bloquear la respuesta del checkout)
+  after(async () => {
+    try {
+      const direccionCompleta = [
+        calle ? `${calle} ${num_exterior || ''}`.trim() : null,
+        colonia ? `Col. ${colonia}` : null,
+        `${ciudad}, ${estado}`,
+        `CP ${codigo_postal}`,
+        flete_urgente ? '⚡ SOLICITÓ FLETE URGENTE' : null,
+      ]
+        .filter(Boolean)
+        .join(' | ');
 
-    const vendedorInfo =
-      (clienteData.vendedor as any)?.activo !== false ? clienteData.vendedor : null;
+      const vendedorInfo =
+        (clienteData.vendedor as any)?.activo !== false ? clienteData.vendedor : null;
 
-    await enviarNotificacionVentas({
-      lead: {
-        nombre_completo: clienteData.nombre_completo,
-        empresa: clienteData.empresa,
-        email: clienteData.email,
-        telefono: clienteData.telefono,
-        direccion: direccionCompleta,
-      },
-      vendedor: vendedorInfo as any,
-      partidas: partidasOficiales.map((p) => ({
-        cantidad: p.cantidad,
-        marca: p.marca,
-        numero_parte: p.numero_parte,
-        descripcion: p.descripcion,
-        precio_unitario: p.precio_unitario,
-        total: p.importe,
-        moneda: monedaOficial,
-      })),
-      subtotal: subtotalOficial,
-      moneda: monedaOficial,
-      folio: folioGenerado,
-      fecha: new Date().toLocaleDateString('es-MX', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    });
-
-    await enviarConfirmacionPedidoCliente({
-      cliente: {
-        nombre_completo: clienteData.nombre_completo,
-        empresa: clienteData.empresa,
-        email: clienteData.email,
-      },
-      vendedor: vendedorInfo as any,
-      partidas: partidasOficiales.map((p) => ({
-        cantidad: p.cantidad,
-        marca: p.marca,
-        numero_parte: p.numero_parte,
-        descripcion: p.descripcion,
-        precio_unitario: p.precio_unitario,
-        total: p.importe,
-      })),
-      subtotal: subtotalOficial,
-      iva: ivaOficial,
-      total: totalOficial,
-      moneda: monedaOficial,
-      folio: folioGenerado,
-      pedidoId: pedido.id,
-    });
-  } catch (emailErr) {
-    console.error('Error enviando correo a ventas:', emailErr);
-  }
+      await Promise.allSettled([
+        enviarNotificacionVentas({
+          lead: {
+            nombre_completo: clienteData.nombre_completo,
+            empresa: clienteData.empresa,
+            email: clienteData.email,
+            telefono: clienteData.telefono,
+            direccion: direccionCompleta,
+          },
+          vendedor: vendedorInfo as any,
+          partidas: partidasOficiales.map((p) => ({
+            cantidad: p.cantidad,
+            marca: p.marca,
+            numero_parte: p.numero_parte,
+            descripcion: p.descripcion,
+            precio_unitario: p.precio_unitario,
+            total: p.importe,
+            moneda: monedaOficial,
+          })),
+          subtotal: subtotalOficial,
+          moneda: monedaOficial,
+          folio: folioGenerado,
+          fecha: new Date().toLocaleDateString('es-MX', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        }),
+        enviarConfirmacionPedidoCliente({
+          cliente: {
+            nombre_completo: clienteData.nombre_completo,
+            empresa: clienteData.empresa,
+            email: clienteData.email,
+          },
+          vendedor: vendedorInfo as any,
+          partidas: partidasOficiales.map((p) => ({
+            cantidad: p.cantidad,
+            marca: p.marca,
+            numero_parte: p.numero_parte,
+            descripcion: p.descripcion,
+            precio_unitario: p.precio_unitario,
+            total: p.importe,
+          })),
+          subtotal: subtotalOficial,
+          iva: ivaOficial,
+          total: totalOficial,
+          moneda: monedaOficial,
+          folio: folioGenerado,
+          pedidoId: pedido.id,
+        }),
+      ]);
+    } catch (emailErr) {
+      console.error('Error enviando correos de cotización:', emailErr);
+    }
+  });
 
   return pedido;
 }

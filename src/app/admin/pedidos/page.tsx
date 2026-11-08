@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ShoppingCart, Eye, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import BotonEliminarPedido from '@/components/admin/BotonEliminarPedido';
+import { esReferenciaPdfBindSegura } from '@/lib/storage/pdf-bind-shared';
 
 // Para forzar SSR y siempre ver los últimos pedidos
 export const dynamic = 'force-dynamic';
@@ -97,16 +98,14 @@ export default async function AdminPedidosPage() {
                         ) : (
                           <div className="text-[11px] text-slate-400 italic">Sin asociar a Bind</div>
                         )}
-                        {pedido.po_url && (
+                        {esReferenciaPdfBindSegura(pedido.po_url) && (
                           <div className="mt-1">
-                            <a
-                              href={pedido.po_url}
-                              target="_blank"
-                              rel="noreferrer"
+                            <Link
+                              href={`/admin/pedidos/${pedido.id}`}
                               className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] rounded font-bold transition-colors"
                             >
                               📄 PDF Adjunto
-                            </a>
+                            </Link>
                           </div>
                         )}
                         {pedido.flete_urgente && (

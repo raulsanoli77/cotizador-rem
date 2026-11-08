@@ -481,13 +481,15 @@ export async function enviarConfirmacionPedidoCliente(params: {
         error.message?.includes('verify a domain')
       ) {
         const match = error.message.match(/\(([^)]+)\)/);
-        const ownerEmail = match ? match[1] : 'raulsanoli77@gmail.com';
-        await resend.emails.send({
-          from: DEFAULT_FROM,
-          to: [ownerEmail],
-          subject: `[COPIA PRUEBA CLIENTE: ${params.cliente.email}] Confirmación Solicitud #${params.folio.replace(/^COT-/i, '')}`,
-          html: htmlBody,
-        });
+        const ownerEmail = match ? match[1] : process.env.NOTIFICATION_EMAIL;
+        if (ownerEmail) {
+          await resend.emails.send({
+            from: DEFAULT_FROM,
+            to: [ownerEmail],
+            subject: `[COPIA PRUEBA CLIENTE: ${params.cliente.email}] Confirmación Solicitud #${params.folio.replace(/^COT-/i, '')}`,
+            html: htmlBody,
+          });
+        }
       }
       return { success: false };
     }

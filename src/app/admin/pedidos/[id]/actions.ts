@@ -4,6 +4,106 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { exigirAdminServerAction } from '@/lib/auth/admin-auth';
 import { revalidatePath } from 'next/cache';
 import { enviarCorreoRevisionCliente } from '@/lib/email/notifications';
+import { BUCKET_PDF_BIND, PDF_BIND_MAX_BYTES, esReferenciaPdfBindSegura } from '@/lib/storage/pdf-bind-shared';
+import { asegurarBucketPrivadoPdf, eliminarArchivoPdfBindAnterior, generarUrlFirmadaPdfBind } from '@/lib/storage/pdf-bind';
+
+/**
+ * Sube el PDF oficial de Bind ERP desde el servidor (validando rol Admin, firma %PDF- y límite de 15 MB),
+ * lo guarda en el bucket privado `cotizaciones-bind`, limpia cualquier PDF anterior del pedido
+ * y actualiza `pedidos.po_url` atómicamente.
+ */
+export async function subirPdfBindPedido(
+  pedidoId: string,
+  folioLimpio: string,
+  formData: FormData
+): Promise<{ success: boolean; po_url?: string; signedUrl?: string | null; error?: string }> {
+  try {
+    await exigirAdminServerAction();
+
+    const file = formData.get('file');
+    if (!file || !(file instanceof File)) {
+      throw new Error('No se recibió un archivo PDF válido.');
+    }
+
+    if (file.size <= 0 || file.size > PDF_BIND_MAX_BYTES) {
+      throw new Error('El archivo PDF no debe superar los 15 MB.');
+    }
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      throw new Error('Solo se permiten archivos en formato PDF.');
+    }
+
+    // Validar cabecera mágica %PDF- en servidor
+    const headerBytes = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+    const headerAscii = String.fromCharCode(...headerBytes);
+    if (headerAscii !== '%PDF-') {
+      throw new Error('El archivo seleccionado no es un documento PDF válido.');
+    }
+
+    const supabase = createAdminClient();
+    const { data: pedidoActual, error: errPed } = await supabase
+      .from('pedidos')
+      .select('id, po_url')
+      .eq('id', pedidoId)
+      .single();
+
+    if (errPed || !pedidoActual) {
+      throw new Error('No se encontró el pedido especificado.');
+    }
+
+    await asegurarBucketPrivadoPdf();
+
+    const safePedidoId = pedidoId.replace(/[^a-zA-Z0-9_-]/g, '');
+    const safeFolio = (folioLimpio || 'COT').replace(/[^a-zA-Z0-9_-]/g, '');
+    const filePath = `${safePedidoId}/Cotizacion_REM_${safeFolio}_${Date.now()}.pdf`;
+
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET_PDF_BIND)
+      .upload(filePath, fileBuffer, {
+        contentType: 'application/pdf',
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(`Error al guardar el PDF en Storage: ${uploadError.message}`);
+    }
+
+    // Actualizar po_url en el pedido
+    const { error: updateErr } = await supabase
+      .from('pedidos')
+      .update({ po_url: filePath })
+      .eq('id', pedidoId);
+
+    if (updateErr) {
+      await supabase.storage.from(BUCKET_PDF_BIND).remove([filePath]);
+      throw new Error(`No se pudo asociar el PDF al pedido: ${updateErr.message}`);
+    }
+
+    // Eliminar PDF anterior si existía para no dejar archivos huérfanos
+    if (pedidoActual.po_url && pedidoActual.po_url !== filePath) {
+      await eliminarArchivoPdfBindAnterior(pedidoActual.po_url);
+    }
+
+    const signedUrl = await generarUrlFirmadaPdfBind(filePath);
+
+    revalidatePath('/admin/pedidos');
+    revalidatePath(`/admin/pedidos/${pedidoId}`);
+    revalidatePath('/cuenta/pedidos');
+    revalidatePath(`/cuenta/pedidos/${pedidoId}`);
+
+    return {
+      success: true,
+      po_url: filePath,
+      signedUrl,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Error al subir el PDF de Bind ERP.',
+    };
+  }
+}
 
 export async function actualizarPedido(
   pedidoId: string, 
@@ -23,13 +123,27 @@ export async function actualizarPedido(
   try {
     await exigirAdminServerAction();
     const supabase = createAdminClient();
+
+    // Consultar po_url previo por si el admin quitó el PDF adjunto
+    const { data: pedidoPrevio } = await supabase
+      .from('pedidos')
+      .select('po_url')
+      .eq('id', pedidoId)
+      .maybeSingle();
+
     // 1. Guardar Estatus, Cotización Bind ERP y Totales
     const updateData: Record<string, any> = { estatus: estatusNuevo };
     if (cotizacionBind !== undefined) {
       updateData.cotizacion_bind = cotizacionBind.trim() || null;
     }
     if (datosExtra?.po_url !== undefined) {
-      updateData.po_url = datosExtra.po_url || null;
+      if (datosExtra.po_url === null || datosExtra.po_url === '') {
+        updateData.po_url = null;
+      } else if (esReferenciaPdfBindSegura(datosExtra.po_url)) {
+        updateData.po_url = datosExtra.po_url.trim();
+      } else {
+        throw new Error('Referencia de archivo PDF no válida.');
+      }
     }
     if (datosExtra?.notas_cliente !== undefined) {
       updateData.notas_cliente = datosExtra.notas_cliente.trim() || null;
@@ -53,6 +167,15 @@ export async function actualizarPedido(
 
     if (!updatedPedido || updatedPedido.length === 0) {
       throw new Error('No se encontró el pedido o no se pudo actualizar.');
+    }
+
+    // Si el admin eliminó o reemplazó el PDF, borrar el archivo anterior del Storage
+    if (
+      datosExtra?.po_url !== undefined &&
+      pedidoPrevio?.po_url &&
+      pedidoPrevio.po_url !== updateData.po_url
+    ) {
+      await eliminarArchivoPdfBindAnterior(pedidoPrevio.po_url);
     }
 
     // 2. Eliminar partidas si alguna fue borrada por el admin
@@ -86,7 +209,7 @@ export async function actualizarPedido(
       if (errPartida) throw new Error(errPartida.message);
     }
 
-    // 3. Notificar si cambió a 'en_revision'
+    // 4. Notificar si cambió a 'en_revision'
     if (estatusNuevo === 'en_revision' && estatusAnterior !== 'en_revision') {
       const { data: pedidoData } = await supabase
         .from('pedidos')
@@ -101,7 +224,6 @@ export async function actualizarPedido(
         const perfilObj: any = Array.isArray(pedidoData.perfil) ? pedidoData.perfil[0] : pedidoData.perfil;
         
         if (perfilObj && perfilObj.email) {
-          // Obtenemos baseURL, fallbackeando a Vercel url o localhost
           const baseURL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cotizador-rem.vercel.app';
           await enviarCorreoRevisionCliente(
             perfilObj.email, 
@@ -113,7 +235,7 @@ export async function actualizarPedido(
       }
     }
 
-    // 4. Revalidar rutas para actualizar vistas
+    // 5. Revalidar rutas para actualizar vistas
     revalidatePath('/admin/pedidos');
     revalidatePath(`/admin/pedidos/${pedidoId}`);
     revalidatePath('/cuenta/pedidos');
@@ -129,6 +251,13 @@ export async function eliminarPedido(pedidoId: string) {
   try {
     await exigirAdminServerAction();
     const supabase = createAdminClient();
+
+    const { data: pedidoPrevio } = await supabase
+      .from('pedidos')
+      .select('po_url')
+      .eq('id', pedidoId)
+      .maybeSingle();
+
     // 1. Eliminar partidas asociadas
     const { error: errPartidas } = await supabase
       .from('partidas_pedido')
@@ -147,6 +276,10 @@ export async function eliminarPedido(pedidoId: string) {
 
     if (errPedido) {
       throw new Error(`Error al eliminar pedido: ${errPedido.message}`);
+    }
+
+    if (pedidoPrevio?.po_url) {
+      await eliminarArchivoPdfBindAnterior(pedidoPrevio.po_url);
     }
 
     revalidatePath('/admin/pedidos');

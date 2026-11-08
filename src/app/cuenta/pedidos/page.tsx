@@ -6,7 +6,8 @@ import { supabase, syncAuthCookie } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import { PackageSearch, ArrowRight, Clock, CheckCircle, Loader2, FileText, RotateCcw } from 'lucide-react';
-import { obtenerPartidasParaRepetirPedido } from '@/app/cuenta/pedidos/[id]/actions';
+import { obtenerPartidasParaRepetirPedido, obtenerUrlDescargaPdfBind } from '@/app/cuenta/pedidos/[id]/actions';
+import { esReferenciaPdfBindSegura } from '@/lib/storage/pdf-bind-shared';
 import { useCartStore } from '@/stores/cart-store';
 
 export default function ClientPedidosPage() {
@@ -15,8 +16,10 @@ export default function ClientPedidosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [repitiendoId, setRepitiendoId] = useState<string | null>(null);
+  const [descargandoPdfId, setDescargandoPdfId] = useState<string | null>(null);
 
   const agregarItem = useCartStore((s) => s.agregarItem);
+  const limpiarCarrito = useCartStore((s) => s.limpiarCarrito);
 
   useEffect(() => {
     const fetchPedidos = async () => {
@@ -45,14 +48,34 @@ export default function ClientPedidosPage() {
     fetchPedidos();
   }, []);
 
+  const handleDescargarPdf = async (pedidoId: string) => {
+    if (descargandoPdfId) return;
+    setDescargandoPdfId(pedidoId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) syncAuthCookie(session.access_token);
+      const res = await obtenerUrlDescargaPdfBind(pedidoId);
+      if (!res.success || !res.url) {
+        alert(res.error || 'No se pudo descargar el PDF.');
+        return;
+      }
+      window.open(res.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      alert('Error al abrir el PDF oficial.');
+    } finally {
+      setDescargandoPdfId(null);
+    }
+  };
+
   const handleRepetirPedido = async (pedidoId: string) => {
+    if (repitiendoId !== null) return;
     setRepitiendoId(pedidoId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.access_token) {
         syncAuthCookie(session.access_token);
       }
-      const res = await obtenerPartidasParaRepetirPedido(pedidoId, session?.access_token || null);
+      const res = await obtenerPartidasParaRepetirPedido(pedidoId);
       if (!res.success) {
         alert(res.error || 'No se pudo recargar el pedido.');
         return;
@@ -60,6 +83,16 @@ export default function ClientPedidosPage() {
       if (res.items.length === 0) {
         alert('Los artículos de esta cotización ya no se encuentran activos en el catálogo.');
         return;
+      }
+
+      const itemsActuales = useCartStore.getState().items;
+      if (itemsActuales.length > 0) {
+        const reemplazar = window.confirm(
+          'Ya tienes productos en tu carrito actual.\n¿Aceptar para REEMPLAZAR el carrito con este pedido, o Cancelar para SUMAR estos artículos al carrito actual?'
+        );
+        if (reemplazar) {
+          limpiarCarrito();
+        }
       }
 
       for (const item of res.items) {
@@ -113,6 +146,8 @@ export default function ClientPedidosPage() {
             const StatusIcon = statusInfo.icon;
             const folioLimpio = (pedido.numero_po || pedido.id.slice(0, 8)).replace(/^COT-/i, '');
             const estaRepitiendo = repitiendoId === pedido.id;
+            const tienePdfValido = esReferenciaPdfBindSegura(pedido.po_url);
+            const descargandoEstePdf = descargandoPdfId === pedido.id;
             
             return (
               <div key={pedido.id} className="bg-white border-2 border-slate-300 rounded-2xl p-5 hover:shadow-lg hover:border-slate-400 transition-all flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shadow-sm">
@@ -126,18 +161,21 @@ export default function ClientPedidosPage() {
                         🏢 Bind ERP: #{pedido.cotizacion_bind}
                       </span>
                     )}
-                    {pedido.po_url && (
-                      <a
-                        href={pedido.po_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="px-2.5 py-0.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white inline-flex items-center gap-1 transition-colors shadow-sm"
+                    {tienePdfValido && (
+                      <button
+                        type="button"
+                        onClick={() => handleDescargarPdf(pedido.id)}
+                        disabled={descargandoEstePdf}
+                        className="px-2.5 py-0.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white inline-flex items-center gap-1 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
                         title="Descargar PDF Oficial de Cotización"
                       >
-                        <FileText className="w-3 h-3" />
+                        {descargandoEstePdf ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <FileText className="w-3 h-3" />
+                        )}
                         PDF Oficial
-                      </a>
+                      </button>
                     )}
                     <span className={`px-2.5 py-1 text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1 border ${statusInfo.bg} ${statusInfo.text}`}>
                       {StatusIcon && <StatusIcon className="w-3 h-3" />}
@@ -156,7 +194,7 @@ export default function ClientPedidosPage() {
                   <button
                     type="button"
                     onClick={() => handleRepetirPedido(pedido.id)}
-                    disabled={estaRepitiendo}
+                    disabled={repitiendoId !== null}
                     className="flex-1 sm:flex-initial text-center px-3.5 py-2 bg-brand-50 hover:bg-brand-100 border-2 border-brand-200 hover:border-brand-300 text-brand-700 font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors text-xs sm:text-sm shadow-2xs disabled:opacity-50 cursor-pointer"
                     title="Cargar estos mismos artículos en el carrito con precios actualizados"
                   >

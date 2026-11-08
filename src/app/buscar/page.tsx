@@ -30,6 +30,7 @@ export default function BuscarPage() {
   const [productosDirectos, setProductosDirectos] = useState<ProductoResultado[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalProductos, setTotalProductos] = useState(0);
+  const [totalCategorias, setTotalCategorias] = useState(0);
   const [agregados, setAgregados] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function BuscarPage() {
         setResultados([]);
         setProductosDirectos([]);
         setTotalProductos(0);
+        setTotalCategorias(0);
         setLoading(false);
         return;
       }
@@ -49,6 +51,7 @@ export default function BuscarPage() {
         setResultados(res.categorias);
         setProductosDirectos(res.productos);
         setTotalProductos(res.totalCoincidencias);
+        setTotalCategorias(res.totalCategorias);
       } catch (err) {
         console.error('Error buscando:', err);
       } finally {
@@ -140,7 +143,7 @@ export default function BuscarPage() {
                 <div className="text-center">
                   <p className="text-slate-400">
                     <span className="text-white font-bold">{totalProductos}</span> {totalProductos === 1 ? 'producto encontrado' : 'productos encontrados'} en{' '}
-                    <span className="text-white font-bold">{resultados.length}</span> categoría{resultados.length !== 1 ? 's' : ''}
+                    <span className="text-white font-bold">{totalCategorias}</span> categoría{totalCategorias !== 1 ? 's' : ''}
                   </p>
                 </div>
 
@@ -200,12 +203,14 @@ export default function BuscarPage() {
                       const multiplo = obtenerMultiploVenta(prod);
 
                       return (
-                        <Link
+                        <div
                           key={prod.id}
-                          href={`/catalogo/${prod.id}`}
                           className="bg-slate-800/70 hover:bg-slate-800 border border-slate-700 hover:border-brand-500 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all group"
                         >
-                          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                          <Link
+                            href={`/catalogo/${prod.id}`}
+                            className="flex items-center gap-3.5 min-w-0 flex-1"
+                          >
                             <div className="w-16 h-16 rounded-xl bg-white border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden p-1.5">
                               {prod.imagen_url ? (
                                 <img
@@ -238,7 +243,7 @@ export default function BuscarPage() {
                                 {prod.descripcion_formateada}
                               </p>
                             </div>
-                          </div>
+                          </Link>
 
                           <div className="flex flex-col items-end gap-2 shrink-0">
                             <div className="text-right">
@@ -271,7 +276,7 @@ export default function BuscarPage() {
                               )}
                             </button>
                           </div>
-                        </Link>
+                        </div>
                       );
                     })}
                   </div>

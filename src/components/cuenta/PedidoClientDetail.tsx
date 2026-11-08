@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 import { supabase, syncAuthCookie } from '@/lib/supabase/client';
-import { obtenerPartidasParaRepetirPedido } from '@/app/cuenta/pedidos/[id]/actions';
+import { obtenerPartidasParaRepetirPedido, obtenerUrlDescargaPdfBind } from '@/app/cuenta/pedidos/[id]/actions';
+import { esReferenciaPdfBindSegura } from '@/lib/storage/pdf-bind-shared';
 import { useCartStore } from '@/stores/cart-store';
 
 interface PedidoClientDetailProps {
@@ -25,24 +26,47 @@ interface PedidoClientDetailProps {
 export default function PedidoClientDetail({ pedido, partidas, vendedor }: PedidoClientDetailProps) {
   const router = useRouter();
   const agregarItem = useCartStore((s) => s.agregarItem);
+  const limpiarCarrito = useCartStore((s) => s.limpiarCarrito);
   const [repitiendo, setRepitiendo] = useState(false);
+  const [descargandoPdf, setDescargandoPdf] = useState(false);
 
   const folioLimpio = (pedido.numero_po || pedido.id.slice(0, 8)).replace(/^COT-/i, '');
   const esAtendida = pedido.estatus === 'atendida' || pedido.estatus === 'aprobado_por_cliente' || pedido.estatus === 'enviado';
+  const tienePdfValido = esReferenciaPdfBindSegura(pedido.po_url);
   const whatsAppMessage = encodeURIComponent(
     `Hola${vendedor ? ` ${vendedor.nombre}` : ' REM Industrial'}, me gustaría dar seguimiento a mi solicitud de cotización folio ${folioLimpio}.`
   );
   const telefonoWhatsApp = vendedor?.telefono ? vendedor.telefono.replace(/\D/g, '') : '614815170';
   const whatsappUrl = `https://wa.me/52${telefonoWhatsApp}?text=${whatsAppMessage}`;
 
+  const handleDescargarPdf = async () => {
+    if (descargandoPdf) return;
+    setDescargandoPdf(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) syncAuthCookie(session.access_token);
+      const res = await obtenerUrlDescargaPdfBind(pedido.id);
+      if (!res.success || !res.url) {
+        alert(res.error || 'No se pudo descargar el PDF.');
+        return;
+      }
+      window.open(res.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      alert('Error al abrir el PDF oficial.');
+    } finally {
+      setDescargandoPdf(false);
+    }
+  };
+
   const handleRepetirPedido = async () => {
+    if (repitiendo) return;
     setRepitiendo(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.access_token) {
         syncAuthCookie(session.access_token);
       }
-      const res = await obtenerPartidasParaRepetirPedido(pedido.id, session?.access_token || null);
+      const res = await obtenerPartidasParaRepetirPedido(pedido.id);
       if (!res.success) {
         alert(res.error || 'No se pudo recargar el pedido.');
         return;
@@ -50,6 +74,16 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
       if (res.items.length === 0) {
         alert('Los artículos de esta cotización ya no se encuentran activos en el catálogo.');
         return;
+      }
+
+      const itemsActuales = useCartStore.getState().items;
+      if (itemsActuales.length > 0) {
+        const reemplazar = window.confirm(
+          'Ya tienes productos en tu carrito actual.\n¿Aceptar para REEMPLAZAR el carrito con este pedido, o Cancelar para SUMAR estos artículos al carrito actual?'
+        );
+        if (reemplazar) {
+          limpiarCarrito();
+        }
       }
 
       for (const item of res.items) {
@@ -127,16 +161,20 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
             )}
           </button>
 
-          {pedido.po_url && (
-            <a
-              href={pedido.po_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-600/20 transition-colors"
+          {tienePdfValido && (
+            <button
+              type="button"
+              onClick={handleDescargarPdf}
+              disabled={descargandoPdf}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-600/20 transition-colors cursor-pointer disabled:opacity-50"
             >
-              <Download className="w-4 h-4" />
+              {descargandoPdf ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
               Descargar Cotización PDF
-            </a>
+            </button>
           )}
           <a 
             href={whatsappUrl}
@@ -151,7 +189,7 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
       </div>
 
       {/* Tarjeta de Cotización Formal en PDF si existe */}
-      {pedido.po_url && (
+      {tienePdfValido && (
         <div className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3.5">
             <div className="p-3 bg-indigo-100 text-indigo-700 rounded-xl shrink-0">
@@ -164,15 +202,19 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
               </p>
             </div>
           </div>
-          <a
-            href={pedido.po_url}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-indigo-100 text-indigo-800 border-2 border-indigo-300 font-bold text-xs sm:text-sm rounded-xl transition-colors shadow-sm"
+          <button
+            type="button"
+            onClick={handleDescargarPdf}
+            disabled={descargandoPdf}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-indigo-100 text-indigo-800 border-2 border-indigo-300 font-bold text-xs sm:text-sm rounded-xl transition-colors shadow-sm cursor-pointer disabled:opacity-50"
           >
-            <Download className="w-4 h-4 text-indigo-600" />
+            {descargandoPdf ? (
+              <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+            ) : (
+              <Download className="w-4 h-4 text-indigo-600" />
+            )}
             Ver / Descargar PDF Oficial
-          </a>
+          </button>
         </div>
       )}
 
