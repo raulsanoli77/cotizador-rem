@@ -36,6 +36,7 @@ export default function RegistroB2BPage() {
   const [sugerenciasColonias, setSugerenciasColonias] = useState<string[]>([]);
   const [esColoniaManual, setEsColoniaManual] = useState(false);
   const [aceptoTerminos, setAceptoTerminos] = useState(false);
+  const [aceptoPromociones, setAceptoPromociones] = useState(true);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -109,6 +110,8 @@ export default function RegistroB2BPage() {
             acepto_terminos: true,
             acepto_terminos_at: fechaAceptacion,
             acepto_terminos_version: '2026-11',
+            uso_exclusivo_empresarial: true,
+            acepta_promociones: aceptoPromociones,
           }
         }
       });
@@ -531,7 +534,7 @@ export default function RegistroB2BPage() {
                 </div>
 
                 {/* Consentimiento Legal Obligatorio (LFPDPPP y Código de Comercio) */}
-                <div className="bg-slate-50 border border-slate-300 rounded-xl p-4 mt-6">
+                <div className="bg-slate-50 border border-slate-300 rounded-xl p-4 mt-6 space-y-3">
                   <div className="flex items-start gap-3">
                     <input
                       required
@@ -563,12 +566,29 @@ export default function RegistroB2BPage() {
                       >
                         Aviso de Privacidad Integral
                       </Link>{' '}
-                      de REM Industrial, manifestando contar con las facultades comerciales necesarias para representar a mi empresa.
+                      de REM Industrial; asimismo, declaro bajo protesta de decir verdad que cuento con facultades para representar a mi empresa y que los bienes cotizados o adquiridos se destinarán exclusivamente a procesos industriales, productivos o comerciales (operación mercantil B2B).
                     </label>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-2 pl-7 flex items-center gap-1">
+
+                  <div className="flex items-start gap-3 pt-2 border-t border-slate-200/80">
+                    <input
+                      id="check_promociones_secundarias"
+                      type="checkbox"
+                      checked={aceptoPromociones}
+                      onChange={(e) => setAceptoPromociones(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-400 text-brand-600 focus:ring-brand-500 cursor-pointer shrink-0"
+                    />
+                    <label
+                      htmlFor="check_promociones_secundarias"
+                      className="text-xs text-slate-600 leading-snug cursor-pointer select-none"
+                    >
+                      Deseo recibir boletines técnicos, catálogos digitales y promociones comerciales especiales (Finalidad secundaria opcional).
+                    </label>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 pt-1 pl-7 flex items-center gap-1">
                     <span>🔒</span>
-                    <span>Tus datos se encuentran estrictamente protegidos bajo la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).</span>
+                    <span>Tus datos se encuentran estrictamente protegidos bajo la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP vigente).</span>
                   </p>
                 </div>
 

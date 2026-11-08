@@ -46,6 +46,7 @@ export default function CheckoutB2BPage() {
   const [guardarDireccion, setGuardarDireccion] = useState(false);
   const [usarDireccionGuardada, setUsarDireccionGuardada] = useState(false);
   const [tieneUbicacionGuardada, setTieneUbicacionGuardada] = useState(false);
+  const [aceptoTerminosCheckout, setAceptoTerminosCheckout] = useState(false);
 
   useEffect(() => {
     async function initCheckout() {
@@ -187,6 +188,11 @@ export default function CheckoutB2BPage() {
 
     if (!cpFinal || !ciudadFinal || !estadoFinal) {
       setErrorStr('El Código Postal, Ciudad y Estado son obligatorios para calcular el flete.');
+      return;
+    }
+
+    if (!aceptoTerminosCheckout) {
+      setErrorStr('Debes aceptar los Términos y Condiciones Comerciales para enviar tu solicitud.');
       return;
     }
 
@@ -605,10 +611,33 @@ export default function CheckoutB2BPage() {
                   </div>
                 )}
 
+                <div className="mt-6 p-3.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none text-xs text-slate-300 leading-snug">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={aceptoTerminosCheckout}
+                      onChange={(e) => setAceptoTerminosCheckout(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-600 text-brand-500 focus:ring-brand-500 cursor-pointer shrink-0"
+                    />
+                    <span>
+                      Acepto los{' '}
+                      <Link href="/terminos-y-condiciones" target="_blank" className="text-brand-400 font-semibold underline hover:text-brand-300">
+                        Términos Comerciales B2B
+                      </Link>{' '}
+                      (pago de contado, vigencia máxima de 7 días y política de devoluciones) y el{' '}
+                      <Link href="/aviso-de-privacidad" target="_blank" className="text-brand-400 font-semibold underline hover:text-brand-300">
+                        Aviso de Privacidad
+                      </Link>
+                      , declarando adquirir los productos para uso empresarial o industrial.
+                    </span>
+                  </label>
+                </div>
+
                 <button
                   type="submit"
                   disabled={procesando}
-                  className="w-full mt-6 bg-brand-500 hover:bg-brand-600 text-white py-4 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none text-base"
+                  className="w-full mt-4 bg-brand-500 hover:bg-brand-600 text-white py-4 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none text-base"
                 >
                   {procesando ? (
                     <><Loader2 className="h-5 w-5 animate-spin" /> Registrando solicitud...</>
@@ -618,16 +647,6 @@ export default function CheckoutB2BPage() {
                 </button>
                 <p className="text-[11px] text-slate-400 text-center mt-4 leading-normal">
                   Tu asesor comercial validará existencias, tiempos de entrega y flete según tu Código Postal para contactarte por WhatsApp o correo.
-                </p>
-                <p className="text-[10px] text-slate-500 text-center mt-2">
-                  Al solicitar cotización aceptas nuestros{' '}
-                  <Link href="/terminos-y-condiciones" target="_blank" className="underline hover:text-slate-300">
-                    Términos Comerciales
-                  </Link>{' '}
-                  y{' '}
-                  <Link href="/aviso-de-privacidad" target="_blank" className="underline hover:text-slate-300">
-                    Aviso de Privacidad
-                  </Link>.
                 </p>
               </div>
             </div>

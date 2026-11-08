@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { User, Building2, Mail, Phone, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import type { LeadFormData } from '@/types/lead';
@@ -14,6 +15,7 @@ export default function GatekeeperForm({ onSuccess, onCancel }: GatekeeperFormPr
   const { registrarLead } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aceptoLegal, setAceptoLegal] = useState(false);
   const [form, setForm] = useState<LeadFormData>({
     nombre_completo: '',
     empresa: '',
@@ -34,6 +36,10 @@ export default function GatekeeperForm({ onSuccess, onCancel }: GatekeeperFormPr
     }
     if (!form.email && !form.telefono) {
       setError('Debes proporcionar un correo electrónico o un teléfono');
+      return;
+    }
+    if (!aceptoLegal) {
+      setError('Debes aceptar el Aviso de Privacidad y los Términos Comerciales para continuar');
       return;
     }
 
@@ -79,6 +85,29 @@ export default function GatekeeperForm({ onSuccess, onCancel }: GatekeeperFormPr
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input type="tel" placeholder="Teléfono (o deja tu correo)" value={form.telefono} onChange={(e) => handleChange('telefono', e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
           </div>
+
+          <label className="flex items-start gap-2.5 text-xs text-gray-600 cursor-pointer select-none bg-gray-50 p-3 rounded-xl border border-gray-200">
+            <input
+              type="checkbox"
+              checked={aceptoLegal}
+              onChange={(e) => {
+                setAceptoLegal(e.target.checked);
+                setError(null);
+              }}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 shrink-0"
+            />
+            <span>
+              Acepto el{' '}
+              <Link href="/aviso-de-privacidad" target="_blank" className="text-brand-600 font-semibold hover:underline">
+                Aviso de Privacidad Integral
+              </Link>{' '}
+              y los{' '}
+              <Link href="/terminos-y-condiciones" target="_blank" className="text-brand-600 font-semibold hover:underline">
+                Términos Comerciales B2B
+              </Link>{' '}
+              (uso exclusivamente empresarial e industrial).
+            </span>
+          </label>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
 

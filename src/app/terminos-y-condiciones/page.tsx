@@ -47,8 +47,13 @@ export default function TerminosYCondicionesPage() {
                 </a>{' '}
                 o mediante atención ejecutiva de sus asesores comerciales (en adelante, <em>&quot;EL CLIENTE&quot;</em>).
               </p>
-              <div className="mt-4 p-4 bg-slate-50 border-l-4 border-brand-600 rounded-r-lg text-xs sm:text-sm text-slate-800 font-medium">
-                Al navegar en la plataforma, solicitar una cotización formal o emitir una Orden de Compra, <em>EL CLIENTE</em> declara bajo protesta de decir verdad que cuenta con la capacidad legal y facultades de representación suficientes para obligarse conforme al Código de Comercio de los Estados Unidos Mexicanos.
+              <div className="mt-4 p-4 bg-slate-50 border-l-4 border-brand-600 rounded-r-lg text-xs sm:text-sm text-slate-800 space-y-2">
+                <p className="font-bold text-slate-900">
+                  Declaración Expresa de Carácter Exclusivamente Mercantil e Industrial (Operación B2B - No Consumidor Final):
+                </p>
+                <p>
+                  Al navegar en la plataforma, registrarse, solicitar una cotización formal o emitir una Orden de Compra, <em>EL CLIENTE</em> declara expresamente y bajo protesta de decir verdad que: <strong>(i)</strong> actúa como persona moral o persona física con actividad empresarial debidamente inscrita ante el RFC; <strong>(ii)</strong> adquiere las herramientas, instrumentos y suministros con el único propósito de integrarlos directamente en sus procesos industriales, de manufactura, maquinado, transformación o comercialización empresarial; y <strong>(iii)</strong> por ende, no ostenta el carácter de consumidor final en términos del Artículo 2, fracción I de la Ley Federal de Protección al Consumidor, rigiéndose toda operación exclusivamente por el <strong>Código de Comercio</strong> y de manera supletoria por el Código Civil Federal.
+                </p>
               </div>
             </section>
 
@@ -142,7 +147,7 @@ export default function TerminosYCondicionesPage() {
               </h2>
               <ul className="list-disc pl-6 space-y-2 text-slate-600">
                 <li>
-                  <strong>Tiempos Estimados de Entrega (ETA):</strong> Los plazos comunicados son estimados con base en la información proporcionada por las plantas productoras, despachos aduanales e inventarios disponibles. <em>EL PROVEEDOR</em> no asume responsabilidad civil, penal ni contractual por retrasos originados por causas de fuerza mayor o caso fortuito (contingencias aduanales en puentes fronterizos, huelgas de paqueterías, fenómenos meteorológicos o demoras imputables directamente a la planta matriz del fabricante extranjero).
+                  <strong>Tiempos Estimados de Entrega (ETA):</strong> Los plazos comunicados son estimados con base en la información proporcionada por las plantas productoras, despachos aduanales e inventarios disponibles. <em>EL PROVEEDOR</em> no asume responsabilidad civil, mercantil ni contractual por retrasos originados por causas de fuerza mayor o caso fortuito (contingencias aduanales en puentes fronterizos, huelgas de paqueterías, fenómenos meteorológicos o demoras imputables directamente a la planta matriz del fabricante extranjero).
                 </li>
                 <li>
                   <strong>Entregas Locales:</strong> En las ciudades de <strong>Ciudad Juárez</strong> y <strong>Chihuahua Capital</strong> (y sus respectivas zonas industriales conurbadas), las entregas se coordinarán conforme a las rutas de reparto programadas o mediante recolección directa en mostrador de almacén.
@@ -175,11 +180,11 @@ export default function TerminosYCondicionesPage() {
                     B. Productos de Stock de Almacén y Evaluación de Procedencia:
                   </h3>
                   <p className="text-slate-700 mt-1">
-                    Toda solicitud de devolución de mercancía estándar de stock regular está sujeta a previa evaluación técnica y comercial. <em>EL PROVEEDOR</em> se reserva en todo momento el derecho exclusivo de analizar caso por caso para determinar si la devolución es aceptada o rechazada.
+                    Toda solicitud de devolución voluntaria de mercancía estándar de stock regular (por error de selección del comprador, cambio de proyecto o preferencia comercial) está sujeta a previa evaluación técnica y comercial. <em>EL PROVEEDOR</em> se reserva en todo momento el derecho exclusivo de analizar caso por caso para determinar si la devolución es aceptada o rechazada.
                   </p>
                   <ul className="list-disc pl-5 mt-2 space-y-1.5 text-slate-600 text-xs sm:text-sm">
                     <li>
-                      <strong>Plazo de Notificación:</strong> Cualquier solicitud deberá formularse por escrito dentro de los primeros <strong>5 (cinco) días hábiles</strong> posteriores a la recepción física del producto. Vencido este plazo, no se admitirá reclamación alguna.
+                      <strong>Plazo de Notificación:</strong> Cualquier solicitud de devolución comercial de mercancía de stock o reporte por discrepancias visibles de cantidad/empaque deberá formularse por escrito dentro de los primeros <strong>5 (cinco) días hábiles</strong> posteriores a la recepción física del producto. (Las reclamaciones técnicas por defectos de fabricación o vicios ocultos se tramitarán conforme a la Cláusula 7 y los plazos del Código de Comercio).
                     </li>
                     <li>
                       <strong>Estado del Producto:</strong> Para ser considerada, la mercancía deberá encontrarse en su empaque original sellado de fábrica, sin etiquetas ajenas, códigos de barra alterados, ni signos de montaje, prueba o manipulación en husillo o torreta.
@@ -204,22 +209,25 @@ export default function TerminosYCondicionesPage() {
                 <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-50 text-brand-700 font-extrabold text-sm">
                   7
                 </span>
-                Garantías y Limitación Exclusiva de Responsabilidad Técnica
+                Garantías, Tope de Responsabilidad y Exclusiones Técnicas
               </h2>
               <p>
-                <strong>Garantía de Calidad:</strong> Todas las herramientas, insertos, cortadores e instrumentos de medición comercializados por <em>EL PROVEEDOR</em> son 100% originales y cuentan exclusivamente con la garantía otorgada por sus respectivas marcas fabricantes contra defectos probados de material o vicios ocultos de manufactura.
+                <strong>Garantía contra Defectos de Fabricación:</strong> Todas las herramientas, insertos, cortadores e instrumentos de medición comercializados por <em>EL PROVEEDOR</em> son 100% originales. En caso de presentarse algún defecto probado de material o vicio oculto de manufactura reclamado dentro de los plazos previstos por el Artículo 383 del Código de Comercio, <em>EL PROVEEDOR</em> canalizará y gestionará el dictamen técnico ante el fabricante correspondiente; de resultar procedente la garantía, la obligación se cumplirá mediante la reposición física de la pieza defectuosa o la emisión de una Nota de Crédito a favor de <em>EL CLIENTE</em> por el valor de la partida afectada.
+              </p>
+              <p>
+                <strong>Tope Máximo de Responsabilidad Contractual:</strong> Salvo en casos de dolo directamente imputable conforme al Artículo 2106 del Código Civil Federal, la responsabilidad total y acumulada de <em>EL PROVEEDOR</em> derivada de cualquier orden de compra, partida suministrada o servicio conexo estará estrictamente limitada, como tope máximo, al <strong>valor neto facturado y efectivamente pagado por la partida específica</strong> que haya dado origen a la reclamación.
               </p>
               <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded-r-lg text-xs sm:text-sm text-red-950 space-y-2">
                 <p className="font-bold">
-                  Exclusión Expresa de Responsabilidad por Parámetros de Maquinado y Operación:
+                  Exclusión Expresa de Responsabilidad por Parámetros de Maquinado y Daños Consecuenciales:
                 </p>
                 <p>
-                  En ningún caso <em>EL PROVEEDOR</em>, sus directivos, ingenieros o asesores comerciales serán legalmente responsables ante <em>EL CLIENTE</em> por:
+                  Salvo dolo comprobado, en ningún caso <em>EL PROVEEDOR</em>, sus directivos, ingenieros o asesores comerciales serán legalmente responsables ante <em>EL CLIENTE</em> por:
                 </p>
                 <ul className="list-disc pl-5 space-y-1 text-xs">
                   <li>Daños indirectos, incidentales, especiales, punitivos o consecuenciales.</li>
-                  <li>Lucro cesante, pérdidas de producción, paros de línea fabril o tiempos muertos de centros de maquinado (CNC, tornos, fresadoras).</li>
-                  <li>Piezas de producción desechadas o retrabajos.</li>
+                  <li>Lucro cesante, pérdidas de producción, penalizaciones contractuales ante terceros, paros de línea fabril o tiempos muertos de centros de maquinado (CNC, tornos, fresadoras).</li>
+                  <li>Piezas de trabajo o materia prima del cliente dañadas, desechadas (scrap) o retrabajos.</li>
                   <li>Ruptura, astillamiento o desgaste prematuro de herramientas derivado de parámetros inadecuados de corte (RPM, avances, profundidad, refrigeración deficiente), falta de rigidez en la máquina, herramientas mal sujetadas o pericia deficiente del operador.</li>
                 </ul>
                 <p className="text-xs italic pt-1">
@@ -250,7 +258,7 @@ export default function TerminosYCondicionesPage() {
                 Propiedad Intelectual y Marcas Registradas
               </h2>
               <p>
-                Todas las marcas, logotipos, nombres comerciales, códigos de producto e imágenes de fabricantes (tales como Kennametal, Kyocera, Mitutoyo, WIDIA, YG-1, entre otras) expuestas en la plataforma son propiedad exclusiva de sus respectivos titulares. Su inclusión en el catálogo digital se realiza con fines informativos y de comercialización legítima autorizada en los términos de la Ley Federal de Protección a la Propiedad Industrial.
+                Todas las marcas, logotipos, nombres comerciales, códigos de producto e imágenes de fabricantes (tales como Kennametal, Kyocera, Mitutoyo, WIDIA, YG-1, Insize, entre otras) expuestas en la plataforma son propiedad exclusiva de sus respectivos titulares. Su exhibición y referencia en el catálogo digital se realiza con fines estrictamente identificativos, informativos y de comercialización legítima de productos originales en los términos de la Ley Federal de Protección a la Propiedad Industrial.
               </p>
             </section>
 

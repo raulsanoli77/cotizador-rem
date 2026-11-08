@@ -21,7 +21,7 @@ export default function AvisoDePrivacidadPage() {
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 border border-emerald-500/30">
                 <ShieldCheck className="w-4 h-4" />
-                Cumplimiento Legal LFPDPPP / INAI
+                Cumplimiento Legal LFPDPPP Vigente
               </div>
               <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
                 Aviso de Privacidad Integral
@@ -41,7 +41,7 @@ export default function AvisoDePrivacidadPage() {
             {/* Introducción */}
             <section className="border-b border-slate-100 pb-8">
               <p>
-                El presente <strong>Aviso de Privacidad Integral</strong> se emite en estricto apego y cumplimiento a las disposiciones establecidas en la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong>, su Reglamento, y los Lineamientos del Aviso de Privacidad emitidos por el Instituto Nacional de Transparencia, Acceso a la Información y Protección de Datos Personales (<strong>INAI</strong>).
+                El presente <strong>Aviso de Privacidad Integral</strong> se emite en estricto apego y cumplimiento a las disposiciones vigentes de la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong>, su normativa reglamentaria aplicable y los lineamientos en materia de protección de datos personales supervisados por la <strong>Secretaría Anticorrupción y Buen Gobierno</strong> (autoridad federal garante en sustitución del extinto INAI).
               </p>
             </section>
 
@@ -154,76 +154,93 @@ export default function AvisoDePrivacidadPage() {
               </p>
             </section>
 
-            {/* 4. Transferencia de Datos */}
+            {/* 4. Transferencia de Datos y Encargados */}
             <section className="space-y-3">
               <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-50 text-brand-700 font-extrabold text-sm">
                   4
                 </span>
-                Transferencia de Datos Personales
+                Transferencia de Datos y Encargados del Tratamiento
               </h2>
               <p>
-                <em>EL RESPONSABLE</em> se compromete a no vender, alquilar, transferir ni divulgar sus datos personales a terceros no autorizados para fines ajenos a los contratados. Sus datos únicamente podrán ser transferidos, sin requerir consentimiento adicional de conformidad con el Artículo 37 de la LFPDPPP, en los siguientes supuestos:
+                <em>EL RESPONSABLE</em> se compromete a no vender, alquilar, transferir ni divulgar sus datos personales a terceros no autorizados para fines ajenos a los contratados. Sus datos únicamente podrán ser compartidos o remitidos, sin requerir consentimiento adicional conforme a las excepciones previstas en la LFPDPPP vigente, en los siguientes supuestos:
               </p>
-              <ul className="list-disc pl-6 space-y-1 text-slate-600 text-sm">
+              <ul className="list-disc pl-6 space-y-1.5 text-slate-600 text-sm">
                 <li><strong>Empresas Fleteras y de Mensajería:</strong> Únicamente los datos indispensables de entrega (Nombre, Dirección de Entrega, Teléfono de Contacto) para la oportuna transportación y entrega física de las herramientas o mercancías.</li>
-                <li><strong>Fabricantes y Proveedores Oficiales:</strong> En supuestos exclusivos donde se requiera soporte técnico especializado directo de planta o trámite formal de garantía ante la marca fabricante.</li>
-                <li><strong>Autoridades Gubernamentales y Fiscales:</strong> En cumplimiento estricto a requerimientos legales fundados y motivados por el SAT u autoridades competentes.</li>
+                <li><strong>Fabricantes y Proveedores Oficiales:</strong> En supuestos exclusivos donde se requiera soporte técnico especializado directo de planta, validación de ingeniería o trámite formal de garantía ante la marca fabricante.</li>
+                <li><strong>Proveedores de Infraestructura Tecnológica en la Nube (Encargados del Tratamiento):</strong> Para la operación segura de la plataforma, bases de datos, envío de correos transaccionales y comunicación ejecutiva, <em>EL RESPONSABLE</em> utiliza servicios de cómputo en la nube e infraestructura tecnológica (tales como Supabase, Vercel, Resend y WhatsApp Business), cuyos servidores pueden ubicarse en los Estados Unidos de América u otras jurisdicciones, operando bajo cláusulas de confidencialidad y cifrado de grado industrial conforme a la figura de <em>Encargados</em> prevista en la LFPDPPP.</li>
+                <li><strong>Autoridades Gubernamentales y Fiscales:</strong> En cumplimiento estricto a obligaciones fiscales ante el Servicio de Administración Tributaria (SAT) o requerimientos legales fundados y motivados por autoridades competentes.</li>
               </ul>
             </section>
 
-            {/* 5. Derechos ARCO */}
+            {/* 5. Plazo de Conservación */}
             <section className="space-y-3">
               <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-50 text-brand-700 font-extrabold text-sm">
                   5
                 </span>
-                Medios para Ejercer los Derechos ARCO y Revocación del Consentimiento
+                Plazo de Conservación y Bloqueo de Datos Personales
               </h2>
               <p>
-                Usted o su representante legal debidamente acreditado tienen el derecho inalienable de ejercer en todo momento sus derechos de <strong>Acceso, Rectificación, Cancelación y Oposición (Derechos ARCO)</strong>, así como de revocar el consentimiento otorgado para el tratamiento de sus datos.
+                Sus datos personales e historial de operaciones serán conservados durante todo el tiempo que se mantenga activa la relación comercial o su cuenta registrada en el portal. Una vez concluida la relación contractual, los datos pasarán a un periodo de bloqueo y resguardo seguro únicamente por los plazos obligatorios establecidos en la legislación mexicana aplicable —incluyendo el plazo de <strong>5 (cinco) años</strong> previsto en el Artículo 30 del Código Fiscal de la Federación para efectos contables y fiscales, y hasta <strong>10 (diez) años</strong> conforme al Artículo 38 del Código de Comercio para efectos mercantiles—, tras lo cual serán suprimidos de forma definitiva.
               </p>
-              <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 text-sm space-y-2">
-                <p className="font-bold text-slate-900">Procedimiento para el ejercicio de Derechos ARCO:</p>
-                <ol className="list-decimal pl-5 space-y-1 text-slate-700 text-xs sm:text-sm">
-                  <li>Enviar una solicitud formal por escrito al correo electrónico oficial: <strong>ventas3@remindustrial.mx</strong> indicando en el asunto: <em>&quot;Ejercicio de Derechos ARCO - [Nombre o Empresa]&quot;</em>.</li>
-                  <li>La solicitud deberá contener: nombre completo del titular, copia simple de documento oficial que acredite su identidad (INE o Pasaporte) o poder notarial en caso de personas morales, correo electrónico para recibir notificaciones, y descripción clara y precisa de los datos sobre los que desea ejercer el derecho (Acceso, Rectificación, Cancelación u Oposición).</li>
-                  <li><strong>Plazos de Respuesta:</strong> Conforme al Artículo 32 de la LFPDPPP, daremos respuesta a su solicitud en un plazo máximo de <strong>20 (veinte) días hábiles</strong> contados desde la recepción de la misma, notificándole la determinación adoptada vía correo electrónico.</li>
-                </ol>
-              </div>
             </section>
 
-            {/* 6. Medidas de Seguridad */}
+            {/* 6. Derechos ARCO */}
             <section className="space-y-3">
               <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-50 text-brand-700 font-extrabold text-sm">
                   6
                 </span>
-                Medidas de Seguridad de la Información
+                Medios para Ejercer los Derechos ARCO y Revocación del Consentimiento
               </h2>
               <p>
-                <em>EL RESPONSABLE</em> implementa medidas de seguridad técnicas, físicas y administrativas robustas para proteger sus datos personales contra daño, pérdida, alteración, destrucción o el uso, acceso o tratamiento no autorizado. Esto incluye cifrado SSL de 256 bits en todo el tráfico web, almacenamiento en bases de datos con políticas de seguridad a nivel de fila (RLS), control estricto de roles administrativos y llaves de acceso seguras.
+                Usted o su representante legal debidamente acreditado tienen el derecho inalienable de ejercer en todo momento sus derechos de <strong>Acceso, Rectificación, Cancelación y Oposición (Derechos ARCO)</strong>, así como de revocar el consentimiento otorgado o solicitar la limitación del uso o divulgación de sus datos.
+              </p>
+              <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 text-sm space-y-2">
+                <p className="font-bold text-slate-900">Procedimiento para el ejercicio de Derechos ARCO:</p>
+                <ol className="list-decimal pl-5 space-y-1 text-slate-700 text-xs sm:text-sm">
+                  <li>Enviar una solicitud formal por escrito al correo electrónico oficial: <strong>ventas3@remindustrial.mx</strong> indicando en el asunto: <em>&quot;Ejercicio de Derechos ARCO - [Nombre o Empresa]&quot;</em>.</li>
+                  <li>La solicitud deberá contener: nombre completo del titular, copia simple de documento oficial que acredite su identidad (INE o Pasaporte) o instrumento que acredite su representación legal en caso de personas morales, correo electrónico para recibir notificaciones, y descripción clara y precisa de los datos sobre los que desea ejercer el derecho (Acceso, Rectificación, Cancelación, Oposición o Revocación).</li>
+                  <li><strong>Plazos de Respuesta:</strong> Conforme a los plazos establecidos en la LFPDPPP vigente, daremos respuesta a su solicitud en un plazo máximo de <strong>20 (veinte) días hábiles</strong> contados desde la recepción de la misma, notificándole la determinación adoptada vía correo electrónico, y de resultar procedente se hará efectiva dentro de los <strong>15 (quince) días hábiles</strong> siguientes.</li>
+                </ol>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                En caso de considerar que su derecho a la protección de datos personales ha sido vulnerado, le informamos que puede acudir ante la <strong>Secretaría Anticorrupción y Buen Gobierno</strong> (autoridad federal garante en materia de protección de datos personales en posesión de los particulares).
               </p>
             </section>
 
-            {/* 7. Cookies */}
+            {/* 7. Medidas de Seguridad */}
             <section className="space-y-3">
               <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-50 text-brand-700 font-extrabold text-sm">
                   7
                 </span>
-                Uso de Cookies y Tecnologías Similares
+                Medidas de Seguridad de la Información
               </h2>
               <p>
-                Nuestra plataforma digital utiliza cookies esenciales con el fin de reconocer a los usuarios autenticados, mantener activas las cotizaciones en curso y brindar una navegación fluida. Dichas cookies no contienen información confidencial ni se comparten con redes publicitarias invasivas. Usted puede deshabilitar el uso de cookies directamente en las opciones de configuración de su navegador de internet, aunque esto podría limitar el funcionamiento del cotizador.
+                <em>EL RESPONSABLE</em> implementa medidas de seguridad técnicas, físicas y administrativas robustas para proteger sus datos personales contra daño, pérdida, alteración, destrucción o el uso, acceso o tratamiento no autorizado. Esto incluye cifrado TLS/SSL en todo el tráfico web, almacenamiento en bases de datos con políticas de seguridad a nivel de fila (RLS), control estricto de roles administrativos y llaves de acceso seguras.
               </p>
             </section>
 
-            {/* 8. Cambios al Aviso */}
+            {/* 8. Cookies */}
             <section className="space-y-3">
               <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-50 text-brand-700 font-extrabold text-sm">
                   8
+                </span>
+                Uso de Cookies y Tecnologías Similares
+              </h2>
+              <p>
+                Nuestra plataforma digital utiliza cookies técnicas y de sesión estrictamente esenciales con el fin de reconocer a los usuarios autenticados, conservar las partidas de sus cotizaciones en curso y brindar una navegación segura. Dichas cookies no recolectan información sensible ni se comparten con redes publicitarias de terceros. Usted puede deshabilitar o borrar las cookies directamente en las opciones de configuración de su navegador de internet, aunque esto podría limitar el funcionamiento del cotizador.
+              </p>
+            </section>
+
+            {/* 9. Cambios al Aviso */}
+            <section className="space-y-3">
+              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-50 text-brand-700 font-extrabold text-sm">
+                  9
                 </span>
                 Modificaciones al Aviso de Privacidad
               </h2>
