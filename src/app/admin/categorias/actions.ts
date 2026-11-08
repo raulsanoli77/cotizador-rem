@@ -1,8 +1,10 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { exigirAdminServerAction } from '@/lib/auth/admin-auth';
 
 export async function getCategoriasServer() {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   const { data, error } = await supabase.from('categorias').select('*').order('nombre');
   if (error) throw new Error(error.message);
@@ -10,6 +12,7 @@ export async function getCategoriasServer() {
 }
 
 export async function saveCategoriaServer(id: string | null, data: any) {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   if (id) {
     // 1. Obtener categoría previa para detectar si se eliminaron campos técnicos
@@ -50,7 +53,7 @@ export async function saveCategoriaServer(id: string | null, data: any) {
         .limit(2500);
 
       if (prods && prods.length > 0) {
-        const promesasUpdate: Promise<any>[] = [];
+        const prodsParaActualizar: Array<{ id: string; especificaciones_tecnicas: Record<string, any> }> = [];
         for (const prod of prods) {
           const specs = prod.especificaciones_tecnicas || {};
           let modificado = false;
@@ -67,17 +70,22 @@ export async function saveCategoriaServer(id: string | null, data: any) {
           }
 
           if (modificado) {
-            promesasUpdate.push(
-              supabase
-                .from('productos')
-                .update({ especificaciones_tecnicas: nuevasSpecs })
-                .eq('id', prod.id) as unknown as Promise<any>
-            );
+            prodsParaActualizar.push({ id: prod.id, especificaciones_tecnicas: nuevasSpecs });
           }
         }
 
-        if (promesasUpdate.length > 0) {
-          await Promise.all(promesasUpdate);
+        // Procesar en lotes controlados (CHUNK_SIZE = 50) para no saturar conexiones ni exceder timeouts
+        const CHUNK_SIZE = 50;
+        for (let i = 0; i < prodsParaActualizar.length; i += CHUNK_SIZE) {
+          const chunk = prodsParaActualizar.slice(i, i + CHUNK_SIZE);
+          await Promise.all(
+            chunk.map((item) =>
+              supabase
+                .from('productos')
+                .update({ especificaciones_tecnicas: item.especificaciones_tecnicas })
+                .eq('id', item.id)
+            )
+          );
         }
       }
     }
@@ -89,12 +97,14 @@ export async function saveCategoriaServer(id: string | null, data: any) {
 }
 
 export async function deleteCategoriaServer(id: string) {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   const { error } = await supabase.from('categorias').delete().eq('id', id);
   if (error) throw new Error(error.message);
   return true;
 }
 export async function autoSincronizarCamposServer(categoriaId: string, categoriaNombre: string) {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   
   // 1. Obtener la categoría actual

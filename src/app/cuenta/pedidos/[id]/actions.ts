@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { exigirSesionUsuarioServerAction } from '@/lib/auth/admin-auth';
 
 export async function aprobarPedidoAdmin(
   pedidoId: string, 
@@ -8,9 +9,10 @@ export async function aprobarPedidoAdmin(
   decisiones: Record<string, string>,
   cantidades: Record<string, number>
 ) {
-  const supabase = createAdminClient();
-  
   try {
+    await exigirSesionUsuarioServerAction(clienteId);
+    const supabase = createAdminClient();
+    
     // 1. Guardar Estatus de Pedido
     const { error: errPedido } = await supabase
       .from('pedidos')

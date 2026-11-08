@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { exigirAdminServerAction } from '@/lib/auth/admin-auth';
 import { revalidatePath } from 'next/cache';
 
 export type PerfilAdmin = {
@@ -17,14 +18,9 @@ export async function obtenerAdministradores(): Promise<{
   data?: PerfilAdmin[];
   error?: string;
 }> {
-  const supabase = createAdminClient();
   try {
-    // Limpiar cualquier vendedor_id residual en cuentas admin
-    await supabase
-      .from('perfiles_clientes')
-      .update({ vendedor_id: null })
-      .eq('rol', 'admin')
-      .not('vendedor_id', 'is', null);
+    await exigirAdminServerAction();
+    const supabase = createAdminClient();
 
     const { data: admins, error } = await supabase
       .from('perfiles_clientes')
@@ -34,23 +30,26 @@ export async function obtenerAdministradores(): Promise<{
 
     if (error) throw new Error(error.message);
 
-    // Obtener fotos desde auth users como respaldo inmediato
-    const userMetaMap = new Map<string, any>();
-    try {
-      const { data: authUsers } = await supabase.auth.admin.listUsers();
-      (authUsers?.users || []).forEach((u) => {
-        userMetaMap.set(u.id, u.user_metadata || {});
-      });
-    } catch (_) {}
-
-    const mapeados: PerfilAdmin[] = (admins || []).map((a: any) => ({
-      id: a.id,
-      email: a.email,
-      nombre_completo: a.nombre_completo,
-      fecha_registro: a.fecha_registro,
-      rol: a.rol,
-      foto_url: a.foto_url || userMetaMap.get(a.id)?.foto_url || null,
-    }));
+    // Obtener fotos desde auth.users solo para los admins que aún no tengan foto_url en la tabla
+    const mapeados: PerfilAdmin[] = await Promise.all(
+      (admins || []).map(async (a: any) => {
+        let foto = a.foto_url || null;
+        if (!foto) {
+          try {
+            const { data: authUser } = await supabase.auth.admin.getUserById(a.id);
+            foto = authUser?.user?.user_metadata?.foto_url || null;
+          } catch (_) {}
+        }
+        return {
+          id: a.id,
+          email: a.email,
+          nombre_completo: a.nombre_completo,
+          fecha_registro: a.fecha_registro,
+          rol: a.rol,
+          foto_url: foto,
+        };
+      })
+    );
 
     return { success: true, data: mapeados };
   } catch (err: any) {
@@ -64,6 +63,7 @@ export async function crearAdministrador(input: {
   password: string;
   foto_url?: string | null;
 }) {
+  await exigirAdminServerAction();
   const nombreLimpio = (input.nombre_completo || '').trim();
   const emailLimpio = (input.email || '').trim().toLowerCase();
   const passwordLimpia = (input.password || '').trim();
@@ -157,6 +157,7 @@ export async function actualizarAdministrador(
     foto_url?: string | null;
   }
 ) {
+  await exigirAdminServerAction();
   const nombreLimpio = (input.nombre_completo || '').trim();
   if (!nombreLimpio) {
     throw new Error('El nombre completo es obligatorio.');
@@ -213,10 +214,11 @@ export async function actualizarAdministrador(
 }
 
 export async function eliminarAdministrador(id: string, currentUserId?: string) {
+  const adminSesion = await exigirAdminServerAction();
   if (!id) {
     throw new Error('ID inválido.');
   }
-  if (currentUserId && id === currentUserId) {
+  if (id === adminSesion.user.id || (currentUserId && id === currentUserId)) {
     throw new Error('Por seguridad, no puedes eliminar tu propia cuenta activa.');
   }
 

@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { exigirAdminServerAction } from '@/lib/auth/admin-auth';
 import { enviarNotificacionAprobacion, enviarNotificacionRechazo } from '@/lib/email/notifications';
 
 export async function actualizarEstatusCliente(
@@ -28,6 +29,7 @@ export async function actualizarEstatusCliente(
   vendedor_id?: string | null,
   nueva_password?: string
 ) {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
 
   // 0. Si el admin especificó una nueva contraseña para el cliente, actualizarla en Supabase Auth
@@ -94,11 +96,12 @@ export async function actualizarEstatusCliente(
 }
 
 export async function eliminarCliente(id: string, currentUserId?: string) {
+  const adminSesion = await exigirAdminServerAction();
   if (!id) {
     throw new Error('ID de cliente inválido.');
   }
 
-  if (currentUserId && id === currentUserId) {
+  if (id === adminSesion.user.id || (currentUserId && id === currentUserId)) {
     throw new Error('Por seguridad, no puedes eliminar tu propia cuenta de administrador activa.');
   }
 
@@ -162,6 +165,7 @@ export interface CrearClienteAdminInput {
 }
 
 export async function crearClienteAdmin(input: CrearClienteAdminInput) {
+  await exigirAdminServerAction();
   const emailLimpio = (input.email || '').trim().toLowerCase();
   const passwordLimpia = (input.password || '').trim();
   const nombreLimpio = (input.nombre_completo || '').trim();
@@ -286,6 +290,7 @@ export async function crearClienteAdmin(input: CrearClienteAdminInput) {
 }
 
 export async function limpiarVendedorDeAdmins() {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   await supabase
     .from('perfiles_clientes')

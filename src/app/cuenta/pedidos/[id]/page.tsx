@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, syncAuthCookie } from '@/lib/supabase/client';
 import PedidoClientDetail from '@/components/cuenta/PedidoClientDetail';
 import { Loader2 } from 'lucide-react';
 
@@ -22,6 +22,7 @@ export default function CuentaPedidoPage() {
         router.push('/admin/login');
         return;
       }
+      syncAuthCookie(session.access_token);
 
       const id = params.id as string;
 

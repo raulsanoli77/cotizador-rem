@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { exigirAdminServerAction } from '@/lib/auth/admin-auth';
 import { revalidatePath } from 'next/cache';
 
 export type Vendedor = {
@@ -15,14 +16,9 @@ export type Vendedor = {
 };
 
 export async function obtenerVendedores(): Promise<{ success: boolean; data?: Vendedor[]; error?: string }> {
-  const supabase = createAdminClient();
   try {
-    // Asegurar que las cuentas de administrador no tengan vendedor asignado como si fueran clientes
-    await supabase
-      .from('perfiles_clientes')
-      .update({ vendedor_id: null })
-      .eq('rol', 'admin')
-      .not('vendedor_id', 'is', null);
+    await exigirAdminServerAction();
+    const supabase = createAdminClient();
 
     const { data: vendedores, error } = await supabase
       .from('vendedores')
@@ -59,8 +55,9 @@ export async function crearVendedor(datos: {
   email: string;
   foto_url?: string | null;
 }) {
-  const supabase = createAdminClient();
   try {
+    await exigirAdminServerAction();
+    const supabase = createAdminClient();
     const { error } = await supabase
       .from('vendedores')
       .insert({
@@ -91,8 +88,9 @@ export async function actualizarVendedor(
     activo: boolean;
   }
 ) {
-  const supabase = createAdminClient();
   try {
+    await exigirAdminServerAction();
+    const supabase = createAdminClient();
     const { error } = await supabase
       .from('vendedores')
       .update({
@@ -115,8 +113,9 @@ export async function actualizarVendedor(
 }
 
 export async function eliminarVendedor(id: string) {
-  const supabase = createAdminClient();
   try {
+    await exigirAdminServerAction();
+    const supabase = createAdminClient();
     // 1. Desvincular de perfiles_clientes asignados
     await supabase
       .from('perfiles_clientes')

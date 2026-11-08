@@ -1,8 +1,10 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { exigirAdminServerAction } from '@/lib/auth/admin-auth';
 
 export async function toggleProductoActivoServer(id: string, nuevoEstado: boolean) {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   const { error } = await supabase.from('productos').update({ activo: nuevoEstado }).eq('id', id);
   
@@ -14,6 +16,7 @@ export async function toggleProductoActivoServer(id: string, nuevoEstado: boolea
 }
 
 export async function deleteProductoServer(id: string) {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   const { error } = await supabase.from('productos').delete().eq('id', id);
   
@@ -25,6 +28,7 @@ export async function deleteProductoServer(id: string) {
 }
 
 export async function updateProductoServer(id: string, data: any) {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   const { error } = await supabase.from('productos').update(data).eq('id', id);
   
@@ -36,6 +40,7 @@ export async function updateProductoServer(id: string, data: any) {
 }
 
 export async function bulkDeleteProductosServer(ids: string[]) {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   const chunkSize = 100;
   
@@ -51,6 +56,7 @@ export async function bulkDeleteProductosServer(ids: string[]) {
 }
 
 export async function bulkUpdateActivoServer(ids: string[], activo: boolean) {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   const chunkSize = 100;
   
@@ -66,6 +72,7 @@ export async function bulkUpdateActivoServer(ids: string[], activo: boolean) {
 }
 
 export async function deleteAllProductosServer() {
+  await exigirAdminServerAction();
   const supabase = createAdminClient();
   // Using a filter that matches everything to delete all rows safely
   const { error } = await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');

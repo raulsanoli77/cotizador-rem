@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { exigirAdminServerAction } from '@/lib/auth/admin-auth';
 import { revalidatePath } from 'next/cache';
 import { enviarCorreoRevisionCliente } from '@/lib/email/notifications';
 
@@ -18,9 +19,9 @@ export async function actualizarPedido(
     partidasEliminadas?: string[];
   }
 ) {
-  const supabase = createAdminClient();
-  
   try {
+    await exigirAdminServerAction();
+    const supabase = createAdminClient();
     // 1. Guardar Estatus, Cotización Bind ERP y Totales
     const updateData: Record<string, any> = { estatus: estatusNuevo };
     if (cotizacionBind !== undefined) {
@@ -121,8 +122,9 @@ export async function actualizarPedido(
 }
 
 export async function eliminarPedido(pedidoId: string) {
-  const supabase = createAdminClient();
   try {
+    await exigirAdminServerAction();
+    const supabase = createAdminClient();
     // 1. Eliminar partidas asociadas
     const { error: errPartidas } = await supabase
       .from('partidas_pedido')

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, syncAuthCookie } from '@/lib/supabase/client';
 import { LayoutDashboard, Package, UploadCloud, Users, Settings, LogOut, Loader2, Tags, Award, Menu, ChevronLeft, ImageIcon, Globe, FileText, ShoppingCart, UserCheck, Building2, DollarSign, ShieldCheck } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         pathname === '/admin/actualizar-password';
 
       if (!session) {
+        syncAuthCookie(null);
         if (!isPublicRoute) {
           router.push('/admin/login');
         } else {
@@ -32,6 +33,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
         return;
       }
+
+      // Sincronizar token en cookie antes de habilitar vistas/acciones de Admin
+      syncAuthCookie(session.access_token);
 
       // Check role
       const { data: perfil } = await supabase

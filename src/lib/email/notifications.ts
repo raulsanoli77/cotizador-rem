@@ -3,6 +3,16 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 const DEFAULT_FROM = process.env.FROM_EMAIL || 'REM Industrial <onboarding@resend.dev>';
 
+function escapeHtml(val: unknown): string {
+  if (val === null || val === undefined) return '';
+  return String(val)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 interface NotificacionCotizacionParams {
   lead: {
     nombre_completo: string;
@@ -103,20 +113,20 @@ export async function enviarNotificacionVentas(
 }
 
 function generarHTMLNotificacion(params: NotificacionCotizacionParams): string {
-  const folioLimpio = params.folio.replace(/^COT-/i, '');
-  const mensajeWA = `Hola ${params.lead.nombre_completo}, te contacto de REM Industrial sobre tu solicitud de cotización folio ${folioLimpio}`;
+  const folioLimpio = escapeHtml(params.folio.replace(/^COT-/i, ''));
+  const mensajeWA = `Hola ${params.lead.nombre_completo}, te contacto de REM Industrial sobre tu solicitud de cotización folio ${params.folio.replace(/^COT-/i, '')}`;
 
   const filasPartidas = params.partidas
     .map(
       (p, i) => `
       <tr style="border-bottom: 1px solid #e5e7eb;">
         <td style="padding: 8px; text-align: center; font-size: 13px;">${i + 1}</td>
-        <td style="padding: 8px; font-size: 13px;">${p.cantidad}</td>
-        <td style="padding: 8px; font-size: 13px; font-weight: 600;">${p.marca}</td>
-        <td style="padding: 8px; font-size: 13px;">${p.numero_parte}</td>
-        <td style="padding: 8px; font-size: 13px;">${p.descripcion}</td>
-        <td style="padding: 8px; text-align: right; font-size: 13px;">$${p.precio_unitario.toFixed(2)}</td>
-        <td style="padding: 8px; text-align: right; font-size: 13px; font-weight: 600;">$${p.total.toFixed(2)}</td>
+        <td style="padding: 8px; font-size: 13px;">${Number(p.cantidad)}</td>
+        <td style="padding: 8px; font-size: 13px; font-weight: 600;">${escapeHtml(p.marca)}</td>
+        <td style="padding: 8px; font-size: 13px;">${escapeHtml(p.numero_parte)}</td>
+        <td style="padding: 8px; font-size: 13px;">${escapeHtml(p.descripcion)}</td>
+        <td style="padding: 8px; text-align: right; font-size: 13px;">$${Number(p.precio_unitario).toFixed(2)}</td>
+        <td style="padding: 8px; text-align: right; font-size: 13px; font-weight: 600;">$${Number(p.total).toFixed(2)}</td>
       </tr>`
     )
     .join('');
@@ -135,18 +145,18 @@ function generarHTMLNotificacion(params: NotificacionCotizacionParams): string {
       <table style="width: 100%; margin-bottom: 16px;">
         <tr>
           <td style="font-size: 13px;"><strong>Folio Solicitud:</strong> #${folioLimpio}</td>
-          <td style="font-size: 13px; text-align: right;"><strong>Fecha:</strong> ${params.fecha}</td>
+          <td style="font-size: 13px; text-align: right;"><strong>Fecha:</strong> ${escapeHtml(params.fecha)}</td>
         </tr>
       </table>
 
       <div style="background: white; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #e2e8f0;">
         <h3 style="margin: 0 0 8px; font-size: 14px; color: #2563eb;">Datos del Cliente</h3>
-        <p style="margin: 4px 0; font-size: 13px;"><strong>Nombre:</strong> ${params.lead.nombre_completo}</p>
-        <p style="margin: 4px 0; font-size: 13px;"><strong>Empresa:</strong> ${params.lead.empresa}</p>
-        <p style="margin: 4px 0; font-size: 13px;"><strong>Email:</strong> <a href="mailto:${params.lead.email}">${params.lead.email}</a></p>
-        <p style="margin: 4px 0; font-size: 13px;"><strong>Teléfono:</strong> ${params.lead.telefono}</p>
-        ${params.vendedor ? `<p style="margin: 4px 0; font-size: 13px; color: #047857;"><strong>Asesor Comercial Asignado:</strong> ${params.vendedor.nombre} (${params.vendedor.email} / ${params.vendedor.telefono})</p>` : ''}
-        ${params.lead.direccion ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Envío a:</strong> ${params.lead.direccion}</p>` : ''}
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Nombre:</strong> ${escapeHtml(params.lead.nombre_completo)}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Empresa:</strong> ${escapeHtml(params.lead.empresa)}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Email:</strong> <a href="mailto:${escapeHtml(params.lead.email)}">${escapeHtml(params.lead.email)}</a></p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Teléfono:</strong> ${escapeHtml(params.lead.telefono)}</p>
+        ${params.vendedor ? `<p style="margin: 4px 0; font-size: 13px; color: #047857;"><strong>Asesor Comercial Asignado:</strong> ${escapeHtml(params.vendedor.nombre)} (${escapeHtml(params.vendedor.email)} / ${escapeHtml(params.vendedor.telefono)})</p>` : ''}
+        ${params.lead.direccion ? `<p style="margin: 4px 0; font-size: 13px;"><strong>Envío a:</strong> ${escapeHtml(params.lead.direccion)}</p>` : ''}
         ${params.lead.telefono ? `
         <div style="margin-top: 10px;">
           <a href="https://wa.me/52${params.lead.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(mensajeWA)}" style="display: inline-block; background: #16a34a; color: white; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px;">
@@ -172,8 +182,8 @@ function generarHTMLNotificacion(params: NotificacionCotizacionParams): string {
         </tbody>
         <tfoot>
           <tr style="background: #f1f5f9;">
-            <td colspan="6" style="padding: 10px 8px; text-align: right; font-weight: bold; font-size: 14px;">Subtotal (${params.moneda}):</td>
-            <td style="padding: 10px 8px; text-align: right; font-weight: bold; font-size: 14px;">$${params.subtotal.toFixed(2)}</td>
+            <td colspan="6" style="padding: 10px 8px; text-align: right; font-weight: bold; font-size: 14px;">Subtotal (${escapeHtml(params.moneda)}):</td>
+            <td style="padding: 10px 8px; text-align: right; font-weight: bold; font-size: 14px;">$${Number(params.subtotal).toFixed(2)}</td>
           </tr>
         </tfoot>
       </table>
@@ -197,30 +207,34 @@ export async function enviarNotificacionAprobacion(
   terminosPago: string
 ) {
   try {
+    const safeNombre = escapeHtml(nombre);
+    const safeTerminos = escapeHtml(terminosPago);
+    const safeDest = escapeHtml(destinatario);
+    const safeUrl = escapeHtml(appUrl);
     const { data, error } = await resend.emails.send({
       from: DEFAULT_FROM, // Importante: Configura tu dominio real en Resend
       to: [destinatario],
       subject: '¡Tu cuenta empresarial en REM Industrial ha sido aprobada!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-          <h2 style="color: #0f172a;">¡Hola ${nombre}!</h2>
+          <h2 style="color: #0f172a;">¡Hola ${safeNombre}!</h2>
           <p>Nos complace informarte que tu cuenta en el <strong>Portal de Clientes de REM Industrial</strong> ha sido aprobada.</p>
           
           <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>Tus términos comerciales:</strong> ${terminosPago}</p>
+            <p style="margin: 0;"><strong>Tus términos comerciales:</strong> ${safeTerminos}</p>
           </div>
 
           <p>A partir de este momento puedes iniciar sesión para acceder a tu catálogo con precios especiales y gestionar tus cotizaciones formales.</p>
           
           <p><strong>Información de Acceso:</strong></p>
           <ul>
-            <li><strong>Enlace:</strong> <a href="${appUrl}/admin/login">${appUrl}/admin/login</a></li>
-            <li><strong>Usuario:</strong> ${destinatario}</li>
+            <li><strong>Enlace:</strong> <a href="${safeUrl}/admin/login">${safeUrl}/admin/login</a></li>
+            <li><strong>Usuario:</strong> ${safeDest}</li>
             <li><strong>Contraseña:</strong> <em>La que creaste al momento de registrarte</em>.</li>
           </ul>
 
           <div style="text-align: center; margin-top: 30px;">
-            <a href="${appUrl}/admin/login" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            <a href="${safeUrl}/admin/login" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
               Iniciar Sesión Ahora
             </a>
           </div>
@@ -253,13 +267,14 @@ export async function enviarNotificacionRechazo(
   nombre: string
 ) {
   try {
+    const safeNombre = escapeHtml(nombre);
     const { data, error } = await resend.emails.send({
       from: DEFAULT_FROM, // Importante: Configura tu dominio real en Resend
       to: [destinatario],
       subject: 'Actualización sobre tu solicitud de cuenta en REM Industrial',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-          <h2 style="color: #0f172a;">Hola ${nombre},</h2>
+          <h2 style="color: #0f172a;">Hola ${safeNombre},</h2>
           <p>Gracias por tu interés en registrarte en el Portal de Clientes de REM Industrial.</p>
           <p>Después de revisar tu solicitud, lamentamos informarte que en este momento <strong>no ha sido posible aprobar tu cuenta empresarial</strong>.</p>
           <p>Si consideras que esto es un error o deseas proveer información adicional sobre tu empresa, por favor responde a este correo o contáctanos directamente a nuestro departamento de ventas.</p>
@@ -285,6 +300,10 @@ export async function enviarNotificacionRechazo(
 
 export async function enviarCorreoRevisionCliente(email: string, nombre: string, pedidoId: string, baseURL: string) {
   try {
+    const safeNombre = escapeHtml(nombre);
+    const safePedidoCorto = escapeHtml(pedidoId.split('-')[0]);
+    const safePedidoId = escapeHtml(pedidoId);
+    const safeBaseURL = escapeHtml(baseURL);
     const { data, error } = await resend.emails.send({
       from: DEFAULT_FROM,
       to: [email],
@@ -299,13 +318,13 @@ export async function enviarCorreoRevisionCliente(email: string, nombre: string,
         </div>
         <div style="padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
           <h2 style="color: #f97316; margin-top: 0;">Tu pedido requiere revisión</h2>
-          <p>Hola <strong>${nombre}</strong>,</p>
-          <p>Hemos revisado tu orden <strong>${pedidoId.split('-')[0]}</strong> y le hemos asignado los tiempos de entrega (ETA).</p>
+          <p>Hola <strong>${safeNombre}</strong>,</p>
+          <p>Hemos revisado tu orden <strong>${safePedidoCorto}</strong> y le hemos asignado los tiempos de entrega (ETA).</p>
           <p>En caso de no contar con existencia de algún producto original, nuestro equipo te ha sugerido una alternativa de catálogo equivalente.</p>
           <p>Por favor, entra a tu portal para revisar estos detalles y aprobar tu orden para que podamos procesarla inmediatamente.</p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${baseURL}/cuenta/pedidos/${pedidoId}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+            <a href="${safeBaseURL}/cuenta/pedidos/${safePedidoId}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
               Revisar y Aprobar Orden
             </a>
           </div>
