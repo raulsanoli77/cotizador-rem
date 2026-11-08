@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { formatearPrecio } from '@/lib/pricing/engine';
 
 import { useAuthStore } from '@/stores/auth-store';
-import { formatearDescripcionProducto, obtenerMultiploVenta, obtenerEncabezadoComercialProducto } from '@/lib/pricing/formatters';
+import { formatearDescripcionProducto, obtenerMultiploVenta } from '@/lib/pricing/formatters';
 
 // Importar PDF dinámicamente (solo client-side)
 const PDFDownloadButton = dynamic(
@@ -149,17 +149,11 @@ export default function CotizacionPage() {
                     <tbody className="divide-y divide-gray-100">
                       {items.map((item) => {
                         const multiplo = obtenerMultiploVenta(item.producto);
-                        const encabezado = obtenerEncabezadoComercialProducto(item.producto);
                         return (
                           <tr key={item.producto.id}>
                             <td className="px-4 py-3">
                               <p className="text-xs text-brand-600 font-semibold">{item.producto.marca}</p>
-                              <p className="text-sm font-bold text-gray-900">
-                                {encabezado.tituloPrincipal}
-                                {encabezado.tituloPrincipal !== item.producto.numero_parte && (
-                                  <span className="text-xs font-mono text-gray-500 font-normal ml-2">(N/P: {item.producto.numero_parte})</span>
-                                )}
-                              </p>
+                              <p className="text-sm font-medium text-gray-900">{item.producto.numero_parte}</p>
                               <p className="text-xs text-gray-500 mt-0.5 leading-tight">{formatearDescripcionProducto(item.producto)}</p>
                               {((item.producto.especificaciones_tecnicas as any)?.requiere_confirmacion === true ||
                                 (item.producto.especificaciones_tecnicas as any)?.requiere_confirmacion === 'true' ||

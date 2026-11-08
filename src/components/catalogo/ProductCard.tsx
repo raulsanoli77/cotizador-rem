@@ -5,7 +5,7 @@ import { ShoppingCart, Plus, Minus, Package } from 'lucide-react';
 import type { ProductoConPrecio } from '@/types/product';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import { useCartStore } from '@/stores/cart-store';
-import { formatearDescripcionProducto, obtenerMultiploVenta, obtenerEncabezadoComercialProducto } from '@/lib/pricing/formatters';
+import { formatearDescripcionProducto, obtenerMultiploVenta } from '@/lib/pricing/formatters';
 import Link from 'next/link';
 
 interface ProductCardProps {
@@ -17,7 +17,6 @@ interface ProductCardProps {
 export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: ProductCardProps) {
   const agregarItem = useCartStore((s) => s.agregarItem);
   const multiplo = obtenerMultiploVenta(producto);
-  const encabezado = obtenerEncabezadoComercialProducto(producto);
   const [cantidad, setCantidad] = useState(multiplo);
 
   const handleAdd = (e?: React.MouseEvent) => {
@@ -71,12 +70,9 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
           )}
         </div>
         <Link href={`/catalogo/${producto.id}`} className="text-left group-hover:text-brand-600 transition-colors mb-1 block">
-          <h3 className="font-mono font-bold text-slate-900 text-sm sm:text-base leading-tight truncate" title={encabezado.tituloPrincipal}>
-            {encabezado.tituloPrincipal}
+          <h3 className="font-mono font-bold text-slate-900 text-base leading-tight truncate">
+            {producto.numero_parte}
           </h3>
-          {encabezado.tituloPrincipal !== producto.numero_parte && (
-            <span className="text-[10px] font-mono text-slate-500 block">N/P: {producto.numero_parte}</span>
-          )}
         </Link>
         <p className="text-xs text-slate-600 leading-snug line-clamp-3 mb-3 flex-1" title={formatearDescripcionProducto(producto)}>
           {formatearDescripcionProducto(producto)}

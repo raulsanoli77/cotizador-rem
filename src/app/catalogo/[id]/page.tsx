@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ShoppingCart, Plus, Minus, ChevronRight, ArrowLeft, Loader2, Package } from 'lucide-react';
 import type { Producto, ProductoConPrecio } from '@/types';
 import { formatearPrecio, calcularPrecioVenta } from '@/lib/pricing/engine';
-import { formatearDescripcionProducto, obtenerMultiploVenta, obtenerEncabezadoComercialProducto } from '@/lib/pricing/formatters';
+import { formatearDescripcionProducto, obtenerMultiploVenta } from '@/lib/pricing/formatters';
 import { useCartStore } from '@/stores/cart-store';
 import { supabase } from '@/lib/supabase/client';
 import { obtenerTipoCambio } from '@/lib/pricing/exchange-rate';
@@ -157,7 +157,6 @@ export default function ProductDetailPage() {
   if (!producto) return null;
 
   const multiplo = obtenerMultiploVenta(producto);
-  const encabezado = obtenerEncabezadoComercialProducto(producto);
 
   const handleAdd = () => {
     const productoAgregado = !isB2B && producto.precio_publico 
@@ -245,33 +244,17 @@ export default function ProductDetailPage() {
               {/* Columna Derecha: Información y Compra */}
               <div className="w-full lg:w-1/2 flex flex-col justify-center text-white py-4">
                 
-                <div className="flex flex-wrap items-center gap-2.5 mb-4">
-                  <span className="text-xs font-mono text-amber-400 font-bold bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-md tracking-wider">
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <span className="text-xs font-mono text-slate-300 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-md tracking-wider">
                     SKU: {producto.sku_interno || producto.id.split('-')[0]}
                   </span>
-                  {encabezado.tituloPrincipal !== producto.numero_parte && (
-                    <span className="text-xs font-mono text-slate-300 bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-md tracking-wider">
-                      N/P: {producto.numero_parte}
-                    </span>
-                  )}
-                  {encabezado.badgeMaterial && (
-                    <span className="text-xs font-bold text-slate-200 bg-slate-800/60 border border-slate-700 px-3 py-1.5 rounded-md">
-                      • {encabezado.badgeMaterial}
-                    </span>
-                  )}
                 </div>
 
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-3 tracking-tight leading-tight drop-shadow-md">
-                  {encabezado.tituloPrincipal}
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 tracking-tighter leading-tight drop-shadow-md">
+                  {producto.numero_parte}
                 </h1>
 
-                {encabezado.subtituloComercial && (
-                  <h2 className="text-lg md:text-xl font-bold text-brand-400 mb-3 tracking-wide">
-                    {encabezado.subtituloComercial}
-                  </h2>
-                )}
-
-                <p className="text-slate-300 text-base md:text-lg mb-8 leading-relaxed font-medium">
+                <p className="text-slate-300 text-lg md:text-xl mb-10 leading-relaxed font-medium">
                   {formatearDescripcionProducto(producto)}
                 </p>
 
