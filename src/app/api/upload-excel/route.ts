@@ -51,12 +51,25 @@ export async function POST(request: NextRequest) {
         finalImageUrl = existente.imagen_url;
       }
 
-      // Merge de especificaciones_tecnicas: 
-      // Mantenemos lo que ya estaba en BD y sobreescribimos solo lo que venga en el Excel
-      const mergedSpecs = {
-        ...(existente?.especificaciones_tecnicas || {}),
-        ...(p.especificaciones_tecnicas || {})
-      };
+      // Reemplazo limpio de especificaciones_tecnicas:
+      // Si el Excel trae columnas técnicas, reemplazamos las anteriores para evitar que
+      // columnas renombradas o eliminadas en la plantilla (ej. TIPO_CONO -> CONO) se queden
+      // guardadas como campos fantasma en la base de datos.
+      // Solo preservamos banderas internas como `requiere_confirmacion`.
+      const nuevasSpecs = p.especificaciones_tecnicas || {};
+      const tieneNuevasSpecs = Object.keys(nuevasSpecs).length > 0;
+      const oldSpecs = existente?.especificaciones_tecnicas || {};
+
+      const mergedSpecs: Record<string, any> = tieneNuevasSpecs
+        ? { ...nuevasSpecs }
+        : { ...oldSpecs };
+
+      if (
+        oldSpecs.requiere_confirmacion !== undefined &&
+        mergedSpecs.requiere_confirmacion === undefined
+      ) {
+        mergedSpecs.requiere_confirmacion = oldSpecs.requiere_confirmacion;
+      }
 
       return {
         ...p,

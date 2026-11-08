@@ -145,7 +145,22 @@ export function formatearDescripcionProducto(
   producto: ProductoConPrecio,
   camposCategoriaOverride?: CampoFiltro[]
 ): string {
-  const specs = producto.especificaciones_tecnicas || {};
+  const rawSpecs = producto.especificaciones_tecnicas || {};
+  const camposCat = camposCategoriaOverride || producto._campos_categoria;
+
+  // Si la categoría tiene campos configurados en Admin -> Categorías, ignorar
+  // cualquier llave vieja/fantasma que no pertenezca a la categoría actual
+  let specs: Record<string, any> = rawSpecs;
+  if (camposCat && Array.isArray(camposCat) && camposCat.length > 0) {
+    const permitidos = new Set(camposCat.map((c) => c.nombre.toUpperCase().trim()));
+    specs = {};
+    for (const [k, v] of Object.entries(rawSpecs)) {
+      if (permitidos.has(k.toUpperCase().trim())) {
+        specs[k] = v;
+      }
+    }
+  }
+
   const usedKeys = new Set<string>();
   const rawCategoria = (producto.categoria || '').toUpperCase();
 
@@ -154,7 +169,6 @@ export function formatearDescripcionProducto(
   // Si el administrador seleccionó qué campos mostrar en la descripción
   // (`visible_en_descripcion === true`), se arma siguiendo ese orden y formato.
   // ---------------------------------------------------------------------------
-  const camposCat = camposCategoriaOverride || producto._campos_categoria;
   if (camposCat && Array.isArray(camposCat)) {
     const camposActivosDesc = camposCat.filter((c) => c.visible_en_descripcion === true);
     if (camposActivosDesc.length > 0) {
@@ -507,7 +521,32 @@ export function formatearDescripcionProducto(
   }
 
   // ----------------------------------------------------
-  // LOGICA 5: MOTOR GENERICO LIMPIO
+  // LOGICA 5: PORTAHERRAMIENTAS
+  // Ej: "PORTAHERRAMIENTAS CAT40 ER32 LARGO 3.2""
+  // ----------------------------------------------------
+  if (rawCategoria.includes('PORTAHERRAMIENTA')) {
+    const cono = getSpec(['cono', 'tipo de cono']);
+    const sujecion = getSpec(['sujecion', 'sujeción', 'tipo de sujecion', 'tipo de sujeción', 'boquilla', 'sistema']);
+    const largo = getSpec(['largo', 'longitud', 'proyeccion', 'proyección']);
+    const diametro = getSpec(['diametro', 'diámetro', 'capacidad']);
+    const balanceo = getSpec(['balanceo', 'rpm']);
+    const refrigerante = getSpec(['refrigerante']);
+
+    const partes: string[] = ['PORTAHERRAMIENTAS'];
+    if (cono) partes.push(cono);
+    if (sujecion) partes.push(sujecion);
+    if (diametro) partes.push(formatDimension(diametro));
+    if (largo) partes.push(`LARGO ${formatDimension(largo)}`);
+    if (balanceo) partes.push(balanceo);
+    if (refrigerante && ['SI', 'SÍ', 'YES', 'AD', 'AD/B'].includes(refrigerante.toUpperCase())) {
+      partes.push('C/REFRIGERANTE');
+    }
+
+    return partes.join(' ').replace(/\s+/g, ' ').trim().toUpperCase();
+  }
+
+  // ----------------------------------------------------
+  // LOGICA 6: MOTOR GENERICO LIMPIO
   // ----------------------------------------------------
   let categoriaStr = rawCategoria || 'HERRAMIENTA';
   const diametro = getSpec(['diametro', 'diámetro']);

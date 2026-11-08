@@ -12,8 +12,75 @@ export async function getCategoriasServer() {
 export async function saveCategoriaServer(id: string | null, data: any) {
   const supabase = createAdminClient();
   if (id) {
+    // 1. Obtener categoría previa para detectar si se eliminaron campos técnicos
+    const { data: catPrevia } = await supabase
+      .from('categorias')
+      .select('nombre, campos_filtro')
+      .eq('id', id)
+      .maybeSingle();
+
     const { error } = await supabase.from('categorias').update(data).eq('id', id);
     if (error) throw new Error(error.message);
+
+    // 2. Si la categoría tiene campos configurados, limpiar de los productos de esa categoría
+    // cualquier campo que haya sido eliminado en el gestor de categorías
+    const nuevosCampos: any[] = Array.isArray(data.campos_filtro) ? data.campos_filtro : [];
+    const nombresPermitidos = new Set(
+      nuevosCampos.map((c: any) => String(c.nombre || '').toUpperCase().trim())
+    );
+    // Siempre conservar llaves internas del sistema
+    nombresPermitidos.add('REQUIERE_CONFIRMACION');
+    nombresPermitidos.add('UNIDAD DE MEDIDA');
+
+    const camposPrevios: any[] = Array.isArray(catPrevia?.campos_filtro) ? catPrevia.campos_filtro : [];
+    const camposEliminados = new Set<string>();
+    camposPrevios.forEach((c: any) => {
+      const upper = String(c.nombre || '').toUpperCase().trim();
+      if (upper && !nombresPermitidos.has(upper)) {
+        camposEliminados.add(upper);
+      }
+    });
+
+    const nombreCat = data.nombre || catPrevia?.nombre;
+    if (nombreCat && (camposEliminados.size > 0 || nuevosCampos.length > 0)) {
+      const { data: prods } = await supabase
+        .from('productos')
+        .select('id, especificaciones_tecnicas')
+        .ilike('categoria', nombreCat)
+        .limit(2500);
+
+      if (prods && prods.length > 0) {
+        const promesasUpdate: Promise<any>[] = [];
+        for (const prod of prods) {
+          const specs = prod.especificaciones_tecnicas || {};
+          let modificado = false;
+          const nuevasSpecs: Record<string, any> = {};
+
+          for (const [k, v] of Object.entries(specs)) {
+            const kUpper = k.toUpperCase().trim();
+            // Si fue explícitamente eliminado o no está en la lista actual de campos de la categoría
+            if (camposEliminados.has(kUpper) || (nuevosCampos.length > 0 && !nombresPermitidos.has(kUpper))) {
+              modificado = true;
+            } else {
+              nuevasSpecs[k] = v;
+            }
+          }
+
+          if (modificado) {
+            promesasUpdate.push(
+              supabase
+                .from('productos')
+                .update({ especificaciones_tecnicas: nuevasSpecs })
+                .eq('id', prod.id) as unknown as Promise<any>
+            );
+          }
+        }
+
+        if (promesasUpdate.length > 0) {
+          await Promise.all(promesasUpdate);
+        }
+      }
+    }
   } else {
     const { error } = await supabase.from('categorias').insert(data);
     if (error) throw new Error(error.message);

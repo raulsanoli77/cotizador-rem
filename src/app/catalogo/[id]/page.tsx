@@ -169,9 +169,15 @@ export default function ProductDetailPage() {
   };
 
   const specs = producto.especificaciones_tecnicas || {};
+  const tieneCamposCategoriaConfigurados = Object.keys(ordenCampos).length > 0;
   const specsEntries = Object.entries(specs)
     .filter(([key, value]) => {
       if (key.toLowerCase() === 'requiere_confirmacion') return false;
+      // Si la categoría tiene sus campos definidos en el gestor de categorías,
+      // ocultar cualquier campo viejo que haya sido eliminado de la categoría
+      if (tieneCamposCategoriaConfigurados && ordenCampos[key.toUpperCase().trim()] === undefined) {
+        return false;
+      }
       const valStr = String(value).trim().toUpperCase();
       return valStr !== '' && valStr !== 'N/A' && valStr !== '-';
     })
