@@ -25,9 +25,24 @@ export async function actualizarEstatusCliente(
   telefono: string,
   rfc: string,
   pagina_web: string,
-  vendedor_id?: string | null
+  vendedor_id?: string | null,
+  nueva_password?: string
 ) {
   const supabase = createAdminClient();
+
+  // 0. Si el admin especificó una nueva contraseña para el cliente, actualizarla en Supabase Auth
+  if (nueva_password && nueva_password.trim().length > 0) {
+    if (nueva_password.trim().length < 6) {
+      throw new Error('La nueva contraseña debe tener al menos 6 caracteres.');
+    }
+    const { error: passError } = await supabase.auth.admin.updateUserById(id, {
+      password: nueva_password.trim(),
+      email_confirm: true,
+    });
+    if (passError) {
+      throw new Error('Error al actualizar la contraseña del cliente: ' + passError.message);
+    }
+  }
 
   // 1. Actualizar base de datos
   const { error } = await supabase
@@ -119,4 +134,153 @@ export async function eliminarCliente(id: string, currentUserId?: string) {
   }
 
   return { success: true };
+}
+
+export interface CrearClienteAdminInput {
+  email: string;
+  password: string;
+  nombre_completo: string;
+  empresa: string;
+  puesto?: string;
+  perfil_empresa?: string;
+  telefono?: string;
+  rfc?: string;
+  pagina_web?: string;
+  estatus?: 'pendiente' | 'aprobado' | 'rechazado';
+  terminos_pago?: string;
+  rol?: string;
+  descuento_porcentaje?: number;
+  vendedor_id?: string | null;
+  codigo_postal?: string;
+  estado?: string;
+  ciudad?: string;
+  colonia?: string;
+  calle?: string;
+  num_exterior?: string;
+  num_interior?: string;
+  enviar_correo?: boolean;
+}
+
+export async function crearClienteAdmin(input: CrearClienteAdminInput) {
+  const emailLimpio = (input.email || '').trim().toLowerCase();
+  const passwordLimpia = (input.password || '').trim();
+  const nombreLimpio = (input.nombre_completo || '').trim();
+  const empresaLimpia = (input.empresa || '').trim();
+
+  if (!emailLimpio) {
+    throw new Error('El correo electrónico es obligatorio.');
+  }
+  if (!passwordLimpia || passwordLimpia.length < 6) {
+    throw new Error('La contraseña inicial debe tener al menos 6 caracteres.');
+  }
+  if (!nombreLimpio) {
+    throw new Error('El nombre completo del contacto es obligatorio.');
+  }
+  if (!empresaLimpia) {
+    throw new Error('El nombre de la empresa es obligatorio.');
+  }
+
+  const supabase = createAdminClient();
+
+  // Verificar si ya existe un perfil con ese correo
+  const { data: existente } = await supabase
+    .from('perfiles_clientes')
+    .select('id, email')
+    .ilike('email', emailLimpio)
+    .maybeSingle();
+
+  if (existente) {
+    throw new Error(`Ya existe un cliente registrado con el correo ${emailLimpio}.`);
+  }
+
+  const estatusFinal = input.estatus || 'aprobado';
+  const terminosFinal = input.terminos_pago || 'Contado';
+  const rolFinal = input.rol || 'cliente';
+
+  // 1. Crear usuario en Supabase Auth con email confirmado inmediatamente
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: emailLimpio,
+    password: passwordLimpia,
+    email_confirm: true,
+    user_metadata: {
+      nombre_completo: nombreLimpio,
+      puesto: input.puesto || '',
+      empresa: empresaLimpia,
+      perfil_empresa: input.perfil_empresa || 'Usuario Final (Planta, Taller, Maquinados)',
+      telefono: input.telefono || '',
+      rfc: (input.rfc || '').toUpperCase(),
+      pagina_web: input.pagina_web || '',
+      codigo_postal: input.codigo_postal || '',
+      ciudad: input.ciudad || '',
+      estado: input.estado || '',
+      colonia: input.colonia || null,
+      calle: input.calle || null,
+      num_exterior: input.num_exterior || null,
+      num_interior: input.num_interior || null,
+      estatus: estatusFinal === 'aprobado' ? 'aprobado' : 'pendiente_aprobacion',
+    },
+  });
+
+  if (authError || !authData?.user) {
+    const msg = authError?.message || 'No se pudo crear el usuario en Auth.';
+    if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('registered')) {
+      throw new Error(`El correo ${emailLimpio} ya está registrado en el sistema de autenticación.`);
+    }
+    throw new Error(msg);
+  }
+
+  const userId = authData.user.id;
+
+  // 2. Insertar / actualizar en perfiles_clientes
+  const { error: profileError } = await supabase
+    .from('perfiles_clientes')
+    .upsert(
+      {
+        id: userId,
+        email: emailLimpio,
+        nombre_completo: nombreLimpio,
+        puesto: input.puesto || '',
+        empresa: empresaLimpia,
+        perfil_empresa: input.perfil_empresa || 'Usuario Final (Planta, Taller, Maquinados)',
+        telefono: input.telefono || '',
+        rfc: (input.rfc || '').toUpperCase(),
+        pagina_web: input.pagina_web || '',
+        codigo_postal: input.codigo_postal || '',
+        ciudad: input.ciudad || '',
+        estado: input.estado || '',
+        colonia: input.colonia || null,
+        calle: input.calle || null,
+        num_exterior: input.num_exterior || null,
+        num_interior: input.num_interior || null,
+        estatus: estatusFinal,
+        terminos_pago: terminosFinal,
+        rol: rolFinal,
+        descuento_porcentaje: Number(input.descuento_porcentaje) || 0,
+        vendedor_id: input.vendedor_id || null,
+      },
+      { onConflict: 'id' }
+    );
+
+  if (profileError) {
+    // Rollback del usuario en Auth si falla la creación del perfil
+    try {
+      await supabase.auth.admin.deleteUser(userId);
+    } catch (_) {}
+    throw new Error('Error al guardar el perfil del cliente: ' + profileError.message);
+  }
+
+  // 3. Opcionalmente enviar correo de notificación si está aprobado
+  if (input.enviar_correo && estatusFinal === 'aprobado') {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cotizador-rem.vercel.app';
+    try {
+      await enviarNotificacionAprobacion(emailLimpio, nombreLimpio, appUrl, terminosFinal);
+    } catch (emailError) {
+      console.error('Error al enviar correo de bienvenida:', emailError);
+    }
+  }
+
+  return {
+    success: true,
+    userId,
+  };
 }

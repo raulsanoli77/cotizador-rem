@@ -2,7 +2,26 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Loader2, Users, Building, Mail, Phone, Calendar, Edit2, ShieldAlert, ShieldCheck, UserCheck, Trash2 } from 'lucide-react';
+import {
+  Loader2,
+  Users,
+  Building,
+  Mail,
+  Phone,
+  Calendar,
+  Edit2,
+  ShieldAlert,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+  KeyRound,
+  Copy,
+  Check,
+  MessageCircle,
+  Eye,
+  EyeOff,
+  Sparkles,
+} from 'lucide-react';
 
 type Vendedor = {
   id: string;
@@ -44,7 +63,17 @@ type PerfilCliente = {
   } | null;
 };
 
-import { actualizarEstatusCliente, eliminarCliente } from './actions';
+import { actualizarEstatusCliente, eliminarCliente, crearClienteAdmin } from './actions';
+
+type CredencialesCreadas = {
+  nombre: string;
+  empresa: string;
+  email: string;
+  password: string;
+  telefono: string;
+  terminos: string;
+  vendedorNombre?: string;
+};
 
 export default function ClientesB2BPage() {
   const [clientes, setClientes] = useState<PerfilCliente[]>([]);
@@ -54,12 +83,48 @@ export default function ClientesB2BPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [eliminandoId, setEliminandoId] = useState<string | null>(null);
   
-  // Modal states
+  // Modal states (Administrar Cliente existente)
   const [modalOpen, setModalOpen] = useState(false);
   const [clienteSelect, setClienteSelect] = useState<PerfilCliente | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [editNuevaPassword, setEditNuevaPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
-  // Form states
+  // Modal states (Crear Nuevo Cliente)
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [creando, setCreando] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(true);
+  const [credencialesCreadas, setCredencialesCreadas] = useState<CredencialesCreadas | null>(null);
+  const [copiado, setCopiado] = useState(false);
+  const [loadingNewCP, setLoadingNewCP] = useState(false);
+  const [coloniasNewCP, setColoniasNewCP] = useState<string[]>([]);
+
+  const [newForm, setNewForm] = useState({
+    empresa: '',
+    nombre_completo: '',
+    email: '',
+    password: '',
+    telefono: '',
+    rfc: '',
+    puesto: '',
+    perfil_empresa: 'Usuario Final (Planta, Taller, Maquinados)',
+    pagina_web: '',
+    estatus: 'aprobado' as 'pendiente' | 'aprobado' | 'rechazado',
+    vendedor_id: '',
+    terminos_pago: 'Contado',
+    descuento_porcentaje: 0,
+    rol: 'cliente',
+    codigo_postal: '',
+    estado: '',
+    ciudad: '',
+    colonia: '',
+    calle: '',
+    num_exterior: '',
+    num_interior: '',
+    enviar_correo: true,
+  });
+
+  // Form states (Editar)
   const [editEstatus, setEditEstatus] = useState<'pendiente' | 'aprobado' | 'rechazado'>('pendiente');
   const [editTerminos, setEditTerminos] = useState('Contado');
   const [editRol, setEditRol] = useState('cliente');
@@ -119,8 +184,132 @@ export default function ClientesB2BPage() {
     setLoading(false);
   };
 
+  const generarPasswordSugerida = (empresaVal?: string) => {
+    const base = (empresaVal ?? newForm.empresa)
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .slice(0, 4);
+    const prefijo = base.length >= 3
+      ? base.charAt(0).toUpperCase() + base.slice(1).toLowerCase()
+      : 'Rem';
+    const num = Math.floor(100 + Math.random() * 900);
+    return `${prefijo}${num}*`;
+  };
+
+  const handleOpenCreateModal = () => {
+    setCredencialesCreadas(null);
+    setCopiado(false);
+    setColoniasNewCP([]);
+    setNewForm({
+      empresa: '',
+      nombre_completo: '',
+      email: '',
+      password: 'Rem' + Math.floor(1000 + Math.random() * 9000) + '*',
+      telefono: '',
+      rfc: '',
+      puesto: 'Compras / Ingeniería',
+      perfil_empresa: 'Usuario Final (Planta, Taller, Maquinados)',
+      pagina_web: '',
+      estatus: 'aprobado',
+      vendedor_id: '',
+      terminos_pago: 'Contado',
+      descuento_porcentaje: 0,
+      rol: 'cliente',
+      codigo_postal: '',
+      estado: '',
+      ciudad: '',
+      colonia: '',
+      calle: '',
+      num_exterior: '',
+      num_interior: '',
+      enviar_correo: true,
+    });
+    setCreateModalOpen(true);
+  };
+
+  const handleNewCPChange = async (val: string) => {
+    const clean = val.trim();
+    setNewForm((prev) => ({ ...prev, codigo_postal: clean }));
+    if (clean.length === 5) {
+      setLoadingNewCP(true);
+      try {
+        const res = await fetch(`/api/sepomex?cp=${clean}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.estado) {
+            const cols: string[] = data.colonias || [];
+            setColoniasNewCP(cols);
+            setNewForm((prev) => ({
+              ...prev,
+              estado: data.estado,
+              ciudad: data.ciudad || data.municipio || prev.ciudad,
+              colonia: cols.length > 0 ? cols[0] : prev.colonia,
+            }));
+          }
+        }
+      } catch (_) {
+        // Ignorar si falla SEPOMEX
+      } finally {
+        setLoadingNewCP(false);
+      }
+    } else {
+      setColoniasNewCP([]);
+    }
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreando(true);
+    try {
+      await crearClienteAdmin(newForm);
+      const vendedorObj = vendedores.find((v) => v.id === newForm.vendedor_id);
+      setCredencialesCreadas({
+        nombre: newForm.nombre_completo.trim(),
+        empresa: newForm.empresa.trim(),
+        email: newForm.email.trim().toLowerCase(),
+        password: newForm.password.trim(),
+        telefono: newForm.telefono.trim(),
+        terminos: newForm.terminos_pago,
+        vendedorNombre: vendedorObj?.nombre,
+      });
+      cargarClientes();
+    } catch (error: any) {
+      alert('Error al crear cliente: ' + error.message);
+    } finally {
+      setCreando(false);
+    }
+  };
+
+  const construirMensajeBienvenida = (cred: CredencialesCreadas) => {
+    const urlLogin =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/admin/login`
+        : 'https://cotizador-rem.vercel.app/admin/login';
+    return (
+      `Hola ${cred.nombre}, te compartimos tu acceso empresarial al nuevo *Catálogo y Cotizador Online de REM Industrial* para *${cred.empresa}*:\n\n` +
+      `🔗 *Portal:* ${urlLogin}\n` +
+      `👤 *Usuario:* ${cred.email}\n` +
+      `🔑 *Contraseña:* ${cred.password}\n` +
+      `📋 *Condiciones:* ${cred.terminos}\n` +
+      (cred.vendedorNombre ? `🤝 *Asesor asignado:* ${cred.vendedorNombre}\n` : '') +
+      `\nTu cuenta ya está aprobada y lista con tus precios preferenciales.`
+    );
+  };
+
+  const handleCopiarCredenciales = async () => {
+    if (!credencialesCreadas) return;
+    try {
+      await navigator.clipboard.writeText(construirMensajeBienvenida(credencialesCreadas));
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    } catch (_) {
+      alert('No se pudo copiar automáticamente.');
+    }
+  };
+
   const handleEdit = (c: PerfilCliente) => {
     setClienteSelect(c);
+    setEditNuevaPassword('');
+    setShowEditPassword(false);
     setEditEstatus(c.estatus);
     setEditTerminos(c.terminos_pago || 'Contado');
     setEditRol(c.rol || 'cliente');
@@ -171,7 +360,8 @@ export default function ClientesB2BPage() {
         editTelefono,
         editRfc,
         editPaginaWeb,
-        editVendedorId || null
+        editVendedorId || null,
+        editNuevaPassword.trim() || undefined
       );
       setModalOpen(false);
       cargarClientes();
@@ -228,7 +418,7 @@ export default function ClientesB2BPage() {
           </p>
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <input
             type="text"
             placeholder="Buscar empresa, nombre..."
@@ -236,6 +426,14 @@ export default function ClientesB2BPage() {
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
+          <button
+            type="button"
+            onClick={handleOpenCreateModal}
+            className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition-colors inline-flex items-center gap-2"
+          >
+            <UserPlus className="h-4 w-4" />
+            Nuevo Cliente
+          </button>
         </div>
       </div>
 
@@ -418,6 +616,29 @@ export default function ClientesB2BPage() {
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 mb-1">Email (Acceso)</label>
                       <input type="email" className="w-full border border-slate-300 bg-slate-100 text-slate-500 rounded-lg px-3 py-1.5 text-sm" value={clienteSelect.email} disabled />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                        <KeyRound className="h-3.5 w-3.5 text-brand-600" />
+                        Asignar Nueva Contraseña <span className="text-slate-400 font-normal">(Opcional - dejar vacío para no cambiar)</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showEditPassword ? 'text' : 'password'}
+                          minLength={6}
+                          placeholder="Escribe una nueva contraseña si el cliente olvidó su acceso..."
+                          className="w-full border border-slate-300 rounded-lg pl-3 pr-9 py-1.5 text-sm bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
+                          value={editNuevaPassword}
+                          onChange={(e) => setEditNuevaPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowEditPassword((v) => !v)}
+                          className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600"
+                        >
+                          {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -612,6 +833,418 @@ export default function ClientesB2BPage() {
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+      )}
+
+      {createModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-brand-600" />
+                <h3 className="font-bold text-lg text-slate-900">
+                  {credencialesCreadas ? '¡Cuenta de Cliente Creada!' : 'Dar de Alta Nuevo Cliente'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setCreateModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {credencialesCreadas ? (
+              <div className="p-6 space-y-5">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
+                  <ShieldCheck className="h-6 w-6 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-emerald-900 text-sm">
+                      El cliente ya puede entrar al catálogo con precios preferenciales
+                    </h4>
+                    <p className="text-xs text-emerald-700 mt-1">
+                      Comparte estos datos de acceso con tu cliente por WhatsApp o correo electrónico.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 text-slate-100 rounded-xl p-5 space-y-2.5 text-sm font-mono border border-slate-800">
+                  <div className="flex justify-between gap-2 border-b border-slate-800 pb-2">
+                    <span className="text-slate-400">Empresa:</span>
+                    <span className="font-bold text-white">{credencialesCreadas.empresa}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 border-b border-slate-800 pb-2">
+                    <span className="text-slate-400">Contacto:</span>
+                    <span className="text-slate-200">{credencialesCreadas.nombre}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 border-b border-slate-800 pb-2">
+                    <span className="text-slate-400">Usuario (Correo):</span>
+                    <span className="font-bold text-cyan-400">{credencialesCreadas.email}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 border-b border-slate-800 pb-2">
+                    <span className="text-slate-400">Contraseña:</span>
+                    <span className="font-bold text-amber-300">{credencialesCreadas.password}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 border-b border-slate-800 pb-2">
+                    <span className="text-slate-400">Términos:</span>
+                    <span className="text-emerald-400 font-semibold">{credencialesCreadas.terminos}</span>
+                  </div>
+                  {credencialesCreadas.vendedorNombre && (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-slate-400">Asesor asignado:</span>
+                      <span className="text-slate-200">{credencialesCreadas.vendedorNombre}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCopiarCredenciales}
+                    className="w-full py-2.5 px-4 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-sm inline-flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {copiado ? (
+                      <>
+                        <Check className="h-4 w-4 text-emerald-600" />
+                        ¡Mensaje copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 text-slate-600" />
+                        Copiar mensaje de bienvenida
+                      </>
+                    )}
+                  </button>
+
+                  <a
+                    href={
+                      credencialesCreadas.telefono
+                        ? `https://wa.me/52${credencialesCreadas.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(
+                            construirMensajeBienvenida(credencialesCreadas)
+                          )}`
+                        : `https://wa.me/?text=${encodeURIComponent(construirMensajeBienvenida(credencialesCreadas))}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm inline-flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Enviar acceso por WhatsApp
+                  </a>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateModal}
+                    className="text-xs font-bold text-brand-600 hover:text-brand-800"
+                  >
+                    + Dar de alta otro cliente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreateModalOpen(false)}
+                    className="px-5 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6">
+                <form onSubmit={handleCreateSubmit} className="space-y-5">
+                  {/* Datos Principales y Credenciales */}
+                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <h4 className="font-semibold text-sm text-slate-800 mb-3 border-b border-slate-200 pb-2">
+                      1. Datos del Cliente y Acceso
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Empresa *</label>
+                        <input
+                          required
+                          type="text"
+                          placeholder="Ej. Maquinados Industriales S.A."
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                          value={newForm.empresa}
+                          onChange={(e) => setNewForm({ ...newForm, empresa: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre Completo (Contacto) *</label>
+                        <input
+                          required
+                          type="text"
+                          placeholder="Ej. Ing. Roberto Gómez"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                          value={newForm.nombre_completo}
+                          onChange={(e) => setNewForm({ ...newForm, nombre_completo: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Correo Electrónico (Usuario) *</label>
+                        <input
+                          required
+                          type="email"
+                          placeholder="compras@empresa.com"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                          value={newForm.email}
+                          onChange={(e) => setNewForm({ ...newForm, email: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-semibold text-slate-700">Contraseña Inicial *</label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNewForm((prev) => ({
+                                ...prev,
+                                password: generarPasswordSugerida(prev.empresa),
+                              }))
+                            }
+                            className="text-[11px] font-bold text-brand-600 hover:text-brand-800 inline-flex items-center gap-1"
+                          >
+                            <Sparkles className="h-3 w-3" /> Generar otra
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <input
+                            required
+                            minLength={6}
+                            type={showNewPassword ? 'text' : 'password'}
+                            placeholder="Mínimo 6 caracteres"
+                            className="w-full border border-slate-300 rounded-lg pl-3 pr-9 py-1.5 text-sm bg-white font-mono"
+                            value={newForm.password}
+                            onChange={(e) => setNewForm({ ...newForm, password: e.target.value })}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword((v) => !v)}
+                            className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600"
+                          >
+                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Teléfono / WhatsApp</label>
+                        <input
+                          type="tel"
+                          placeholder="656 000 0000"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                          value={newForm.telefono}
+                          onChange={(e) => setNewForm({ ...newForm, telefono: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">RFC (Opcional)</label>
+                        <input
+                          type="text"
+                          placeholder="ABC123456T1"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white uppercase"
+                          value={newForm.rfc}
+                          onChange={(e) => setNewForm({ ...newForm, rfc: e.target.value.toUpperCase() })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Puesto</label>
+                        <input
+                          type="text"
+                          placeholder="Compras / Mantenimiento"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                          value={newForm.puesto}
+                          onChange={(e) => setNewForm({ ...newForm, puesto: e.target.value })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Perfil de Empresa</label>
+                        <select
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                          value={newForm.perfil_empresa}
+                          onChange={(e) => setNewForm({ ...newForm, perfil_empresa: e.target.value })}
+                        >
+                          <option value="Usuario Final (Planta, Taller, Maquinados)">Usuario Final (Planta, Taller, Maquinados)</option>
+                          <option value="Distribuidor / Revendedor">Distribuidor / Revendedor</option>
+                          <option value="Integrador / Revendedor">Integrador / Revendedor</option>
+                          <option value="Fabricante">Fabricante</option>
+                          <option value="Otro">Otro</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Configuración Comercial */}
+                  <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                    <h4 className="font-semibold text-sm text-slate-800 mb-3 border-b border-blue-100 pb-2">
+                      2. Condiciones Comerciales y Vendedor Asignado
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Vendedor Asignado</label>
+                        <select
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                          value={newForm.vendedor_id}
+                          onChange={(e) => setNewForm({ ...newForm, vendedor_id: e.target.value })}
+                        >
+                          <option value="">-- Sin Vendedor Asignado (General) --</option>
+                          {vendedores.map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {v.nombre} ({v.telefono}) {!v.activo ? '[Inactivo]' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Términos de Pago</label>
+                        <select
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                          value={newForm.terminos_pago}
+                          onChange={(e) => setNewForm({ ...newForm, terminos_pago: e.target.value })}
+                        >
+                          <option value="Contado">Contado</option>
+                          <option value="Crédito 8 Días">Crédito 8 Días</option>
+                          <option value="Crédito 15 Días">Crédito 15 Días</option>
+                          <option value="Crédito 30 Días">Crédito 30 Días</option>
+                          <option value="Crédito 45 Días">Crédito 45 Días</option>
+                          <option value="Crédito 60 Días">Crédito 60 Días</option>
+                          <option value="Crédito 75 Días">Crédito 75 Días</option>
+                          <option value="Crédito 90 Días">Crédito 90 Días</option>
+                          <option value="Crédito 105 Días">Crédito 105 Días</option>
+                          <option value="Crédito 120 Días">Crédito 120 Días</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Estatus Inicial</label>
+                        <select
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                          value={newForm.estatus}
+                          onChange={(e: any) => setNewForm({ ...newForm, estatus: e.target.value })}
+                        >
+                          <option value="aprobado">Aprobado (Listo para usar)</option>
+                          <option value="pendiente">Pendiente</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Descuento Permanente (%)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                          value={newForm.descuento_porcentaje}
+                          onChange={(e) =>
+                            setNewForm({ ...newForm, descuento_porcentaje: parseFloat(e.target.value) || 0 })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ubicación Base (Opcional) */}
+                  <div className="p-4 rounded-lg border border-slate-200">
+                    <h4 className="font-semibold text-sm text-slate-800 mb-3 border-b border-slate-100 pb-2">
+                      3. Ubicación de Entrega Base <span className="text-xs font-normal text-slate-400">(Opcional)</span>
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Código Postal</label>
+                        <input
+                          type="text"
+                          maxLength={5}
+                          placeholder="Ej. 32668"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm"
+                          value={newForm.codigo_postal}
+                          onChange={(e) => handleNewCPChange(e.target.value)}
+                        />
+                        {loadingNewCP && (
+                          <span className="text-[10px] text-brand-600 font-semibold">Detectando CP...</span>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Estado</label>
+                        <input
+                          type="text"
+                          placeholder="Ej. Chihuahua"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm"
+                          value={newForm.estado}
+                          onChange={(e) => setNewForm({ ...newForm, estado: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Ciudad</label>
+                        <input
+                          type="text"
+                          placeholder="Ej. Juárez"
+                          className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm"
+                          value={newForm.ciudad}
+                          onChange={(e) => setNewForm({ ...newForm, ciudad: e.target.value })}
+                        />
+                      </div>
+                      <div className="md:col-span-3">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Colonia</label>
+                        {coloniasNewCP.length > 0 ? (
+                          <select
+                            className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                            value={newForm.colonia}
+                            onChange={(e) => setNewForm({ ...newForm, colonia: e.target.value })}
+                          >
+                            {coloniasNewCP.map((col, idx) => (
+                              <option key={idx} value={col}>
+                                {col}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder="Colonia o Parque Industrial"
+                            className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm"
+                            value={newForm.colonia}
+                            onChange={(e) => setNewForm({ ...newForm, colonia: e.target.value })}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setCreateModalOpen(false)}
+                      className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={creando}
+                      className="px-5 py-2 text-sm font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors inline-flex items-center gap-2 shadow-sm disabled:opacity-50"
+                    >
+                      {creando ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" /> Creando cuenta...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4" /> Crear Cuenta de Cliente
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       )}
