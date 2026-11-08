@@ -35,6 +35,7 @@ export interface Categoria {
   campos_filtro: CampoFiltro[];
   descripcion: string | null;
   icono_url: string | null;
+  imagen_url?: string | null;
 }
 
 export interface CampoFiltro {

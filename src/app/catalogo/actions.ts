@@ -4,6 +4,7 @@ import { cookies, headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { calcularPrecioVenta } from '@/lib/pricing/engine';
 import { obtenerTipoCambio } from '@/lib/pricing/exchange-rate';
+import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
 import type { Producto, ProductoConPrecio, Categoria, CampoFiltro } from '@/types';
 
 /**
@@ -350,4 +351,114 @@ export async function sincronizarPreciosCarrito(
       _campos_categoria: catObj?.campos_filtro,
     };
   });
+}
+
+/**
+ * Buscador rápido con vista previa instantánea para el Header.
+ * Soporta búsqueda por código exacto/parcial, marca, categoría, descripción y especificaciones
+ * (incluyendo búsquedas multi-palabra como "broca 1/2" o "inserto tpu").
+ */
+export async function buscarVistaPreviaRapida(
+  terminoRaw: string,
+  accessToken?: string | null,
+  limiteProductos: number = 6
+): Promise<{
+  productos: (ProductoConPrecio & { descripcion_formateada: string })[];
+  categorias: { nombre: string; cantidad: number; imagen_url: string | null }[];
+  totalCoincidencias: number;
+  isB2B: boolean;
+}> {
+  const q = (terminoRaw || '').trim().toLowerCase();
+  if (q.length < 2) {
+    return {
+      productos: [],
+      categorias: [],
+      totalCoincidencias: 0,
+      isB2B: false,
+    };
+  }
+
+  const { productos, categorias, isB2B } = await obtenerCatalogoPublico(null, accessToken);
+
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const imagenesCatMap = new Map<string, string | null>();
+  categorias.forEach((c) => {
+    imagenesCatMap.set(c.nombre.toLowerCase().trim(), c.imagen_url || null);
+  });
+
+  const conteoCategorias: Record<string, number> = {};
+  const coincidencias: {
+    prod: ProductoConPrecio & { descripcion_formateada: string };
+    score: number;
+  }[] = [];
+
+  for (const prod of productos) {
+    const numParte = (prod.numero_parte || '').toLowerCase();
+    const sku = (prod.sku_interno || '').toLowerCase();
+    const marca = (prod.marca || '').toLowerCase();
+    const cat = (prod.categoria || '').toLowerCase();
+    const descFormateada = formatearDescripcionProducto(prod);
+    const descFormLower = descFormateada.toLowerCase();
+
+    let specsText = '';
+    if (prod.especificaciones_tecnicas) {
+      specsText = Object.values(prod.especificaciones_tecnicas)
+        .map((v) => String(v ?? '').toLowerCase())
+        .join(' ');
+    }
+
+    const textoCompleto = `${numParte} ${sku} ${marca} ${cat} ${descFormLower} ${specsText}`;
+
+    // Todos los tokens deben coincidir en alguna parte del producto
+    const cumpleTokens = tokens.every((tk) => textoCompleto.includes(tk));
+    if (!cumpleTokens) continue;
+
+    const catNombre = prod.categoria ? prod.categoria.trim() : 'General';
+    conteoCategorias[catNombre] = (conteoCategorias[catNombre] || 0) + 1;
+
+    // Calcular relevancia para ordenar los mejores resultados arriba
+    let score = 10;
+    if (numParte === q || sku === q) {
+      score = 100;
+    } else if (numParte.startsWith(q) || sku.startsWith(q)) {
+      score = 85;
+    } else if (numParte.includes(q) || sku.includes(q)) {
+      score = 70;
+    } else if (marca === q || cat === q) {
+      score = 55;
+    } else if (descFormLower.startsWith(q) || marca.startsWith(q) || cat.startsWith(q)) {
+      score = 40;
+    } else if (descFormLower.includes(q)) {
+      score = 25;
+    }
+
+    coincidencias.push({
+      prod: {
+        ...prod,
+        descripcion_formateada: descFormateada,
+      },
+      score,
+    });
+  }
+
+  coincidencias.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return (a.prod.numero_parte || '').localeCompare(b.prod.numero_parte || '');
+  });
+
+  const categoriasOrdenadas = Object.entries(conteoCategorias)
+    .map(([nombre, cantidad]) => ({
+      nombre,
+      cantidad,
+      imagen_url: imagenesCatMap.get(nombre.toLowerCase()) || null,
+    }))
+    .sort((a, b) => b.cantidad - a.cantidad)
+    .slice(0, 4);
+
+  return {
+    productos: coincidencias.slice(0, limiteProductos).map((item) => item.prod),
+    categorias: categoriasOrdenadas,
+    totalCoincidencias: coincidencias.length,
+    isB2B,
+  };
 }
