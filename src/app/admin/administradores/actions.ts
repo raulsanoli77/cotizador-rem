@@ -9,6 +9,7 @@ export type PerfilAdmin = {
   nombre_completo: string;
   fecha_registro: string;
   rol: string;
+  foto_url?: string | null;
 };
 
 export async function obtenerAdministradores(): Promise<{
@@ -25,15 +26,33 @@ export async function obtenerAdministradores(): Promise<{
       .eq('rol', 'admin')
       .not('vendedor_id', 'is', null);
 
-    const { data, error } = await supabase
+    const { data: admins, error } = await supabase
       .from('perfiles_clientes')
-      .select('id, email, nombre_completo, fecha_registro, rol')
+      .select('*')
       .eq('rol', 'admin')
       .order('fecha_registro', { ascending: true });
 
     if (error) throw new Error(error.message);
 
-    return { success: true, data: (data || []) as PerfilAdmin[] };
+    // Obtener fotos desde auth users como respaldo inmediato
+    const userMetaMap = new Map<string, any>();
+    try {
+      const { data: authUsers } = await supabase.auth.admin.listUsers();
+      (authUsers?.users || []).forEach((u) => {
+        userMetaMap.set(u.id, u.user_metadata || {});
+      });
+    } catch (_) {}
+
+    const mapeados: PerfilAdmin[] = (admins || []).map((a: any) => ({
+      id: a.id,
+      email: a.email,
+      nombre_completo: a.nombre_completo,
+      fecha_registro: a.fecha_registro,
+      rol: a.rol,
+      foto_url: a.foto_url || userMetaMap.get(a.id)?.foto_url || null,
+    }));
+
+    return { success: true, data: mapeados };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -43,6 +62,7 @@ export async function crearAdministrador(input: {
   nombre_completo: string;
   email: string;
   password: string;
+  foto_url?: string | null;
 }) {
   const nombreLimpio = (input.nombre_completo || '').trim();
   const emailLimpio = (input.email || '').trim().toLowerCase();
@@ -79,6 +99,7 @@ export async function crearAdministrador(input: {
       empresa: 'REM Industrial',
       rol: 'admin',
       estatus: 'aprobado',
+      foto_url: input.foto_url || null,
     },
   });
 
@@ -88,27 +109,39 @@ export async function crearAdministrador(input: {
 
   const userId = authData.user.id;
 
-  const { error: profileError } = await supabase
-    .from('perfiles_clientes')
-    .upsert(
-      {
-        id: userId,
-        email: emailLimpio,
-        nombre_completo: nombreLimpio,
-        empresa: 'REM Industrial',
-        estatus: 'aprobado',
-        rol: 'admin',
-        terminos_pago: 'Contado',
-        vendedor_id: null,
-      },
-      { onConflict: 'id' }
-    );
+  const perfilData: any = {
+    id: userId,
+    email: emailLimpio,
+    nombre_completo: nombreLimpio,
+    empresa: 'REM Industrial',
+    estatus: 'aprobado',
+    rol: 'admin',
+    terminos_pago: 'Contado',
+    vendedor_id: null,
+  };
 
-  if (profileError) {
+  if (input.foto_url) {
+    perfilData.foto_url = input.foto_url;
+  }
+
+  try {
+    const { error: profileError } = await supabase
+      .from('perfiles_clientes')
+      .upsert(perfilData, { onConflict: 'id' });
+
+    if (profileError) {
+      if (profileError.message?.includes('foto_url')) {
+        delete perfilData.foto_url;
+        await supabase.from('perfiles_clientes').upsert(perfilData, { onConflict: 'id' });
+      } else {
+        throw profileError;
+      }
+    }
+  } catch (err: any) {
     try {
       await supabase.auth.admin.deleteUser(userId);
     } catch (_) {}
-    throw new Error('Error al guardar el perfil de administrador: ' + profileError.message);
+    throw new Error('Error al guardar el perfil de administrador: ' + err.message);
   }
 
   revalidatePath('/admin/administradores');
@@ -121,6 +154,7 @@ export async function actualizarAdministrador(
   input: {
     nombre_completo: string;
     nueva_password?: string;
+    foto_url?: string | null;
   }
 ) {
   const nombreLimpio = (input.nombre_completo || '').trim();
@@ -130,32 +164,48 @@ export async function actualizarAdministrador(
 
   const supabase = createAdminClient();
 
+  const authUpdatePayload: any = {
+    user_metadata: {
+      nombre_completo: nombreLimpio,
+      foto_url: input.foto_url || null,
+    },
+  };
+
   if (input.nueva_password && input.nueva_password.trim().length > 0) {
     if (input.nueva_password.trim().length < 6) {
       throw new Error('La nueva contraseña debe tener al menos 6 caracteres.');
     }
-    const { error: passError } = await supabase.auth.admin.updateUserById(id, {
-      password: input.nueva_password.trim(),
-      email_confirm: true,
-    });
-    if (passError) {
-      throw new Error('Error al actualizar contraseña: ' + passError.message);
-    }
+    authUpdatePayload.password = input.nueva_password.trim();
+    authUpdatePayload.email_confirm = true;
   }
+
+  try {
+    await supabase.auth.admin.updateUserById(id, authUpdatePayload);
+  } catch (authErr: any) {
+    console.warn('Aviso al actualizar auth metadata:', authErr);
+  }
+
+  const updateData: any = {
+    nombre_completo: nombreLimpio,
+    empresa: 'REM Industrial',
+    rol: 'admin',
+    estatus: 'aprobado',
+    vendedor_id: null,
+    foto_url: input.foto_url || null,
+  };
 
   const { error } = await supabase
     .from('perfiles_clientes')
-    .update({
-      nombre_completo: nombreLimpio,
-      empresa: 'REM Industrial',
-      rol: 'admin',
-      estatus: 'aprobado',
-      vendedor_id: null,
-    })
+    .update(updateData)
     .eq('id', id);
 
   if (error) {
-    throw new Error('Error al actualizar administrador: ' + error.message);
+    if (error.message?.includes('foto_url')) {
+      delete updateData.foto_url;
+      await supabase.from('perfiles_clientes').update(updateData).eq('id', id);
+    } else {
+      throw new Error('Error al actualizar administrador: ' + error.message);
+    }
   }
 
   revalidatePath('/admin/administradores');

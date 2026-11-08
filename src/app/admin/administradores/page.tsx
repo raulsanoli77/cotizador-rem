@@ -13,6 +13,9 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
+  Camera,
+  User,
+  X,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import {
@@ -38,6 +41,8 @@ export default function AdministradoresPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [fotoUrl, setFotoUrl] = useState('');
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -60,6 +65,7 @@ export default function AdministradoresPage() {
     setNombreCompleto('');
     setEmail('');
     setPassword('');
+    setFotoUrl('');
     setShowPassword(false);
     setModalOpen(true);
   };
@@ -69,8 +75,31 @@ export default function AdministradoresPage() {
     setNombreCompleto(a.nombre_completo || '');
     setEmail(a.email);
     setPassword('');
+    setFotoUrl(a.foto_url || '');
     setShowPassword(false);
     setModalOpen(true);
+  };
+
+  const handleSubirFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setSubiendoFoto(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `admin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = `administradores/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('media').upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('media').getPublicUrl(filePath);
+      setFotoUrl(data.publicUrl);
+    } catch (err: any) {
+      alert('Error al subir la imagen: ' + err.message);
+    } finally {
+      setSubiendoFoto(false);
+    }
   };
 
   const handleGuardar = async (e: React.FormEvent) => {
@@ -81,12 +110,14 @@ export default function AdministradoresPage() {
         await actualizarAdministrador(adminSelect.id, {
           nombre_completo: nombreCompleto,
           nueva_password: password.trim() || undefined,
+          foto_url: fotoUrl.trim() || null,
         });
       } else {
         await crearAdministrador({
           nombre_completo: nombreCompleto,
           email,
           password,
+          foto_url: fotoUrl.trim() || null,
         });
       }
       setModalOpen(false);
@@ -148,7 +179,7 @@ export default function AdministradoresPage() {
           <table className="w-full text-left text-sm text-slate-600 table-auto">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
               <tr>
-                <th className="px-4 py-3.5">Nombre / Cuenta</th>
+                <th className="px-4 py-3.5">Administrador</th>
                 <th className="px-4 py-3.5">Correo de Acceso</th>
                 <th className="px-4 py-3.5">Fecha de Alta</th>
                 <th className="px-4 py-3.5">Permisos</th>
@@ -175,9 +206,17 @@ export default function AdministradoresPage() {
                     <tr key={a.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-purple-100 text-purple-700 font-bold flex items-center justify-center shrink-0 text-xs border border-purple-200">
-                            {(a.nombre_completo || a.email).slice(0, 2).toUpperCase()}
-                          </div>
+                          {a.foto_url ? (
+                            <img
+                              src={a.foto_url}
+                              alt={a.nombre_completo || a.email}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-purple-200 shrink-0 shadow-sm"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 font-bold flex items-center justify-center shrink-0 text-xs border border-purple-200 shadow-sm">
+                              {(a.nombre_completo || a.email).slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="font-bold text-slate-900">
@@ -255,7 +294,7 @@ export default function AdministradoresPage() {
 
       {modalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 space-y-4 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-purple-600" />
@@ -271,6 +310,52 @@ export default function AdministradoresPage() {
             </div>
 
             <form onSubmit={handleGuardar} className="space-y-4">
+              {/* Fotografía de Perfil */}
+              <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100">
+                <label className="block text-xs font-bold text-purple-900 mb-2">Fotografía de Perfil</label>
+                <div className="flex items-center gap-4">
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden bg-white border-2 border-purple-300 flex items-center justify-center shrink-0 shadow-sm">
+                    {fotoUrl ? (
+                      <img src={fotoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-8 h-8 text-purple-300" />
+                    )}
+                    {subiendoFoto && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-purple-200 hover:bg-purple-100 text-purple-800 rounded-lg text-xs font-bold transition-colors shadow-sm">
+                        <Camera className="w-3.5 h-3.5 text-purple-600" />
+                        <span>{subiendoFoto ? 'Subiendo...' : fotoUrl ? 'Cambiar Foto' : 'Subir Foto'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleSubirFoto}
+                          disabled={subiendoFoto}
+                        />
+                      </label>
+                      {fotoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setFotoUrl('')}
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors text-xs"
+                          title="Eliminar foto"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500">Formato JPG, PNG o WebP.</p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Nombre Completo *
@@ -341,7 +426,7 @@ export default function AdministradoresPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={guardando}
+                  disabled={guardando || subiendoFoto}
                   className="px-5 py-2 text-sm font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors inline-flex items-center gap-2 disabled:opacity-50"
                 >
                   {guardando ? (
