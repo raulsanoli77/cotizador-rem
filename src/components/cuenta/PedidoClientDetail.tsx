@@ -1,9 +1,14 @@
 'use client';
 
-import { ArrowLeft, Package, Calendar, MessageSquare, MapPin, Clock, CheckCircle, FileText, Download } from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Package, Calendar, MessageSquare, MapPin, Clock, CheckCircle, FileText, Download, RotateCcw, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
+import { supabase, syncAuthCookie } from '@/lib/supabase/client';
+import { obtenerPartidasParaRepetirPedido } from '@/app/cuenta/pedidos/[id]/actions';
+import { useCartStore } from '@/stores/cart-store';
 
 interface PedidoClientDetailProps {
   pedido: any;
@@ -18,6 +23,10 @@ interface PedidoClientDetailProps {
 }
 
 export default function PedidoClientDetail({ pedido, partidas, vendedor }: PedidoClientDetailProps) {
+  const router = useRouter();
+  const agregarItem = useCartStore((s) => s.agregarItem);
+  const [repitiendo, setRepitiendo] = useState(false);
+
   const folioLimpio = (pedido.numero_po || pedido.id.slice(0, 8)).replace(/^COT-/i, '');
   const esAtendida = pedido.estatus === 'atendida' || pedido.estatus === 'aprobado_por_cliente' || pedido.estatus === 'enviado';
   const whatsAppMessage = encodeURIComponent(
@@ -25,6 +34,42 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
   );
   const telefonoWhatsApp = vendedor?.telefono ? vendedor.telefono.replace(/\D/g, '') : '614815170';
   const whatsappUrl = `https://wa.me/52${telefonoWhatsApp}?text=${whatsAppMessage}`;
+
+  const handleRepetirPedido = async () => {
+    setRepitiendo(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        syncAuthCookie(session.access_token);
+      }
+      const res = await obtenerPartidasParaRepetirPedido(pedido.id, session?.access_token || null);
+      if (!res.success) {
+        alert(res.error || 'No se pudo recargar el pedido.');
+        return;
+      }
+      if (res.items.length === 0) {
+        alert('Los artículos de esta cotización ya no se encuentran activos en el catálogo.');
+        return;
+      }
+
+      for (const item of res.items) {
+        agregarItem(item.producto, item.cantidad);
+      }
+
+      if (res.noDisponibles.length > 0) {
+        alert(
+          `Se agregaron ${res.items.length} artículos a tu cotización con precios actualizados.\nNota: Los siguientes códigos ya no están disponibles: ${res.noDisponibles.join(', ')}`
+        );
+      }
+
+      router.push('/checkout');
+    } catch (err) {
+      console.error('Error al repetir pedido:', err);
+      alert('Ocurrió un error al volver a cotizar este pedido.');
+    } finally {
+      setRepitiendo(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -62,6 +107,26 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleRepetirPedido}
+            disabled={repitiendo}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-700 border-2 border-brand-200 font-bold text-sm rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
+            title="Cargar todos estos artículos nuevamente en tu carrito con precios actualizados"
+          >
+            {repitiendo ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Cargando...
+              </>
+            ) : (
+              <>
+                <RotateCcw className="w-4 h-4" />
+                Volver a Cotizar
+              </>
+            )}
+          </button>
+
           {pedido.po_url && (
             <a
               href={pedido.po_url}

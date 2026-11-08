@@ -1,15 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { supabase, syncAuthCookie } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
-import { PackageSearch, ArrowRight, Clock, CheckCircle, Loader2, FileText } from 'lucide-react';
+import { PackageSearch, ArrowRight, Clock, CheckCircle, Loader2, FileText, RotateCcw } from 'lucide-react';
+import { obtenerPartidasParaRepetirPedido } from '@/app/cuenta/pedidos/[id]/actions';
+import { useCartStore } from '@/stores/cart-store';
 
 export default function ClientPedidosPage() {
+  const router = useRouter();
   const [pedidos, setPedidos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [repitiendoId, setRepitiendoId] = useState<string | null>(null);
+
+  const agregarItem = useCartStore((s) => s.agregarItem);
 
   useEffect(() => {
     const fetchPedidos = async () => {
@@ -19,6 +26,7 @@ export default function ClientPedidosPage() {
         setLoading(false);
         return;
       }
+      syncAuthCookie(session.access_token);
 
       const { data, error: err } = await supabase
         .from('pedidos')
@@ -36,6 +44,42 @@ export default function ClientPedidosPage() {
 
     fetchPedidos();
   }, []);
+
+  const handleRepetirPedido = async (pedidoId: string) => {
+    setRepitiendoId(pedidoId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        syncAuthCookie(session.access_token);
+      }
+      const res = await obtenerPartidasParaRepetirPedido(pedidoId, session?.access_token || null);
+      if (!res.success) {
+        alert(res.error || 'No se pudo recargar el pedido.');
+        return;
+      }
+      if (res.items.length === 0) {
+        alert('Los artículos de esta cotización ya no se encuentran activos en el catálogo.');
+        return;
+      }
+
+      for (const item of res.items) {
+        agregarItem(item.producto, item.cantidad);
+      }
+
+      if (res.noDisponibles.length > 0) {
+        alert(
+          `Se agregaron ${res.items.length} artículos a tu cotización con precios actualizados.\nNota: Los siguientes códigos ya no están disponibles: ${res.noDisponibles.join(', ')}`
+        );
+      }
+
+      router.push('/checkout');
+    } catch (err) {
+      console.error('Error al repetir pedido:', err);
+      alert('Ocurrió un error al volver a cotizar este pedido.');
+    } finally {
+      setRepitiendoId(null);
+    }
+  };
 
   if (loading) return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
@@ -68,6 +112,7 @@ export default function ClientPedidosPage() {
             const statusInfo = getEstatusInfo(pedido.estatus);
             const StatusIcon = statusInfo.icon;
             const folioLimpio = (pedido.numero_po || pedido.id.slice(0, 8)).replace(/^COT-/i, '');
+            const estaRepitiendo = repitiendoId === pedido.id;
             
             return (
               <div key={pedido.id} className="bg-white border-2 border-slate-300 rounded-2xl p-5 hover:shadow-lg hover:border-slate-400 transition-all flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shadow-sm">
@@ -107,13 +152,35 @@ export default function ClientPedidosPage() {
                   </div>
                 </div>
 
-                <Link 
-                  href={`/cuenta/pedidos/${pedido.id}`}
-                  className="w-full sm:w-auto text-center px-4 py-2 bg-white hover:bg-slate-50 border-2 border-slate-300 hover:border-slate-400 text-slate-800 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors text-sm shadow-sm"
-                >
-                  Ver Detalle
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleRepetirPedido(pedido.id)}
+                    disabled={estaRepitiendo}
+                    className="flex-1 sm:flex-initial text-center px-3.5 py-2 bg-brand-50 hover:bg-brand-100 border-2 border-brand-200 hover:border-brand-300 text-brand-700 font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors text-xs sm:text-sm shadow-2xs disabled:opacity-50 cursor-pointer"
+                    title="Cargar estos mismos artículos en el carrito con precios actualizados"
+                  >
+                    {estaRepitiendo ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Cargando...
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="w-4 h-4" />
+                        Volver a Cotizar
+                      </>
+                    )}
+                  </button>
+
+                  <Link 
+                    href={`/cuenta/pedidos/${pedido.id}`}
+                    className="flex-1 sm:flex-initial text-center px-4 py-2 bg-white hover:bg-slate-50 border-2 border-slate-300 hover:border-slate-400 text-slate-800 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors text-xs sm:text-sm shadow-sm"
+                  >
+                    Ver Detalle
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
               </div>
             );
           })}
