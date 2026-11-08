@@ -85,17 +85,19 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
               <div className="flex flex-col mb-1">
                 {producto.precio_publico && producto.precio_publico > producto.precio_venta && (
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[10px] text-slate-400 line-through">
+                    <span className="text-[10px] text-slate-400 line-through whitespace-nowrap">
                       ${producto.precio_publico.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded border border-green-200">
+                    <span className="text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded border border-green-200 whitespace-nowrap">
                       -{Math.round((1 - (producto.precio_venta / producto.precio_publico)) * 100)}%
                     </span>
                   </div>
                 )}
-                <div className="text-lg sm:text-xl font-black text-slate-900 leading-none truncate">
-                  ${producto.precio_venta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  <span className="text-xs sm:text-sm text-slate-600 font-bold ml-1">
+                <div className="flex items-baseline flex-wrap gap-x-1 gap-y-0.5 leading-none">
+                  <span className="text-base sm:text-lg font-black text-slate-900 whitespace-nowrap">
+                    ${producto.precio_venta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase whitespace-nowrap">
                     {producto.moneda_venta}{multiplo > 1 ? '/pza' : ''}
                   </span>
                 </div>
@@ -108,9 +110,14 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
                   <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
                     Precio de Lista {multiplo > 1 ? '(Por pza)' : ''}
                   </span>
-                  <span className="text-base font-black text-slate-900">
-                    ${producto.precio_publico.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {producto.moneda_venta}
-                  </span>
+                  <div className="flex items-baseline justify-center flex-wrap gap-1">
+                    <span className="text-base sm:text-lg font-black text-slate-900 whitespace-nowrap">
+                      ${producto.precio_publico.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase whitespace-nowrap">
+                      {producto.moneda_venta}
+                    </span>
+                  </div>
                 </div>
               )}
               <Link href="/admin/login" className="block w-full bg-slate-900 hover:bg-black text-white text-[11px] font-bold py-1.5 rounded-lg transition-colors shadow-sm">
@@ -121,10 +128,10 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
 
           {/* ADD TO CART CONTROLS (SIEMPRE VISIBLES) */}
           <div className="flex gap-1.5 w-full mt-auto">
-            <div className="flex items-center justify-between border-2 border-slate-300 rounded-xl bg-white w-[74px] shrink-0 shadow-sm">
+            <div className="flex items-center justify-between border-2 border-slate-300 rounded-xl bg-white w-[60px] sm:w-[66px] shrink-0 shadow-sm px-0.5">
               <button 
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCantidad(Math.max(multiplo, cantidad - multiplo)); }}
-                className="py-1.5 px-2 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-l-lg transition-colors"
+                className="py-1 px-1 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-l-lg transition-colors"
                 title={multiplo > 1 ? `Restar paquete de ${multiplo}` : 'Restar 1'}
               >
                 <Minus className="h-3 w-3" />
@@ -132,7 +139,7 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
               <span className="text-xs font-bold text-slate-900">{cantidad}</span>
               <button 
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCantidad(cantidad + multiplo); }}
-                className="py-1.5 px-2 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-r-lg transition-colors"
+                className="py-1 px-1 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-r-lg transition-colors"
                 title={multiplo > 1 ? `Sumar paquete de ${multiplo}` : 'Sumar 1'}
               >
                 <Plus className="h-3 w-3" />
@@ -141,10 +148,10 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
             
             <button 
               onClick={handleAdd}
-              className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-95 shadow-md shadow-brand-600/20 py-2 px-1 overflow-hidden"
+              className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-xl flex items-center justify-center gap-1.5 transition-colors active:scale-95 shadow-md shadow-brand-600/20 py-2 px-2"
             >
               <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-              <span className="text-[11px] font-bold truncate">Agregar</span>
+              <span className="text-xs font-bold whitespace-nowrap">Agregar</span>
             </button>
           </div>
         </div>
