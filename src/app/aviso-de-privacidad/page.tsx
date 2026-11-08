@@ -54,24 +54,46 @@ export default function AvisoDePrivacidadPage() {
                 Identidad y Domicilio del Responsable del Tratamiento
               </h2>
               <p>
-                <strong>REM Industrial</strong> (en lo sucesivo denominado <em>&quot;EL RESPONSABLE&quot;</em>), con domicilio comercial y de operaciones ubicado en la ciudad de <strong>Chihuahua, Chihuahua, México</strong>, y portal oficial de internet{' '}
+                <strong>REM Industrial</strong>, marca y operación comercial a cargo de la persona física con actividad empresarial <strong>ROBERTO AVILA SILVA</strong> (con Registro Federal de Contribuyentes <strong>AISR761004B77</strong>), en lo sucesivo denominado conjuntamente como <em>&quot;EL RESPONSABLE&quot;</em>, con portal oficial de internet{' '}
                 <a href="https://www.remindustrial.mx" className="text-brand-600 font-bold hover:underline">
                   https://www.remindustrial.mx
                 </a>
                 , hace de su conocimiento que es el responsable legítimo del uso, almacenamiento, tratamiento y protección de sus datos personales.
               </p>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-600 mt-3">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-brand-600 shrink-0" />
-                  <span><strong>Contacto Privacidad:</strong> ventas3@remindustrial.mx</span>
+              
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3 text-xs sm:text-sm text-slate-700 mt-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border-b md:border-b-0 md:border-r border-slate-200 pb-3 md:pb-0 md:pr-4">
+                    <p className="font-bold text-slate-900 text-xs uppercase tracking-wider text-brand-700 mb-1">
+                      Domicilio Fiscal Registrado (SAT):
+                    </p>
+                    <p className="text-slate-600">
+                      Av. Manuel Gómez Morín No. 1249, Int. 1 (Plaza Comercial Impulso, Local 5), Colonia Las Palmas, C.P. 32668, Ciudad Juárez, Chihuahua, México.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 text-xs uppercase tracking-wider text-brand-700 mb-1">
+                      Oficinas Comerciales y Operativas:
+                    </p>
+                    <p className="text-slate-600">
+                      Chihuahua, Chihuahua (Chihuahua Capital) &amp; Ciudad Juárez, con distribución industrial y cobertura a toda la República Mexicana.
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-brand-600 shrink-0" />
-                  <span><strong>Teléfono:</strong> +52 (614) 181 5170</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-brand-600 shrink-0" />
-                  <span>Chihuahua, Chih., México</span>
+
+                <div className="border-t border-slate-200 pt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-brand-600 shrink-0" />
+                    <span><strong>Contacto Privacidad:</strong> ventas3@remindustrial.mx</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-brand-600 shrink-0" />
+                    <span><strong>Teléfono / WhatsApp:</strong> +52 (614) 181 5170</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-brand-600 shrink-0" />
+                    <span>RFC: AISR761004B77</span>
+                  </div>
                 </div>
               </div>
             </section>

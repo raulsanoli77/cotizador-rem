@@ -41,7 +41,7 @@ export default function TerminosYCondicionesPage() {
             {/* Introducción */}
             <section className="border-b border-slate-100 pb-8">
               <p>
-                El presente documento establece los <strong>Términos y Condiciones Generales de Uso, Cotización y Venta Mercantil</strong> (en adelante, los <em>&quot;Términos&quot;</em>) que rigen la relación comercial entre <strong>REM Industrial</strong> (en lo sucesivo, <em>&quot;EL PROVEEDOR&quot;</em>) y las personas físicas con actividad empresarial o personas morales que accedan, se registren, coticen o adquieran mercancías a través del portal{' '}
+                El presente documento establece los <strong>Términos y Condiciones Generales de Uso, Cotización y Venta Mercantil</strong> (en adelante, los <em>&quot;Términos&quot;</em>) que rigen la relación comercial entre <strong>REM Industrial</strong>, representada y operada comercialmente por la persona física con actividad empresarial <strong>ROBERTO AVILA SILVA</strong> (con Registro Federal de Contribuyentes <strong>AISR761004B77</strong>), con domicilio fiscal registrado en Av. Manuel Gómez Morín No. 1249, Int. 1 (Plaza Comercial Impulso, Local 5), Colonia Las Palmas, C.P. 32668, Ciudad Juárez, Chihuahua, y oficinas comerciales en Chihuahua, Chihuahua (en lo sucesivo, <em>&quot;EL PROVEEDOR&quot;</em>), y las personas físicas con actividad empresarial o personas morales que accedan, se registren, coticen o adquieran mercancías a través del portal{' '}
                 <a href="https://www.remindustrial.mx" className="text-brand-600 font-bold hover:underline">
                   https://www.remindustrial.mx
                 </a>{' '}
@@ -246,7 +246,7 @@ export default function TerminosYCondicionesPage() {
                 Legislación Aplicable, Jurisdicción y Competencia
               </h2>
               <p>
-                Para la interpretación, ejecución y cumplimiento de las operaciones mercantiles reguladas bajo estos Términos, las partes se someten de manera expresa e irrestricta a las leyes mercantiles y civiles aplicables de los <strong>Estados Unidos Mexicanos</strong> y a la jurisdicción exclusiva de los <strong>Tribunales Competentes con sede en la ciudad de Chihuahua, Chihuahua</strong>, renunciando a cualquier otro fuero o tribunal que por razón de sus domicilios presentes, futuros o por la ubicación de sus plantas pudiera corresponderles.
+                Para la interpretación, ejecución y cumplimiento de las operaciones mercantiles reguladas bajo estos Términos, las partes se someten de manera expresa e irrestricta a las leyes mercantiles y civiles aplicables de los <strong>Estados Unidos Mexicanos</strong> y a la jurisdicción de los <strong>Tribunales Competentes del Estado de Chihuahua</strong> (con sede en la ciudad de Chihuahua o Ciudad Juárez, a elección de la parte promovente), renunciando a cualquier otro fuero o tribunal que por razón de sus domicilios presentes, futuros o por la ubicación de sus plantas pudiera corresponderles.
               </p>
             </section>
 
