@@ -145,10 +145,10 @@ export default function TerminosYCondicionesPage() {
                   <strong>Tiempos Estimados de Entrega (ETA):</strong> Los plazos comunicados son estimados con base en la información proporcionada por las plantas productoras, despachos aduanales e inventarios disponibles. <em>EL PROVEEDOR</em> no asume responsabilidad civil, penal ni contractual por retrasos originados por causas de fuerza mayor o caso fortuito (contingencias aduanales en puentes fronterizos, huelgas de paqueterías, fenómenos meteorológicos o demoras imputables directamente a la planta matriz del fabricante extranjero).
                 </li>
                 <li>
-                  <strong>Entregas Locales:</strong> En la ciudad de Chihuahua y zona industrial conurbada, las entregas se coordinarán conforme a las rutas de reparto programadas o mediante recolección en mostrador de almacén.
+                  <strong>Entregas Locales:</strong> En las ciudades de <strong>Ciudad Juárez</strong> y <strong>Chihuahua Capital</strong> (y sus respectivas zonas industriales conurbadas), las entregas se coordinarán conforme a las rutas de reparto programadas o mediante recolección directa en mostrador de almacén.
                 </li>
                 <li>
-                  <strong>Envíos Foráneos (Traspaso de Riesgo):</strong> Salvo acuerdo específico de flete pagado por <em>EL PROVEEDOR</em>, los envíos foráneos se consideran bajo la modalidad <strong>FOB Almacén Chihuahua (Libre a Bordo)</strong>. La mercancía viaja por cuenta, cargo y riesgo de <em>EL CLIENTE</em> a partir del momento en que es entregada a la empresa transportista o fletera seleccionada (Tresguerras, Castores, FedEx, etc.). Se recomienda a <em>EL CLIENTE</em> solicitar flete asegurado al momento de su cotización.
+                  <strong>Envíos Foráneos (Traspaso de Riesgo):</strong> Salvo acuerdo específico de flete pagado por <em>EL PROVEEDOR</em>, los envíos foráneos a otros municipios o entidades federativas se consideran bajo la modalidad <strong>FOB Almacén (Libre a Bordo Ciudad Juárez / Chihuahua)</strong>. La mercancía viaja por cuenta, cargo y riesgo de <em>EL CLIENTE</em> a partir del momento en que es entregada a la empresa transportista o fletera seleccionada (Tresguerras, Castores, FedEx, etc.). Se recomienda a <em>EL CLIENTE</em> solicitar flete asegurado al momento de su cotización.
                 </li>
               </ul>
             </section>
