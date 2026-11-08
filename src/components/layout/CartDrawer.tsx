@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { X, ShoppingCart, ArrowRight } from 'lucide-react';
+import { X, ShoppingCart, ArrowRight, FileSpreadsheet } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { supabase } from '@/lib/supabase/client';
 import { formatearPrecio } from '@/lib/pricing/engine';
+import CargaRapidaModal from '@/components/cotizacion/CargaRapidaModal';
 
 export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const items = useCartStore((s) => s.items);
@@ -13,6 +14,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   const removerItem = useCartStore((s) => s.removerItem);
 
   const [b2bStatus, setB2BStatus] = useState(false);
+  const [mostrarCargaRapida, setMostrarCargaRapida] = useState(false);
 
   useEffect(() => {
     async function check() {
@@ -30,90 +32,120 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-hidden">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
-      
-      <div className="fixed inset-y-0 right-0 w-full max-w-md flex flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5 text-brand-600" />
-            Cotización Actual
-          </h2>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          {items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4">
-              <ShoppingCart className="h-16 w-16 opacity-20" />
-              <p>Tu lista de cotización está vacía</p>
-              <button onClick={onClose} className="text-brand-600 font-semibold hover:underline">Ir al catálogo</button>
-            </div>
-          ) : (
-            <ul className="space-y-6">
-              {items.map((item) => (
-                <li key={item.producto.id} className="flex gap-4">
-                  <div className="h-16 w-16 bg-slate-100 rounded-lg flex-shrink-0 border border-slate-200 p-1 flex items-center justify-center">
-                    {item.producto.imagen_url ? (
-                      <img src={item.producto.imagen_url} alt={item.producto.numero_parte} className="max-h-full object-contain mix-blend-multiply" />
-                    ) : (
-                      <span className="text-xs text-slate-400 font-medium">{item.producto.marca}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-mono text-sm font-bold text-brand-700 truncate">{item.producto.numero_parte}</p>
-                    <p className="text-xs text-slate-500 uppercase truncate mt-0.5">{item.producto.categoria}</p>
-                    <div className="mt-2 flex items-end justify-between">
-                      <div className="flex flex-col">
-                        <p className="text-[11px] text-slate-500 font-medium mb-0.5">
-                          {item.cantidad} und. x {formatearPrecio(item.producto.precio_venta, item.producto.moneda_venta)}
-                        </p>
-                        <p className="text-sm font-black text-slate-900">
-                          {formatearPrecio(item.cantidad * item.producto.precio_venta, item.producto.moneda_venta)}
-                        </p>
-                      </div>
-                      <button onClick={() => removerItem(item.producto.id)} className="text-[11px] text-red-500 font-bold hover:underline mb-0.5">
-                        Remover
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {items.length > 0 && (
-          <div className="border-t border-slate-100 p-6 bg-slate-50 space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-slate-500">Subtotal estimado</span>
-              <span className="text-xl font-bold text-slate-900">
-                {formatearPrecio(obtenerSubtotal(), items[0]?.producto.moneda_venta || 'USD')}
-              </span>
-            </div>
-            
-            {b2bStatus ? (
-              <Link 
-                href="/checkout" 
-                onClick={onClose}
-                className="w-full bg-brand-600 hover:bg-brand-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
+    <>
+      <div className="fixed inset-0 z-[100] overflow-hidden">
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+        
+        <div className="fixed inset-y-0 right-0 w-full max-w-md flex flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-brand-600" />
+              Cotización Actual
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setMostrarCargaRapida(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 text-xs font-bold transition-colors cursor-pointer"
+                title="Pegar lista de códigos desde Excel"
               >
-                Solicitar Cotización Formal <ArrowRight className="h-4 w-4" />
-              </Link>
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                Carga Rápida
+              </button>
+              <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6">
+            {items.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4 text-center">
+                <ShoppingCart className="h-16 w-16 opacity-20" />
+                <p className="text-slate-500 font-medium">Tu lista de cotización está vacía</p>
+                <div className="flex flex-col gap-2.5 w-full max-w-xs pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setMostrarCargaRapida(true)}
+                    className="w-full py-2.5 px-4 bg-brand-50 hover:bg-brand-100 text-brand-700 border-2 border-brand-200 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Pegar Códigos desde Excel
+                  </button>
+                  <button onClick={onClose} className="text-brand-600 font-semibold text-sm hover:underline">
+                    Explorar el catálogo
+                  </button>
+                </div>
+              </div>
             ) : (
-              <Link 
-                href="/cotizacion" 
-                onClick={onClose}
-                className="w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20"
-              >
-                Generar PDF de Cotización <ArrowRight className="h-4 w-4" />
-              </Link>
+              <ul className="space-y-6">
+                {items.map((item) => (
+                  <li key={item.producto.id} className="flex gap-4">
+                    <div className="h-16 w-16 bg-slate-100 rounded-lg flex-shrink-0 border border-slate-200 p-1 flex items-center justify-center">
+                      {item.producto.imagen_url ? (
+                        <img src={item.producto.imagen_url} alt={item.producto.numero_parte} className="max-h-full object-contain mix-blend-multiply" />
+                      ) : (
+                        <span className="text-xs text-slate-400 font-medium">{item.producto.marca}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-mono text-sm font-bold text-brand-700 truncate">{item.producto.numero_parte}</p>
+                      <p className="text-xs text-slate-500 uppercase truncate mt-0.5">{item.producto.categoria}</p>
+                      <div className="mt-2 flex items-end justify-between">
+                        <div className="flex flex-col">
+                          <p className="text-[11px] text-slate-500 font-medium mb-0.5">
+                            {item.cantidad} und. x {formatearPrecio(item.producto.precio_venta, item.producto.moneda_venta)}
+                          </p>
+                          <p className="text-sm font-black text-slate-900">
+                            {formatearPrecio(item.cantidad * item.producto.precio_venta, item.producto.moneda_venta)}
+                          </p>
+                        </div>
+                        <button onClick={() => removerItem(item.producto.id)} className="text-[11px] text-red-500 font-bold hover:underline mb-0.5">
+                          Remover
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-        )}
+
+          {items.length > 0 && (
+            <div className="border-t border-slate-100 p-6 bg-slate-50 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-slate-500">Subtotal estimado</span>
+                <span className="text-xl font-bold text-slate-900">
+                  {formatearPrecio(obtenerSubtotal(), items[0]?.producto.moneda_venta || 'USD')}
+                </span>
+              </div>
+              
+              {b2bStatus ? (
+                <Link 
+                  href="/checkout" 
+                  onClick={onClose}
+                  className="w-full bg-brand-600 hover:bg-brand-700 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20"
+                >
+                  Solicitar Cotización Formal <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : (
+                <Link 
+                  href="/cotizacion" 
+                  onClick={onClose}
+                  className="w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20"
+                >
+                  Generar PDF de Cotización <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      <CargaRapidaModal
+        isOpen={mostrarCargaRapida}
+        onClose={() => setMostrarCargaRapida(false)}
+      />
+    </>
   );
 }

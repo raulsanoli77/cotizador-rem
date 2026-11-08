@@ -4,7 +4,7 @@ import { cookies, headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { calcularPrecioVenta } from '@/lib/pricing/engine';
 import { obtenerTipoCambio } from '@/lib/pricing/exchange-rate';
-import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
+import { formatearDescripcionProducto, obtenerMultiploVenta } from '@/lib/pricing/formatters';
 import type { Producto, ProductoConPrecio, Categoria, CampoFiltro } from '@/types';
 
 /**
@@ -461,4 +461,83 @@ export async function buscarVistaPreviaRapida(
     totalCoincidencias: coincidencias.length,
     isB2B,
   };
+}
+
+/**
+ * Resuelve una lista de códigos y cantidades pegados desde Excel o texto libre
+ * para la función de Carga Rápida de Pedido B2B.
+ */
+export async function resolverCargaRapidaCodigos(
+  entradas: { codigo: string; cantidad: number }[],
+  accessToken?: string | null
+): Promise<{
+  encontrados: {
+    producto: ProductoConPrecio;
+    cantidadSolicitada: number;
+    cantidadFinal: number;
+    multiplo: number;
+  }[];
+  noEncontrados: string[];
+}> {
+  if (!entradas || entradas.length === 0) {
+    return { encontrados: [], noEncontrados: [] };
+  }
+
+  const { productos } = await obtenerCatalogoPublico(null, accessToken);
+
+  // Construir mapas por numero_parte y sku_interno normalizados
+  const mapaExacto = new Map<string, ProductoConPrecio>();
+  const mapaSinGuiones = new Map<string, ProductoConPrecio>();
+
+  for (const prod of productos) {
+    const np = (prod.numero_parte || '').trim().toUpperCase();
+    const sku = (prod.sku_interno || '').trim().toUpperCase();
+    if (np) {
+      mapaExacto.set(np, prod);
+      mapaSinGuiones.set(np.replace(/[\s\-_]/g, ''), prod);
+    }
+    if (sku) {
+      if (!mapaExacto.has(sku)) mapaExacto.set(sku, prod);
+      const skuClean = sku.replace(/[\s\-_]/g, '');
+      if (!mapaSinGuiones.has(skuClean)) mapaSinGuiones.set(skuClean, prod);
+    }
+  }
+
+  const encontrados: {
+    producto: ProductoConPrecio;
+    cantidadSolicitada: number;
+    cantidadFinal: number;
+    multiplo: number;
+  }[] = [];
+  const noEncontrados: string[] = [];
+
+  for (const item of entradas) {
+    const rawCodigo = (item.codigo || '').trim();
+    if (!rawCodigo) continue;
+
+    const upper = rawCodigo.toUpperCase();
+    const clean = upper.replace(/[\s\-_]/g, '');
+
+    const prod = mapaExacto.get(upper) || mapaSinGuiones.get(clean);
+    if (!prod) {
+      noEncontrados.push(rawCodigo);
+      continue;
+    }
+
+    const cantSol = Math.max(1, Math.floor(Number(item.cantidad) || 1));
+    const multiplo = obtenerMultiploVenta(prod);
+    const cantFinal =
+      multiplo > 1
+        ? Math.max(multiplo, Math.ceil(cantSol / multiplo) * multiplo)
+        : cantSol;
+
+    encontrados.push({
+      producto: prod,
+      cantidadSolicitada: cantSol,
+      cantidadFinal: cantFinal,
+      multiplo,
+    });
+  }
+
+  return { encontrados, noEncontrados };
 }

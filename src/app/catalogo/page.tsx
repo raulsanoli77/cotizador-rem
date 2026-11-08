@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { FileSpreadsheet } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProductGrid from '@/components/catalogo/ProductGrid';
 import SearchBar from '@/components/catalogo/SearchBar';
 import FilterSidebar from '@/components/catalogo/FilterSidebar';
+import CargaRapidaModal from '@/components/cotizacion/CargaRapidaModal';
 import { supabase, syncAuthCookie } from '@/lib/supabase/client';
 import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
 import { obtenerCatalogoPublico } from '@/app/catalogo/actions';
@@ -43,6 +45,7 @@ export default function CatalogoPage() {
   const [productosBase, setProductosBase] = useState<ProductoConCacheBusqueda[]>([]);
   const [paginaActual, setPaginaActual] = useState(1);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [mostrarCargaRapida, setMostrarCargaRapida] = useState(false);
   const [marcasLogos, setMarcasLogos] = useState<Record<string, string>>({});
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
   const [urlInicializada, setUrlInicializada] = useState(false);
@@ -462,9 +465,19 @@ export default function CatalogoPage() {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Título y búsqueda */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-4">
-              Catálogo de Herramientas
-            </h1>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <h1 className="text-2xl font-bold text-slate-900">
+                Catálogo de Herramientas
+              </h1>
+              <button
+                type="button"
+                onClick={() => setMostrarCargaRapida(true)}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-brand-50 text-brand-700 border-2 border-brand-200 font-bold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-brand-600" />
+                Carga Rápida (Pegar desde Excel)
+              </button>
+            </div>
             <SearchBar
               onSearch={(q) => {
                 setBusqueda(q);
@@ -610,6 +623,10 @@ export default function CatalogoPage() {
         </div>
       </main>
       <Footer />
+      <CargaRapidaModal
+        isOpen={mostrarCargaRapida}
+        onClose={() => setMostrarCargaRapida(false)}
+      />
     </>
   );
 }

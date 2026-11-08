@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download, Send, ShoppingCart, Loader2, CheckCircle, Minus, Plus, Trash2 } from 'lucide-react';
+import { Download, Send, ShoppingCart, Loader2, CheckCircle, Minus, Plus, Trash2, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import GatekeeperForm from '@/components/cotizacion/GatekeeperForm';
 import AddressForm from '@/components/cotizacion/AddressForm';
+import CargaRapidaModal from '@/components/cotizacion/CargaRapidaModal';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuth } from '@/hooks/useAuth';
 import { formatearPrecio } from '@/lib/pricing/engine';
@@ -35,6 +36,7 @@ export default function CotizacionPage() {
   const { isAuthenticated, lead } = useAuth();
   const [mostrarGatekeeper, setMostrarGatekeeper] = useState(false);
   const [mostrarAddressForm, setMostrarAddressForm] = useState(false);
+  const [mostrarCargaRapida, setMostrarCargaRapida] = useState(false);
   const [autoDownloadPDF, setAutoDownloadPDF] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
@@ -126,16 +128,36 @@ export default function CotizacionPage() {
       <Header />
       <main className="min-h-screen bg-slate-50 pt-32 pb-12">
         <div className="max-w-5xl mx-auto px-4">
-          <h1 className="text-3xl font-bold text-slate-900 mb-8 tracking-tight">Checkout Segura</h1>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Checkout Segura</h1>
+            <button
+              type="button"
+              onClick={() => setMostrarCargaRapida(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-brand-50 text-brand-700 border-2 border-brand-200 font-bold text-sm shadow-sm transition-colors cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-brand-600" />
+              Carga Rápida (Pegar desde Excel)
+            </button>
+          </div>
 
           {items.length === 0 ? (
             <div className="bg-white rounded-xl shadow-md border border-slate-200 p-16 text-center">
               <ShoppingCart className="h-16 w-16 text-slate-300 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-slate-700 mb-2">Tu carrito está vacío</h2>
-              <p className="text-slate-500 mb-8">Agrega productos del catálogo para generar una cotización formal.</p>
-              <Link href="/catalogo" className="inline-block bg-brand-600 hover:bg-brand-700 text-white px-8 py-3.5 rounded-lg font-bold transition-all shadow-lg shadow-brand-600/20">
-                Regresar al Catálogo
-              </Link>
+              <p className="text-slate-500 mb-8">Agrega productos del catálogo o pega una lista de códigos desde Excel para generar tu cotización.</p>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setMostrarCargaRapida(true)}
+                  className="inline-flex items-center gap-2 bg-white hover:bg-brand-50 text-brand-700 border-2 border-brand-300 px-6 py-3.5 rounded-lg font-bold transition-all shadow-sm cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-5 h-5 text-brand-600" />
+                  Pegar Códigos desde Excel
+                </button>
+                <Link href="/catalogo" className="inline-block bg-brand-600 hover:bg-brand-700 text-white px-8 py-3.5 rounded-lg font-bold transition-all shadow-lg shadow-brand-600/20">
+                  Regresar al Catálogo
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="space-y-6">
@@ -334,6 +356,11 @@ export default function CotizacionPage() {
           onCancel={() => setMostrarAddressForm(false)} 
         />
       )}
+
+      <CargaRapidaModal
+        isOpen={mostrarCargaRapida}
+        onClose={() => setMostrarCargaRapida(false)}
+      />
     </>
   );
 }
