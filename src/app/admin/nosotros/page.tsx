@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { obtenerConfiguracionesAdmin, guardarConfiguracionesAdmin } from '@/app/admin/config/actions';
 import { 
   Building2, 
   Users, 
@@ -74,13 +75,9 @@ export default function AdminNosotrosPage() {
     async function cargarDatos() {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('configuracion')
-          .select('clave, valor')
-          .in('clave', ['nosotros_pagina', 'nosotros_equipo']);
-
-        if (!error && data) {
-          data.forEach((item) => {
+        const res = await obtenerConfiguracionesAdmin(['nosotros_pagina', 'nosotros_equipo']);
+        if (res.success && res.data) {
+          res.data.forEach((item) => {
             if (item.clave === 'nosotros_pagina' && item.valor) {
               setConfig(normalizarNosotrosConfig(item.valor));
             }
@@ -105,14 +102,11 @@ export default function AdminNosotrosPage() {
       setSaving(true);
       setMensaje(null);
 
-      const { error } = await supabase.from('configuracion').upsert(
-        [
-          { clave: 'nosotros_pagina', valor: config },
-        ],
-        { onConflict: 'clave' }
-      );
+      const res = await guardarConfiguracionesAdmin([
+        { clave: 'nosotros_pagina', valor: config },
+      ]);
 
-      if (error) throw error;
+      if (!res.success) throw new Error(res.error);
 
       setMensaje({ texto: '¡Contenido de Sobre Nosotros guardado con éxito!', tipo: 'success' });
       setTimeout(() => setMensaje(null), 3500);
@@ -128,14 +122,11 @@ export default function AdminNosotrosPage() {
       setSaving(true);
       setMensaje(null);
 
-      const { error } = await supabase.from('configuracion').upsert(
-        [
-          { clave: 'nosotros_equipo', valor: nuevoEquipo },
-        ],
-        { onConflict: 'clave' }
-      );
+      const res = await guardarConfiguracionesAdmin([
+        { clave: 'nosotros_equipo', valor: nuevoEquipo },
+      ]);
 
-      if (error) throw error;
+      if (!res.success) throw new Error(res.error);
 
       setEquipo(nuevoEquipo);
       setMensaje({ texto: '¡Organigrama del equipo guardado con éxito!', tipo: 'success' });

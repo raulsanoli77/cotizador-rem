@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { obtenerConfiguracionesAdmin, guardarConfiguracionesAdmin } from '@/app/admin/config/actions';
 import { Plus, Edit2, Trash2, Image as ImageIcon, Loader2, Award } from 'lucide-react';
 
 export default function MarcasAdminPage() {
@@ -29,17 +30,22 @@ export default function MarcasAdminPage() {
 
   const fetchMarcas = async () => {
     setLoading(true);
-    const [resLogos, resMargenes, resMargenesPub, resCruces] = await Promise.all([
-      supabase.from('configuracion').select('valor').eq('clave', 'marcas_logos').maybeSingle(),
-      supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes').maybeSingle(),
-      supabase.from('configuracion').select('valor').eq('clave', 'marcas_margenes_publico').maybeSingle(),
-      supabase.from('configuracion').select('valor').eq('clave', 'marcas_cruce_volumen').maybeSingle()
+    const res = await obtenerConfiguracionesAdmin([
+      'marcas_logos',
+      'marcas_margenes',
+      'marcas_margenes_publico',
+      'marcas_cruce_volumen',
     ]);
 
-    setMarcas(resLogos.data?.valor || {});
-    setMargenes(resMargenes.data?.valor || {});
-    setMargenesPublico(resMargenesPub.data?.valor || {});
-    setCruces(resCruces.data?.valor || {});
+    const configMap: Record<string, any> = {};
+    (res.data || []).forEach((row: { clave: string; valor: any }) => {
+      configMap[row.clave] = row.valor;
+    });
+
+    setMarcas(configMap['marcas_logos'] || {});
+    setMargenes(configMap['marcas_margenes'] || {});
+    setMargenesPublico(configMap['marcas_margenes_publico'] || {});
+    setCruces(configMap['marcas_cruce_volumen'] || {});
     setLoading(false);
   };
 
@@ -113,17 +119,14 @@ export default function MarcasAdminPage() {
       nuevosMargenesPub[marcaLimpia] = Number(margenPub);
       nuevosCruces[marcaLimpia] = Boolean(aplicaCruce);
 
-      const [errLogos, errMargenes, errMargenesPub, errCruces] = await Promise.all([
-        supabase.from('configuracion').upsert({ clave: 'marcas_logos', valor: nuevasMarcas }, { onConflict: 'clave' }),
-        supabase.from('configuracion').upsert({ clave: 'marcas_margenes', valor: nuevosMargenes }, { onConflict: 'clave' }),
-        supabase.from('configuracion').upsert({ clave: 'marcas_margenes_publico', valor: nuevosMargenesPub }, { onConflict: 'clave' }),
-        supabase.from('configuracion').upsert({ clave: 'marcas_cruce_volumen', valor: nuevosCruces }, { onConflict: 'clave' })
+      const resSave = await guardarConfiguracionesAdmin([
+        { clave: 'marcas_logos', valor: nuevasMarcas },
+        { clave: 'marcas_margenes', valor: nuevosMargenes },
+        { clave: 'marcas_margenes_publico', valor: nuevosMargenesPub },
+        { clave: 'marcas_cruce_volumen', valor: nuevosCruces },
       ]);
 
-      if (errLogos.error) throw errLogos.error;
-      if (errMargenes.error) throw errMargenes.error;
-      if (errMargenesPub.error) throw errMargenesPub.error;
-      if (errCruces.error) throw errCruces.error;
+      if (!resSave.success) throw new Error(resSave.error);
 
       setMensaje({ texto: 'Marca guardada exitosamente', tipo: 'success' });
       setMarcas(nuevasMarcas);
@@ -149,17 +152,14 @@ export default function MarcasAdminPage() {
       delete nuevosMargenesPub[marca];
       delete nuevosCruces[marca];
 
-      const [errLogos, errMargenes, errMargenesPub, errCruces] = await Promise.all([
-        supabase.from('configuracion').upsert({ clave: 'marcas_logos', valor: nuevasMarcas }, { onConflict: 'clave' }),
-        supabase.from('configuracion').upsert({ clave: 'marcas_margenes', valor: nuevosMargenes }, { onConflict: 'clave' }),
-        supabase.from('configuracion').upsert({ clave: 'marcas_margenes_publico', valor: nuevosMargenesPub }, { onConflict: 'clave' }),
-        supabase.from('configuracion').upsert({ clave: 'marcas_cruce_volumen', valor: nuevosCruces }, { onConflict: 'clave' })
+      const resDel = await guardarConfiguracionesAdmin([
+        { clave: 'marcas_logos', valor: nuevasMarcas },
+        { clave: 'marcas_margenes', valor: nuevosMargenes },
+        { clave: 'marcas_margenes_publico', valor: nuevosMargenesPub },
+        { clave: 'marcas_cruce_volumen', valor: nuevosCruces },
       ]);
 
-      if (errLogos.error) throw errLogos.error;
-      if (errMargenes.error) throw errMargenes.error;
-      if (errMargenesPub.error) throw errMargenesPub.error;
-      if (errCruces.error) throw errCruces.error;
+      if (!resDel.success) throw new Error(resDel.error);
 
       setMensaje({ texto: 'Marca eliminada exitosamente', tipo: 'success' });
       setMarcas(nuevasMarcas);

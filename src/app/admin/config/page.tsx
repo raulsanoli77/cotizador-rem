@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { obtenerConfiguracionesAdmin, guardarConfiguracionesAdmin } from '@/app/admin/config/actions';
 import { Save, Loader2, Paintbrush, Building2, Calculator, FileText } from 'lucide-react';
 import ImageUploader from '@/components/admin/ImageUploader';
 
@@ -31,7 +31,8 @@ export default function AdminConfig() {
 
   useEffect(() => {
     async function fetchConfig() {
-      const { data } = await supabase.from('configuracion').select('*');
+      const res = await obtenerConfiguracionesAdmin();
+      const data = res.data;
       
       if (data) {
         data.forEach(item => {
@@ -75,10 +76,10 @@ export default function AdminConfig() {
       { clave: 'pdf_config', valor: { text_legal: pdfLegal } }
     ];
 
-    const { error } = await supabase.from('configuracion').upsert(upserts, { onConflict: 'clave' });
+    const res = await guardarConfiguracionesAdmin(upserts);
       
-    if (error) {
-      setMensaje({ texto: 'Error al guardar la configuración', tipo: 'error' });
+    if (!res.success) {
+      setMensaje({ texto: res.error || 'Error al guardar la configuración', tipo: 'error' });
     } else {
       setMensaje({ texto: 'Configuración guardada exitosamente', tipo: 'success' });
       setTimeout(() => setMensaje(null), 3000);
