@@ -172,11 +172,28 @@ export default function TerminosYCondicionesPage() {
                 </div>
                 <div className="border-t border-slate-200 pt-3">
                   <h3 className="font-bold text-slate-800 uppercase">
-                    B. Productos de Stock de Almacén:
+                    B. Productos de Stock de Almacén y Evaluación de Procedencia:
                   </h3>
                   <p className="text-slate-700 mt-1">
-                    Cualquier solicitud de devolución de mercancía estándar de stock regular deberá notificarse por escrito dentro de los primeros <strong>5 (cinco) días hábiles</strong> posteriores a la recepción física. Para que sea procedente, el producto deberá encontrarse en su empaque original sellado, sin signos de uso, montaje o manipulación. Toda devolución autorizada causará un cargo administrativo por reabastecimiento e inspección del <strong>15% al 20%</strong> sobre el valor neto de la partida.
+                    Toda solicitud de devolución de mercancía estándar de stock regular está sujeta a previa evaluación técnica y comercial. <em>EL PROVEEDOR</em> se reserva en todo momento el derecho exclusivo de analizar caso por caso para determinar si la devolución es aceptada o rechazada.
                   </p>
+                  <ul className="list-disc pl-5 mt-2 space-y-1.5 text-slate-600 text-xs sm:text-sm">
+                    <li>
+                      <strong>Plazo de Notificación:</strong> Cualquier solicitud deberá formularse por escrito dentro de los primeros <strong>5 (cinco) días hábiles</strong> posteriores a la recepción física del producto. Vencido este plazo, no se admitirá reclamación alguna.
+                    </li>
+                    <li>
+                      <strong>Estado del Producto:</strong> Para ser considerada, la mercancía deberá encontrarse en su empaque original sellado de fábrica, sin etiquetas ajenas, códigos de barra alterados, ni signos de montaje, prueba o manipulación en husillo o torreta.
+                    </li>
+                    <li>
+                      <strong>Cargo Mínimo de Reabastecimiento (Restocking Fee):</strong> Toda devolución autorizada causará un cargo administrativo <strong>mínimo del 20% (veinte por ciento)</strong> sobre el valor neto facturado de la partida. En caso de que el fabricante o planta matriz en el extranjero cobre un porcentaje o penalización superior por concepto de retorno o reingreso, dicho porcentaje mayor será trasladado íntegramente a <em>EL CLIENTE</em>.
+                    </li>
+                    <li>
+                      <strong>Gastos Logísticos y Arancelarios:</strong> Todos los costos de fletes de recolección y reenvío, maniobras de almacén, seguros de traslado, gastos aduanales, aranceles de reimportación/retorno o cualquier otro costo logístico generado por la devolución serán absorbidos al 100% por cuenta y cargo exclusivo de <em>EL CLIENTE</em>.
+                    </li>
+                    <li>
+                      <strong>No Devolución de Dinero (Saldo a Favor Exclusivo):</strong> Las devoluciones aceptadas <strong>EN NINGÚN CASO IMPLICARÁN EL REEMBOLSO O DEVOLUCIÓN DE DINERO EN EFECTIVO NI POR TRANSFERENCIA BANCARIA</strong>. El importe neto procedente (una vez deducido el cargo mínimo del 20% o el cargo superior del fabricante, así como los gastos de flete y aduana) se acreditará exclusivamente como una <strong>Nota de Crédito o Saldo a Favor</strong> para ser redimido en futuras compras de herramientas o suministros con <em>EL PROVEEDOR</em>.
+                    </li>
+                  </ul>
                 </div>
               </div>
             </section>
