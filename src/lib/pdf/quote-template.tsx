@@ -528,7 +528,7 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
               <Text style={styles.totalValue}>{formatearMoneda(subtotal, moneda)}</Text>
             </View>
             <Text style={styles.taxNote}>
-              * Precios antes de I.V.A. (16% o tasa fronteriza 8% sujeta a cumplimiento fiscal). No incluye costo de flete.
+              * Precios antes de I.V.A. (16% o tasa fronteriza 8% sujeta a cumplimiento fiscal). El costo de flete se especifica en la cotización formal.
             </Text>
           </View>
         </View>
@@ -545,10 +545,10 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
             • <Text style={styles.disclaimerBold}>Disponibilidad y Stock:</Text> No garantiza existencias, apartado de mercancía ni tiempos de entrega (ETA). La disponibilidad definitiva se confirma en la cotización formal.
           </Text>
           <Text style={styles.disclaimerBullet}>
-            • <Text style={styles.disclaimerBold}>Deslinde por error:</Text> Precios y especificaciones sujetos a validación. REM Industrial se reserva el derecho de corregir cualquier error involuntario de captura, sistema o catálogo previo a la confirmación del pedido.
+            • <Text style={styles.disclaimerBold}>Precios:</Text> Precios y especificaciones sujetos a validación. REM Industrial se reserva el derecho de corregir cualquier error involuntario de captura, sistema o catálogo previo a la confirmación del pedido.
           </Text>
           <Text style={styles.disclaimerBullet}>
-            • <Text style={styles.disclaimerBold}>Flete e Impuestos:</Text> Precios L.A.B. nuestras instalaciones en Cd. Juárez / Chihuahua. No incluye gastos de envío, maniobras ni seguro de traslado.
+            • <Text style={styles.disclaimerBold}>Flete e Impuestos:</Text> Precios antes de I.V.A. No incluye gastos de envío ni seguro de traslado; el costo de flete se especifica en la cotización formal.
           </Text>
         </View>
 
