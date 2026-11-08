@@ -54,12 +54,12 @@ export default function PDFDownloadButton({
           item.producto.requiere_confirmacion === true,
       }));
 
-      // Obtener configuración
+      // Obtener configuración general
       const { data: configData } = await supabase.from('configuracion').select('*');
       
       let empresa = { nombre: 'REM Industrial', rfc: '', direccion: '', email: '', telefono: '' };
       let logoUrl: string | undefined = undefined;
-      let textLegal = 'Esta cotización rápida no incluye costo de flete, tiempos de entrega ni disponibilidad. Estos datos le serán enviados junto con la cotización formal y datos bancarios para su compra.';
+      let textLegal: string | undefined = undefined;
       
       if (configData) {
         configData.forEach((item: any) => {
@@ -67,6 +67,35 @@ export default function PDFDownloadButton({
           if (item.clave === 'apariencia' && item.valor?.logo_url) logoUrl = item.valor.logo_url;
           if (item.clave === 'pdf_config' && item.valor?.text_legal) textLegal = item.valor.text_legal;
         });
+      }
+
+      // Asesor Comercial por defecto (Raúl Sánchez - ventas3@remindustrial.com / 614 181 5170)
+      let vendedor = {
+        nombre: 'Raúl Sánchez',
+        email: 'ventas3@remindustrial.com',
+        telefono: '614 181 5170',
+      };
+
+      // Si es un cliente registrado con sesión activa, verificar si tiene otro asesor asignado
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user?.id) {
+          const { data: perfil } = await supabase
+            .from('perfiles_clientes')
+            .select('vendedor:vendedores(nombre, email, telefono, activo)')
+            .eq('id', sessionData.session.user.id)
+            .maybeSingle();
+
+          if (perfil?.vendedor && (perfil.vendedor as any).activo !== false) {
+            vendedor = {
+              nombre: (perfil.vendedor as any).nombre || vendedor.nombre,
+              email: (perfil.vendedor as any).email || vendedor.email,
+              telefono: (perfil.vendedor as any).telefono || vendedor.telefono,
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('No se pudo consultar asesor asignado:', err);
       }
 
       // Generar PDF blob en el cliente
@@ -84,6 +113,7 @@ export default function PDFDownloadButton({
           subtotal={subtotal}
           moneda={moneda}
           config={{ empresa, logoUrl, textLegal }}
+          vendedor={vendedor}
         />
       ).toBlob();
 

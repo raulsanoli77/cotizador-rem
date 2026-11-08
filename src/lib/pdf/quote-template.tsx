@@ -24,8 +24,13 @@ export interface QuotePDFProps {
   config: {
     empresa: { nombre: string; rfc?: string; direccion?: string; email?: string; telefono?: string };
     logoUrl?: string;
-    textLegal: string;
+    textLegal?: string;
   };
+  vendedor?: {
+    nombre: string;
+    email: string;
+    telefono: string;
+  } | null;
 }
 
 export function generarFolio(): string {
@@ -43,159 +48,328 @@ export function formatearMoneda(valor: number, moneda: 'USD' | 'MXN'): string {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    paddingTop: 28,
+    paddingBottom: 36,
+    paddingHorizontal: 34,
     fontFamily: 'Helvetica',
-    fontSize: 10,
-    color: '#333333',
+    fontSize: 9,
+    color: '#334155',
     position: 'relative',
+    backgroundColor: '#ffffff',
   },
-  headerBar: {
-    backgroundColor: '#0f172a',
-    height: 10,
-    width: '100%',
+  topAccentBar: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+    height: 5,
+    backgroundColor: '#0f172a',
+  },
+  topCyanBar: {
+    position: 'absolute',
+    top: 5,
+    left: 0,
+    right: 0,
+    height: 2.5,
+    backgroundColor: '#0284c7',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 40,
-    borderBottomWidth: 2,
-    borderBottomColor: '#2563eb',
-    paddingBottom: 20,
-    marginTop: 10,
-  },
-  companyInfo: {
-    flexDirection: 'column',
-  },
-  companyName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
-    marginBottom: 4,
-  },
-  tagline: {
-    fontSize: 12,
-    color: '#2563eb',
-    marginBottom: 4,
-  },
-  companyDetails: {
-    color: '#666666',
-    fontSize: 9,
-  },
-  quoteInfo: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-  },
-  quoteTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2563eb',
-    marginBottom: 8,
-  },
-  quoteDetailText: {
-    marginBottom: 4,
-  },
-  bold: {
-    fontWeight: 'bold',
-  },
-  clientSection: {
-    marginBottom: 30,
-    padding: 15,
-    backgroundColor: '#f8fafc',
-    borderRadius: 4,
-  },
-  clientTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#0f172a',
-    marginBottom: 10,
+    alignItems: 'flex-start',
+    marginTop: 6,
+    marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
-    paddingBottom: 4,
+    paddingBottom: 14,
   },
-  clientGrid: {
+  companyCol: {
+    width: '56%',
+  },
+  logo: {
+    width: 120,
+    height: 40,
+    objectFit: 'contain',
+    marginBottom: 4,
+  },
+  companyName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    marginBottom: 2,
+  },
+  tagline: {
+    fontSize: 8,
+    color: '#0284c7',
+    fontWeight: 'bold',
+    marginBottom: 3,
+  },
+  companyMeta: {
+    fontSize: 7.5,
+    color: '#64748b',
+    lineHeight: 1.3,
+  },
+  quoteMetaCol: {
+    width: '42%',
+    alignItems: 'flex-end',
+  },
+  badgePill: {
+    backgroundColor: '#0f172a',
+    paddingVertical: 3.5,
+    paddingHorizontal: 9,
+    borderRadius: 4,
+    marginBottom: 6,
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 9,
+    fontWeight: 'bold',
+    letterSpacing: 0.6,
+  },
+  metaRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    marginBottom: 2,
   },
-  clientItem: {
-    width: '50%',
-    marginBottom: 8,
+  metaLabel: {
+    fontSize: 8,
+    color: '#64748b',
+    marginRight: 4,
   },
+  metaValue: {
+    fontSize: 8.5,
+    fontWeight: 'bold',
+    color: '#0f172a',
+  },
+  vigenciaValue: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#b45309',
+  },
+
+  /* Dos tarjetas superiores: Cliente y Asesor */
+  cardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  clientCard: {
+    width: '56%',
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 5,
+    padding: 8,
+  },
+  advisorCard: {
+    width: '42%',
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    borderRadius: 5,
+    padding: 8,
+  },
+  cardTitle: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    color: '#0f172a',
+    borderBottomWidth: 0.8,
+    borderBottomColor: '#cbd5e1',
+    paddingBottom: 3,
+    marginBottom: 5,
+    letterSpacing: 0.4,
+  },
+  advisorCardTitle: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    color: '#166534',
+    borderBottomWidth: 0.8,
+    borderBottomColor: '#86efac',
+    paddingBottom: 3,
+    marginBottom: 5,
+    letterSpacing: 0.4,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+  cardLabel: {
+    fontSize: 7.8,
+    color: '#64748b',
+    width: 62,
+    fontWeight: 'bold',
+  },
+  cardValue: {
+    fontSize: 7.8,
+    color: '#1e293b',
+    flex: 1,
+  },
+
+  /* Tabla de partidas */
   table: {
     width: '100%',
-    marginBottom: 30,
+    marginBottom: 10,
   },
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: '#0f172a',
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    borderRadius: 3,
+    alignItems: 'center',
+  },
+  tableHeaderCol: {
     color: '#ffffff',
-    padding: 8,
-    fontSize: 9,
+    fontSize: 7.8,
     fontWeight: 'bold',
+    textTransform: 'uppercase',
   },
   tableRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    padding: 8,
-    fontSize: 9,
+    paddingVertical: 4.5,
+    paddingHorizontal: 6,
+    borderBottomWidth: 0.8,
+    borderBottomColor: '#f1f5f9',
+    alignItems: 'center',
   },
-  col1: { width: '5%' },
-  col2: { width: '10%', textAlign: 'center' },
-  col3: { width: '15%' },
-  col4: { width: '20%' },
-  col5: { width: '26%' },
-  col6: { width: '12%', textAlign: 'right' },
-  col7: { width: '12%', textAlign: 'right' },
+  tableRowAlt: {
+    backgroundColor: '#f8fafc',
+  },
+  col1: { width: '4%', fontSize: 7.5, color: '#64748b' },
+  col2: { width: '8%', textAlign: 'center', fontSize: 7.8, fontWeight: 'bold', color: '#0f172a' },
+  col3: { width: '13%', fontSize: 7.8, fontWeight: 'bold', color: '#0284c7' },
+  col4: { width: '18%', fontSize: 7.8, fontWeight: 'bold', color: '#0f172a' },
+  col5: { width: '33%', fontSize: 7.5, color: '#334155', paddingRight: 4 },
+  col6: { width: '12%', textAlign: 'right', fontSize: 7.8, color: '#334155' },
+  col7: { width: '12%', textAlign: 'right', fontSize: 7.8, fontWeight: 'bold', color: '#0f172a' },
+
+  /* Totales */
   totalsSection: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginBottom: 40,
+    marginBottom: 12,
   },
   totalsBox: {
-    width: '40%',
+    width: '48%',
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 5,
+    padding: 8,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    alignItems: 'center',
+    marginBottom: 3,
   },
-  subtotalLabel: {
+  totalLabel: {
+    fontSize: 9,
     fontWeight: 'bold',
     color: '#0f172a',
   },
-  subtotalValue: {
+  totalValue: {
+    fontSize: 10.5,
+    fontWeight: 'bold',
+    color: '#0284c7',
+  },
+  taxNote: {
+    fontSize: 7.2,
+    color: '#64748b',
+    fontStyle: 'italic',
+    textAlign: 'right',
+    marginTop: 2,
+    borderTopWidth: 0.5,
+    borderTopColor: '#e2e8f0',
+    paddingTop: 3,
+  },
+
+  /* Cláusulas legales de protección (Cortas y claras) */
+  disclaimerBox: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: 5,
+    padding: 8,
+    marginBottom: 10,
+  },
+  disclaimerTitle: {
+    fontSize: 7.8,
+    fontWeight: 'bold',
+    color: '#92400e',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  disclaimerBullet: {
+    fontSize: 7.2,
+    color: '#78350f',
+    marginBottom: 2.5,
+    lineHeight: 1.28,
+  },
+  disclaimerBold: {
+    fontWeight: 'bold',
+    color: '#92400e',
+  },
+
+  /* Banner CTA (Para solicitar cotización formal) */
+  ctaBanner: {
+    backgroundColor: '#0f172a',
+    borderRadius: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  ctaLeft: {
+    width: '68%',
+  },
+  ctaTitle: {
+    color: '#ffffff',
+    fontSize: 7.8,
     fontWeight: 'bold',
   },
-  disclaimerSection: {
-    marginTop: 'auto',
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-    paddingTop: 15,
-    marginBottom: 30,
+  ctaSubtitle: {
+    color: '#94a3b8',
+    fontSize: 7,
+    marginTop: 1.5,
   },
-  disclaimerText: {
-    fontSize: 8,
-    color: '#64748b',
-    marginBottom: 4,
-    fontStyle: 'italic',
+  ctaRight: {
+    width: '30%',
+    alignItems: 'flex-end',
   },
+  ctaButtonText: {
+    color: '#38bdf8',
+    fontSize: 7.5,
+    fontWeight: 'bold',
+  },
+  ctaPhoneText: {
+    color: '#4ade80',
+    fontSize: 7.2,
+    fontWeight: 'bold',
+    marginTop: 1,
+  },
+
+  /* Footer */
   footer: {
     position: 'absolute',
-    bottom: 30,
-    left: 40,
-    right: 40,
-    textAlign: 'center',
-    fontSize: 8,
-    color: '#94a3b8',
-    borderTopWidth: 1,
+    bottom: 14,
+    left: 34,
+    right: 34,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 0.8,
     borderTopColor: '#e2e8f0',
-    paddingTop: 10,
+    paddingTop: 5,
+  },
+  footerText: {
+    fontSize: 6.8,
+    color: '#94a3b8',
   },
 });
 
@@ -207,101 +381,203 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
   subtotal,
   moneda,
   config,
-}) => (
-  <Document>
-    <Page size="LETTER" style={styles.page}>
-      <View style={styles.headerBar} />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.companyInfo}>
-          {config.logoUrl ? (
-            <Image src={config.logoUrl} style={{ width: 120, marginBottom: 8 }} />
-          ) : (
-            <Text style={styles.companyName}>{config.empresa.nombre}</Text>
-          )}
-          <Text style={styles.tagline}>Especialistas en herramientas de corte, metrología y MRO para la industria metalmecánica y maquiladora.</Text>
-          {config.empresa.rfc && <Text style={styles.companyDetails}>RFC: {config.empresa.rfc}</Text>}
-          {config.empresa.direccion && <Text style={styles.companyDetails}>Dirección: {config.empresa.direccion}</Text>}
-        </View>
-        <View style={styles.quoteInfo}>
-          <Text style={styles.quoteTitle}>COTIZACIÓN</Text>
-          <Text style={styles.quoteDetailText}><Text style={styles.bold}>Folio:</Text> {folio}</Text>
-          <Text style={styles.quoteDetailText}><Text style={styles.bold}>Fecha:</Text> {fecha}</Text>
-          <Text style={styles.quoteDetailText}><Text style={styles.bold}>Moneda:</Text> {moneda}</Text>
-        </View>
-      </View>
+  vendedor,
+}) => {
+  // Asesor por defecto si no viene especificado
+  const asesorFinal = {
+    nombre: vendedor?.nombre || 'Raúl Sánchez',
+    email: vendedor?.email || 'ventas3@remindustrial.com',
+    telefono: vendedor?.telefono || '614 181 5170',
+  };
 
-      {/* Client Section */}
-      <View style={styles.clientSection}>
-        <Text style={styles.clientTitle}>Datos del Cliente</Text>
-        <View style={styles.clientGrid}>
-          <View style={styles.clientItem}>
-            <Text><Text style={styles.bold}>Nombre:</Text> {cliente.nombre_completo}</Text>
+  return (
+    <Document>
+      <Page size="LETTER" style={styles.page}>
+        <View style={styles.topAccentBar} />
+        <View style={styles.topCyanBar} />
+
+        {/* Encabezado */}
+        <View style={styles.header}>
+          <View style={styles.companyCol}>
+            {config.logoUrl ? (
+              <Image src={config.logoUrl} style={styles.logo} />
+            ) : (
+              <Text style={styles.companyName}>{config.empresa.nombre || 'REM Industrial'}</Text>
+            )}
+            <Text style={styles.tagline}>
+              Herramientas de Corte · Metrología · MRO Industrial
+            </Text>
+            <Text style={styles.companyMeta}>
+              REM Industrial Supplies · Matriz Cd. Juárez & Chihuahua, Chih.
+            </Text>
+            <Text style={styles.companyMeta}>
+              Web: cotizador-rem.vercel.app · Atención: {asesorFinal.email}
+            </Text>
           </View>
-          <View style={styles.clientItem}>
-            <Text><Text style={styles.bold}>Empresa:</Text> {cliente.empresa}</Text>
-          </View>
-          <View style={styles.clientItem}>
-            <Text><Text style={styles.bold}>Email:</Text> {cliente.email}</Text>
-          </View>
-          <View style={styles.clientItem}>
-            <Text><Text style={styles.bold}>Teléfono:</Text> {cliente.telefono}</Text>
+
+          <View style={styles.quoteMetaCol}>
+            <View style={styles.badgePill}>
+              <Text style={styles.badgeText}>COTIZACIÓN INFORMATIVA</Text>
+            </View>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Folio:</Text>
+              <Text style={styles.metaValue}>{folio}</Text>
+            </View>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Fecha:</Text>
+              <Text style={styles.metaValue}>{fecha}</Text>
+            </View>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Moneda:</Text>
+              <Text style={styles.metaValue}>{moneda}</Text>
+            </View>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Vigencia:</Text>
+              <Text style={styles.vigenciaValue}>Al día de consulta (Sujeta a cambios)</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Items Table */}
-      <View style={styles.table}>
-        <View style={styles.tableHeader}>
-          <Text style={styles.col1}>#</Text>
-          <Text style={styles.col2}>Cant.</Text>
-          <Text style={styles.col3}>Marca</Text>
-          <Text style={styles.col4}>No. Parte</Text>
-          <Text style={styles.col5}>Descripción</Text>
-          <Text style={styles.col6}>P. Unit.</Text>
-          <Text style={styles.col7}>Total</Text>
-        </View>
-        
-        {partidas.map((item, index) => (
-          <View key={index} style={styles.tableRow}>
-            <Text style={styles.col1}>{index + 1}</Text>
-            <Text style={styles.col2}>{item.cantidad}</Text>
-            <Text style={styles.col3}>{item.marca}</Text>
-            <Text style={styles.col4}>{item.numero_parte}</Text>
-            <Text style={styles.col5}>{item.descripcion}</Text>
-            <Text style={styles.col6}>{formatearMoneda(item.precio_unitario, moneda)}</Text>
-            <Text style={styles.col7}>{formatearMoneda(item.total, moneda)}</Text>
+        {/* Dos tarjetas: Datos del Solicitante y Asesor Comercial */}
+        <View style={styles.cardsContainer}>
+          {/* Tarjeta Solicitante */}
+          <View style={styles.clientCard}>
+            <Text style={styles.cardTitle}>Datos del Solicitante</Text>
+            <View style={styles.cardRow}>
+              <Text style={styles.cardLabel}>Empresa:</Text>
+              <Text style={styles.cardValue}>{cliente.empresa || 'Cliente General'}</Text>
+            </View>
+            <View style={styles.cardRow}>
+              <Text style={styles.cardLabel}>Contacto:</Text>
+              <Text style={styles.cardValue}>{cliente.nombre_completo || 'N/A'}</Text>
+            </View>
+            <View style={styles.cardRow}>
+              <Text style={styles.cardLabel}>Email:</Text>
+              <Text style={styles.cardValue}>{cliente.email || 'N/A'}</Text>
+            </View>
+            <View style={styles.cardRow}>
+              <Text style={styles.cardLabel}>Teléfono:</Text>
+              <Text style={styles.cardValue}>{cliente.telefono || 'Sin teléfono'}</Text>
+            </View>
           </View>
-        ))}
-      </View>
 
-      {/* Totals Section */}
-      <View style={styles.totalsSection}>
-        <View style={styles.totalsBox}>
-          <View style={styles.totalRow}>
-            <Text style={styles.subtotalLabel}>Subtotal</Text>
-            <Text style={styles.subtotalValue}>{formatearMoneda(subtotal, moneda)}</Text>
+          {/* Tarjeta Asesor Asignado */}
+          <View style={styles.advisorCard}>
+            <Text style={styles.advisorCardTitle}>Asesor Comercial Asignado</Text>
+            <View style={styles.cardRow}>
+              <Text style={styles.cardLabel}>Asesor:</Text>
+              <Text style={styles.cardValue}>{asesorFinal.nombre}</Text>
+            </View>
+            <View style={styles.cardRow}>
+              <Text style={styles.cardLabel}>Correo:</Text>
+              <Text style={styles.cardValue}>{asesorFinal.email}</Text>
+            </View>
+            <View style={styles.cardRow}>
+              <Text style={styles.cardLabel}>Tel / WA:</Text>
+              <Text style={styles.cardValue}>{asesorFinal.telefono}</Text>
+            </View>
+            <View style={styles.cardRow}>
+              <Text style={styles.cardLabel}>Atención:</Text>
+              <Text style={{ ...styles.cardValue, color: '#166534', fontWeight: 'bold' }}>
+                Formalización y tiempos de entrega
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Legal Disclaimers */}
-      <View style={styles.disclaimerSection}>
-        <Text style={styles.disclaimerText}>
-          {config.textLegal}
-        </Text>
-        {partidas.some((p) => p.requiere_confirmacion) && (
-          <Text style={{ ...styles.disclaimerText, marginTop: 4, color: '#b45309', fontWeight: 'bold' }}>
-            * NOTA: Uno o más artículos en esta cotización tienen precio y tiempo de entrega sujetos a confirmación con planta.
+        {/* Tabla de Partidas */}
+        <View style={styles.table}>
+          <View style={styles.tableHeader}>
+            <Text style={{ ...styles.tableHeaderCol, ...styles.col1 }}>#</Text>
+            <Text style={{ ...styles.tableHeaderCol, ...styles.col2 }}>Cant.</Text>
+            <Text style={{ ...styles.tableHeaderCol, ...styles.col3 }}>Marca</Text>
+            <Text style={{ ...styles.tableHeaderCol, ...styles.col4 }}>No. Parte</Text>
+            <Text style={{ ...styles.tableHeaderCol, ...styles.col5 }}>Descripción</Text>
+            <Text style={{ ...styles.tableHeaderCol, ...styles.col6 }}>P. Unit.</Text>
+            <Text style={{ ...styles.tableHeaderCol, ...styles.col7 }}>Total</Text>
+          </View>
+
+          {partidas.map((item, index) => {
+            const isAlt = index % 2 === 1;
+            return (
+              <View key={index} style={[styles.tableRow, isAlt ? styles.tableRowAlt : {}]}>
+                <Text style={styles.col1}>{index + 1}</Text>
+                <Text style={styles.col2}>{item.cantidad}</Text>
+                <Text style={styles.col3}>{item.marca}</Text>
+                <Text style={styles.col4}>{item.numero_parte}</Text>
+                <Text style={styles.col5}>
+                  {item.descripcion}
+                  {item.requiere_confirmacion && (
+                    <Text style={{ color: '#b45309', fontWeight: 'bold' }}>
+                      {' '}[Precio sujeto a confirmación]
+                    </Text>
+                  )}
+                </Text>
+                <Text style={styles.col6}>{formatearMoneda(item.precio_unitario, moneda)}</Text>
+                <Text style={styles.col7}>{formatearMoneda(item.total, moneda)}</Text>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Sección de Totales */}
+        <View style={styles.totalsSection} wrap={false}>
+          <View style={styles.totalsBox}>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Subtotal ({moneda}):</Text>
+              <Text style={styles.totalValue}>{formatearMoneda(subtotal, moneda)}</Text>
+            </View>
+            <Text style={styles.taxNote}>
+              * Precios antes de I.V.A. (16% o tasa fronteriza 8% sujeta a cumplimiento fiscal). No incluye costo de flete.
+            </Text>
+          </View>
+        </View>
+
+        {/* Cláusulas de Protección (Cortas y Contundentes) */}
+        <View style={styles.disclaimerBox} wrap={false}>
+          <Text style={styles.disclaimerTitle}>
+            Condiciones de esta Cotización Informativa:
           </Text>
-        )}
-      </View>
+          <Text style={styles.disclaimerBullet}>
+            • <Text style={styles.disclaimerBold}>Sin vigencia de precio:</Text> Precios informativos al momento de su consulta, válidos únicamente al día de emisión y sujetos a cambio sin previo aviso hasta emitirse una cotización formal.
+          </Text>
+          <Text style={styles.disclaimerBullet}>
+            • <Text style={styles.disclaimerBold}>Disponibilidad y Stock:</Text> No garantiza existencias, apartado de mercancía ni tiempos de entrega (ETA). La disponibilidad definitiva se confirma en la cotización formal.
+          </Text>
+          <Text style={styles.disclaimerBullet}>
+            • <Text style={styles.disclaimerBold}>Deslinde por error:</Text> Precios y especificaciones sujetos a validación. REM Industrial se reserva el derecho de corregir cualquier error involuntario de captura, sistema o catálogo previo a la confirmación del pedido.
+          </Text>
+          <Text style={styles.disclaimerBullet}>
+            • <Text style={styles.disclaimerBold}>Flete e Impuestos:</Text> Precios L.A.B. nuestras instalaciones en Cd. Juárez / Chihuahua. No incluye gastos de envío, maniobras ni seguro de traslado.
+          </Text>
+        </View>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text>Este documento es una cotización rápida con carácter informativo. Para una cotización formal contacte a {config.empresa.email || 'ventas@remindustrial.com'}</Text>
-      </View>
-    </Page>
-  </Document>
-);
+        {/* Banner CTA para Solicitar Cotización Formal y Registro */}
+        <View style={styles.ctaBanner} wrap={false}>
+          <View style={styles.ctaLeft}>
+            <Text style={styles.ctaTitle}>
+              ¿Deseas asegurar precio, tiempos de entrega o tramitar tu orden?
+            </Text>
+            <Text style={styles.ctaSubtitle}>
+              Solicita tu Cotización Formal con tu asesor asignado o regístrate en nuestro portal para precios preferenciales y crédito comercial.
+            </Text>
+          </View>
+          <View style={styles.ctaRight}>
+            <Text style={styles.ctaButtonText}>{asesorFinal.email}</Text>
+            <Text style={styles.ctaPhoneText}>WhatsApp: {asesorFinal.telefono}</Text>
+          </View>
+        </View>
+
+        {/* Pie de Página */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            REM Industrial Supplies · Especialistas en herramientas de corte, metrología y MRO para la industria metalmecánica y maquiladora.
+          </Text>
+          <Text style={styles.footerText}>
+            Documento preliminar sin validez fiscal
+          </Text>
+        </View>
+      </Page>
+    </Document>
+  );
+};
