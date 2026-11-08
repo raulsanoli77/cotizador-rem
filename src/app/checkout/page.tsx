@@ -619,6 +619,16 @@ export default function CheckoutB2BPage() {
                 <p className="text-[11px] text-slate-400 text-center mt-4 leading-normal">
                   Tu asesor comercial validará existencias, tiempos de entrega y flete según tu Código Postal para contactarte por WhatsApp o correo.
                 </p>
+                <p className="text-[10px] text-slate-500 text-center mt-2">
+                  Al solicitar cotización aceptas nuestros{' '}
+                  <Link href="/terminos-y-condiciones" target="_blank" className="underline hover:text-slate-300">
+                    Términos Comerciales
+                  </Link>{' '}
+                  y{' '}
+                  <Link href="/aviso-de-privacidad" target="_blank" className="underline hover:text-slate-300">
+                    Aviso de Privacidad
+                  </Link>.
+                </p>
               </div>
             </div>
 

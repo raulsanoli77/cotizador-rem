@@ -35,6 +35,7 @@ export default function RegistroB2BPage() {
   const [loadingCP, setLoadingCP] = useState(false);
   const [sugerenciasColonias, setSugerenciasColonias] = useState<string[]>([]);
   const [esColoniaManual, setEsColoniaManual] = useState(false);
+  const [aceptoTerminos, setAceptoTerminos] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -74,10 +75,16 @@ export default function RegistroB2BPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!aceptoTerminos) {
+      setError('Debes aceptar los Términos y Condiciones Comerciales y el Aviso de Privacidad Integral para continuar.');
+      return;
+    }
     setLoading(true);
     setError(null);
 
     try {
+      const fechaAceptacion = new Date().toISOString();
+
       // Registrar usuario en Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -99,6 +106,9 @@ export default function RegistroB2BPage() {
             num_exterior: formData.num_exterior || null,
             num_interior: formData.num_interior || null,
             estatus: 'pendiente_aprobacion', // Campo clave para el Admin
+            acepto_terminos: true,
+            acepto_terminos_at: fechaAceptacion,
+            acepto_terminos_version: '2026-11',
           }
         }
       });
@@ -520,7 +530,49 @@ export default function RegistroB2BPage() {
                   </div>
                 </div>
 
-                <div className="mt-8 pt-6">
+                {/* Consentimiento Legal Obligatorio (LFPDPPP y Código de Comercio) */}
+                <div className="bg-slate-50 border border-slate-300 rounded-xl p-4 mt-6">
+                  <div className="flex items-start gap-3">
+                    <input
+                      required
+                      id="check_terminos_privacidad"
+                      type="checkbox"
+                      checked={aceptoTerminos}
+                      onChange={(e) => setAceptoTerminos(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-slate-400 text-brand-600 focus:ring-brand-500 cursor-pointer shrink-0"
+                    />
+                    <label
+                      htmlFor="check_terminos_privacidad"
+                      className="text-xs sm:text-sm text-slate-700 leading-snug cursor-pointer select-none"
+                    >
+                      He leído, comprendo y acepto expresamente los{' '}
+                      <Link
+                        href="/terminos-y-condiciones"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-600 font-bold hover:underline"
+                      >
+                        Términos y Condiciones Comerciales
+                      </Link>{' '}
+                      y el{' '}
+                      <Link
+                        href="/aviso-de-privacidad"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-600 font-bold hover:underline"
+                      >
+                        Aviso de Privacidad Integral
+                      </Link>{' '}
+                      de REM Industrial, manifestando contar con las facultades comerciales necesarias para representar a mi empresa.
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-2 pl-7 flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Tus datos se encuentran estrictamente protegidos bajo la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).</span>
+                  </p>
+                </div>
+
+                <div className="mt-8 pt-2">
                   <button
                     type="submit"
                     disabled={loading}

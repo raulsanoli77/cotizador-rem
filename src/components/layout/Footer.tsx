@@ -104,6 +104,16 @@ export default function Footer() {
                   Cotización
                 </Link>
               </li>
+              <li>
+                <Link href="/aviso-de-privacidad" className="text-gray-400 hover:text-white text-sm transition-colors">
+                  Aviso de Privacidad
+                </Link>
+              </li>
+              <li>
+                <Link href="/terminos-y-condiciones" className="text-gray-400 hover:text-white text-sm transition-colors">
+                  Términos y Condiciones
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -139,12 +149,21 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Copyright */}
+      {/* Copyright y Legal */}
       <div className="border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <p className="text-center text-gray-500 text-xs">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+          <p>
             © {year} {titulo}. Todos los derechos reservados.
           </p>
+          <div className="flex items-center gap-4">
+            <Link href="/aviso-de-privacidad" className="hover:text-gray-300 transition-colors">
+              Aviso de Privacidad (LFPDPPP)
+            </Link>
+            <span>·</span>
+            <Link href="/terminos-y-condiciones" className="hover:text-gray-300 transition-colors">
+              Términos Comerciales B2B
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

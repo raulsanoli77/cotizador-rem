@@ -560,6 +560,11 @@ export async function enviarConfirmacionPedidoCliente(params: {
           Ver Estatus de mi Solicitud en el Portal
         </a>
       </div>
+
+      <div style="margin-top: 28px; padding-top: 14px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; line-height: 1.4;">
+        <p style="margin: 0 0 4px;"><strong>🔒 Confidencialidad y Legalidad:</strong> La información contenida en esta cotización es de carácter confidencial y para uso exclusivo de <em>${safeEmpresa}</em>. Operación mercantil sujeta a nuestros <a href="${escapeHtml(appUrl)}/terminos-y-condiciones" target="_blank" style="color: #2563eb; text-decoration: underline;">Términos y Condiciones Comerciales</a> y protegida conforme al <a href="${escapeHtml(appUrl)}/aviso-de-privacidad" target="_blank" style="color: #2563eb; text-decoration: underline;">Aviso de Privacidad Integral</a>.</p>
+        <p style="margin: 0;">REM Industrial · Chihuahua, Chih., México · <a href="${escapeHtml(appUrl)}" style="color: #64748b; text-decoration: underline;">www.remindustrial.mx</a></p>
+      </div>
     </div>
   </body>
   </html>`;
