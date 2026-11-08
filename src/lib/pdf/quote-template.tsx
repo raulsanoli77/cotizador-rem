@@ -22,9 +22,10 @@ export interface QuotePDFProps {
   subtotal: number;
   moneda: 'USD' | 'MXN';
   config: {
-    empresa: { nombre: string; rfc?: string; direccion?: string; email?: string; telefono?: string };
+    empresa: { nombre: string; rfc?: string; direccion?: string; email?: string; telefono?: string; pagina_web?: string };
     logoUrl?: string;
     textLegal?: string;
+    sitioWeb?: string;
   };
   vendedor?: {
     nombre: string;
@@ -390,6 +391,11 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
     telefono: vendedor?.telefono || '614 181 5170',
   };
 
+  const sitioWebFinal =
+    config.sitioWeb ||
+    config.empresa.pagina_web ||
+    'cotizador-rem.vercel.app';
+
   return (
     <Document>
       <Page size="LETTER" style={styles.page}>
@@ -411,7 +417,7 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
               REM Industrial Supplies · Matriz Cd. Juárez & Chihuahua, Chih.
             </Text>
             <Text style={styles.companyMeta}>
-              Web: cotizador-rem.vercel.app · Atención: {asesorFinal.email}
+              Web: {sitioWebFinal} · Atención: {asesorFinal.email}
             </Text>
           </View>
 

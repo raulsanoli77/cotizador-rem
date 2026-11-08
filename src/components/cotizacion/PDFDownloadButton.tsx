@@ -98,6 +98,12 @@ export default function PDFDownloadButton({
         console.warn('No se pudo consultar asesor asignado:', err);
       }
 
+      // Detectar automáticamente el dominio actual del navegador
+      const sitioWebActual =
+        typeof window !== 'undefined' && window.location?.host
+          ? window.location.host
+          : process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') || 'cotizador-rem.vercel.app';
+
       // Generar PDF blob en el cliente
       const blob = await pdf(
         <QuotePDFDocument
@@ -112,7 +118,7 @@ export default function PDFDownloadButton({
           partidas={partidas}
           subtotal={subtotal}
           moneda={moneda}
-          config={{ empresa, logoUrl, textLegal }}
+          config={{ empresa, logoUrl, textLegal, sitioWeb: sitioWebActual }}
           vendedor={vendedor}
         />
       ).toBlob();
