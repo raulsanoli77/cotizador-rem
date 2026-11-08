@@ -98,6 +98,7 @@ export default function ClientesB2BPage() {
   const [copiado, setCopiado] = useState(false);
   const [loadingNewCP, setLoadingNewCP] = useState(false);
   const [coloniasNewCP, setColoniasNewCP] = useState<string[]>([]);
+  const [esColoniaManualNew, setEsColoniaManualNew] = useState(false);
 
   const [newForm, setNewForm] = useState({
     empresa: '',
@@ -199,6 +200,7 @@ export default function ClientesB2BPage() {
     setCredencialesCreadas(null);
     setCopiado(false);
     setColoniasNewCP([]);
+    setEsColoniaManualNew(false);
     setNewForm({
       empresa: '',
       nombre_completo: '',
@@ -238,6 +240,7 @@ export default function ClientesB2BPage() {
           if (data.estado) {
             const cols: string[] = data.colonias || [];
             setColoniasNewCP(cols);
+            setEsColoniaManualNew(false);
             setNewForm((prev) => ({
               ...prev,
               estado: data.estado,
@@ -253,6 +256,7 @@ export default function ClientesB2BPage() {
       }
     } else {
       setColoniasNewCP([]);
+      setEsColoniaManualNew(false);
     }
   };
 
@@ -1192,24 +1196,58 @@ export default function ClientesB2BPage() {
                         />
                       </div>
                       <div className="md:col-span-3">
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">Colonia</label>
-                        {coloniasNewCP.length > 0 ? (
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-semibold text-slate-700">
+                            Colonia / Fraccionamiento / Parque Industrial
+                            {coloniasNewCP.length > 0 && !esColoniaManualNew && (
+                              <span className="text-slate-400 font-normal ml-1">({coloniasNewCP.length} encontradas)</span>
+                            )}
+                          </label>
+                          {coloniasNewCP.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nuevoEstado = !esColoniaManualNew;
+                                setEsColoniaManualNew(nuevoEstado);
+                                if (!nuevoEstado && !newForm.colonia && coloniasNewCP.length > 0) {
+                                  setNewForm((prev) => ({ ...prev, colonia: coloniasNewCP[0] }));
+                                }
+                              }}
+                              className="text-[11px] font-bold text-brand-600 hover:text-brand-800 transition-colors"
+                            >
+                              {esColoniaManualNew
+                                ? `📋 Ver lista (${coloniasNewCP.length})`
+                                : '✏️ Escribir otra manualmente'}
+                            </button>
+                          )}
+                        </div>
+
+                        {coloniasNewCP.length > 0 && !esColoniaManualNew ? (
                           <select
-                            className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+                            className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none cursor-pointer"
                             value={newForm.colonia}
-                            onChange={(e) => setNewForm({ ...newForm, colonia: e.target.value })}
+                            onChange={(e) => {
+                              if (e.target.value === '__OTRA__') {
+                                setEsColoniaManualNew(true);
+                                setNewForm((prev) => ({ ...prev, colonia: '' }));
+                              } else {
+                                setNewForm((prev) => ({ ...prev, colonia: e.target.value }));
+                              }
+                            }}
                           >
+                            <option value="">-- Selecciona una colonia ({coloniasNewCP.length} disponibles) --</option>
                             {coloniasNewCP.map((col, idx) => (
                               <option key={idx} value={col}>
                                 {col}
                               </option>
                             ))}
+                            <option value="__OTRA__">✏️ Otra colonia (no está en la lista)...</option>
                           </select>
                         ) : (
                           <input
                             type="text"
-                            placeholder="Colonia o Parque Industrial"
-                            className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm"
+                            placeholder="Escribe el nombre de la colonia o parque industrial..."
+                            className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none"
                             value={newForm.colonia}
                             onChange={(e) => setNewForm({ ...newForm, colonia: e.target.value })}
                           />
