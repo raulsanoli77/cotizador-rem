@@ -272,9 +272,10 @@ export default function CotizacionPage() {
               {/* Leyendas legales */}
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
                 <p className="text-xs text-amber-800 font-semibold">⚠️ Importante sobre esta cotización rápida:</p>
-                <p className="text-xs text-amber-800">• No incluye costo de flete.</p>
-                <p className="text-xs text-amber-800">• No incluye tiempos de entrega ni disponibilidad de stock.</p>
-                <p className="text-xs text-amber-800">• Esta información junto con los datos bancarios para su compra le será enviada en la cotización formal.</p>
+                <p className="text-xs text-amber-800">• Los precios mostrados en catálogo y cotizador son netos y <strong>NO incluyen IVA</strong>.</p>
+                <p className="text-xs text-amber-800">• Es <strong>responsabilidad del cliente</strong> notificar a su asesor con qué tasa de IVA (16% general u 8% frontera) debe facturarse su pedido.</p>
+                <p className="text-xs text-amber-800">• Esta cotización rápida no incluye costo de flete ni tiempos de entrega de stock.</p>
+                <p className="text-xs text-amber-800">• La información final de IVA, flete y datos bancarios para pago de contado le será confirmada en la cotización formal.</p>
               </div>
 
               {/* Acciones */}

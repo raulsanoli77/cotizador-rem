@@ -86,7 +86,7 @@ export default function TerminosYCondicionesPage() {
                   <strong>Moneda de Cotización:</strong> Salvo indicación expresa en contrario, los precios de herramientas importadas suelen cotizarse en Dólares de los Estados Unidos de América (USD) o en Moneda Nacional (MXN).
                 </li>
                 <li>
-                  <strong>Impuesto al Valor Agregado (IVA):</strong> Todos los precios mostrados en el catálogo o desglosados en pre-cotizaciones se entienden <strong>más el 16% de IVA</strong> (o tasa fronteriza aplicable según la legislación fiscal vigente), el cual se detallará en la cotización formal y en la factura correspondiente.
+                  <strong>Precios Netos Sin IVA y Notificación de Tasa Aplicable:</strong> Todos los precios mostrados en el catálogo digital, buscador, fichas técnicas y pre-cotizaciones son <strong>precios netos unitarios y NO INCLUYEN el Impuesto al Valor Agregado (IVA)</strong>. A toda cotización y venta se le adicionará el IVA correspondiente (tasa general del 16% o tasa de estímulo del 8% para la región fronteriza norte, según proceda legalmente). Es <strong>responsabilidad exclusiva e indelegable de <em>EL CLIENTE</em> notificar formalmente y por escrito a su asesor comercial con qué tasa de IVA debe emitirse su cotización y factura fiscal (CFDI)</strong> antes de realizar el pago o confirmar la orden de compra, debiendo remitir su Constancia de Situación Fiscal y documentación de acreditación fiscal aplicable. Si <em>EL CLIENTE</em> no notifica oportunamente la tasa especial a aplicar, la cotización y factura se emitirán aplicando de manera predeterminada la tasa general del 16% de IVA.
                 </li>
                 <li>
                   <strong>Tipo de Cambio Oficial:</strong> Las operaciones cotizadas en USD que sean liquidadas en Moneda Nacional (MXN) se solventarán al <strong>Tipo de Cambio para solventar obligaciones denominadas en moneda extranjera</strong> publicado por el <strong>Banco de México (Banxico)</strong> en el Diario Oficial de la Federación (DOF) correspondiente al día hábil de pago efectivo.
@@ -242,10 +242,13 @@ export default function TerminosYCondicionesPage() {
                 <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-50 text-brand-700 font-extrabold text-sm">
                   8
                 </span>
-                Facturación Fiscal Digital (CFDI 4.0)
+                Facturación Fiscal Digital (CFDI 4.0) y Determinación de la Tasa de IVA
               </h2>
               <p>
                 Las facturas fiscales electrónicas se emitirán conforme a los datos tributarios capturados por <em>EL CLIENTE</em> en el portal (RFC, Régimen Fiscal, Domicilio Fiscal y Uso de CFDI), debiendo coincidir estrictamente con su Constancia de Situación Fiscal ante el SAT. Toda factura se emitirá dentro del mes calendario en que se procese el pedido o cobro, conforme a las disposiciones del Código Fiscal de la Federación.
+              </p>
+              <p className="text-xs sm:text-sm text-slate-600">
+                Es responsabilidad indelegable de <em>EL CLIENTE</em> notificar e instruir oportunamente si su facturación debe procesarse con tasa general del 16% o tasa de estímulo fronterizo del 8% antes de realizar su pago o de que se timbre el comprobante. Una vez emitido el CFDI, cualquier solicitud de refacturación o sustitución derivada de omisión por parte de <em>EL CLIENTE</em> estará condicionada a la normatividad y reglas de cancelación del SAT y causará demoras administrativas ajenas a <em>EL PROVEEDOR</em>.
               </p>
             </section>
 

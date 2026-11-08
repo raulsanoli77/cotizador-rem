@@ -554,7 +554,7 @@ export default function CheckoutB2BPage() {
                     rows={2}
                     value={notas}
                     onChange={(e) => setNotas(e.target.value)}
-                    placeholder="Ej. Entregar en horario de 8 a 15 hrs, maniobra en rampa, etc."
+                    placeholder="Ej. Entregar en horario de 8 a 15 hrs, maniobra en rampa, facturar con tasa frontera 8%, etc."
                     className="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 bg-white text-slate-900 font-medium text-sm resize-none focus:outline-none transition-all"
                   />
                 </div>
@@ -625,7 +625,7 @@ export default function CheckoutB2BPage() {
                       <Link href="/terminos-y-condiciones" target="_blank" className="text-brand-400 font-semibold underline hover:text-brand-300">
                         Términos Comerciales B2B
                       </Link>{' '}
-                      (pago de contado, vigencia máxima de 7 días y política de devoluciones) y el{' '}
+                      (precios netos sin IVA, responsabilidad de indicar tasa aplicable 16% u 8%, pago de contado, vigencia de 7 días y devoluciones) y el{' '}
                       <Link href="/aviso-de-privacidad" target="_blank" className="text-brand-400 font-semibold underline hover:text-brand-300">
                         Aviso de Privacidad
                       </Link>
