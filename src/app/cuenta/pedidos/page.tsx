@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
-import { PackageSearch, ArrowRight, Clock, AlertTriangle, CheckCircle, Package, Loader2 } from 'lucide-react';
+import { PackageSearch, ArrowRight, Clock, CheckCircle, Loader2, FileText } from 'lucide-react';
 
 export default function ClientPedidosPage() {
   const [pedidos, setPedidos] = useState<any[]>([]);
@@ -80,6 +80,19 @@ export default function ClientPedidosPage() {
                       <span className="px-2.5 py-0.5 text-xs font-bold rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800">
                         🏢 Bind ERP: #{pedido.cotizacion_bind}
                       </span>
+                    )}
+                    {pedido.po_url && (
+                      <a
+                        href={pedido.po_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="px-2.5 py-0.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white inline-flex items-center gap-1 transition-colors shadow-sm"
+                        title="Descargar PDF Oficial de Cotización"
+                      >
+                        <FileText className="w-3 h-3" />
+                        PDF Oficial
+                      </a>
                     )}
                     <span className={`px-2.5 py-1 text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1 border ${statusInfo.bg} ${statusInfo.text}`}>
                       {StatusIcon && <StatusIcon className="w-3 h-3" />}

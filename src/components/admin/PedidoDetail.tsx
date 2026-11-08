@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Package, Calendar, Trash2, MessageSquare, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Save, Package, Calendar, Trash2, MessageSquare, FileText, Upload, ExternalLink, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
+import { supabase } from '@/lib/supabase/client';
 import { actualizarPedido, eliminarPedido } from '@/app/admin/pedidos/[id]/actions';
 
 export default function PedidoDetailAdmin({ pedido, partidas }: { pedido: any; partidas: any[]; productosOriginales?: any[] }) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const normalizarEstatus = (st?: string) => {
     if (st === 'atendida' || st === 'aprobado_por_cliente' || st === 'enviado') return 'atendida';
@@ -17,6 +19,8 @@ export default function PedidoDetailAdmin({ pedido, partidas }: { pedido: any; p
 
   const [estatus, setEstatus] = useState(normalizarEstatus(pedido.estatus));
   const [cotizacionBind, setCotizacionBind] = useState(pedido.cotizacion_bind || '');
+  const [pdfBindUrl, setPdfBindUrl] = useState<string | null>(pedido.po_url || null);
+  const [subiendoPdf, setSubiendoPdf] = useState(false);
   const [notasCliente, setNotasCliente] = useState(pedido.notas_cliente || '');
   const [loading, setLoading] = useState(false);
   const [partidasState, setPartidasState] = useState(partidas);
@@ -71,6 +75,38 @@ export default function PedidoDetailAdmin({ pedido, partidas }: { pedido: any; p
     setPartidasState(prev => prev.filter(p => p.id !== partidaId));
   };
 
+  const handleSubirPdfBind = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setErrorStr('Por favor selecciona un archivo en formato PDF.');
+      return;
+    }
+
+    setSubiendoPdf(true);
+    setErrorStr(null);
+    try {
+      const safeFolio = folioLimpio.replace(/[^a-zA-Z0-9_-]/g, '');
+      const filePath = `cotizaciones_bind/Cotizacion_REM_${safeFolio}_${Date.now()}.pdf`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file, { contentType: 'application/pdf', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('media').getPublicUrl(filePath);
+      setPdfBindUrl(data.publicUrl);
+      setSuccessStr('PDF adjuntado. Recuerda hacer clic en "Guardar Cambios" para confirmar.');
+    } catch (err: any) {
+      setErrorStr(`Error al subir el PDF: ${err.message || 'Intenta de nuevo'}`);
+    } finally {
+      setSubiendoPdf(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const guardarCambios = async () => {
     setLoading(true);
     setErrorStr(null);
@@ -88,7 +124,8 @@ export default function PedidoDetailAdmin({ pedido, partidas }: { pedido: any; p
           subtotal: subtotalCalculado,
           iva: ivaCalculado,
           total: totalCalculado,
-          partidasEliminadas
+          partidasEliminadas,
+          po_url: pdfBindUrl,
         }
       );
 
@@ -258,20 +295,84 @@ export default function PedidoDetailAdmin({ pedido, partidas }: { pedido: any; p
               Cambia a &quot;Atendida&quot; una vez que hayas revisado y procesado esta cotización.
             </p>
 
-            <div className="mt-4 pt-4 border-t border-slate-200">
-              <label className="block text-sm font-semibold text-slate-700 mb-1">
-                No. Cotización Formal Bind ERP
-              </label>
-              <p className="text-xs text-slate-500 mb-2">
-                Ingresa el folio o número generado en Bind ERP para asociarlo con esta solicitud:
-              </p>
-              <input 
-                type="text"
-                value={cotizacionBind}
-                onChange={(e) => setCotizacionBind(e.target.value)}
-                placeholder="Ej. 12450 ó QT19854"
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-brand-500 focus:border-brand-500 text-sm font-semibold text-slate-800"
-              />
+            <div className="mt-4 pt-4 border-t border-slate-200 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  No. Cotización Formal Bind ERP <span className="text-xs font-normal text-slate-400">(Opcional)</span>
+                </label>
+                <p className="text-xs text-slate-500 mb-2">
+                  Ingresa el folio o número generado en Bind ERP para asociarlo con esta solicitud:
+                </p>
+                <input 
+                  type="text"
+                  value={cotizacionBind}
+                  onChange={(e) => setCotizacionBind(e.target.value)}
+                  placeholder="Ej. 12450 ó QT19854"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-brand-500 focus:border-brand-500 text-sm font-semibold text-slate-800"
+                />
+              </div>
+
+              {/* Subida opcional de PDF de Bind ERP */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-indigo-600" />
+                  Archivo PDF de Bind ERP <span className="text-xs font-normal text-slate-400">(Opcional)</span>
+                </label>
+                <p className="text-xs text-slate-500 mb-2">
+                  Si adjuntas el PDF generado en Bind ERP, el cliente podrá descargarlo desde su portal:
+                </p>
+
+                {pdfBindUrl ? (
+                  <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between gap-2">
+                    <a
+                      href={pdfBindUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-800 hover:text-indigo-950 hover:underline truncate"
+                    >
+                      <FileText className="w-4 h-4 shrink-0 text-indigo-600" />
+                      <span className="truncate">Ver PDF Oficial Adjunto</span>
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setPdfBindUrl(null)}
+                      title="Quitar PDF adjunto"
+                      className="p-1 text-indigo-500 hover:text-red-600 hover:bg-white rounded-lg transition-colors shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      onChange={handleSubirPdfBind}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={subiendoPdf}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-50 hover:bg-indigo-50/60 text-slate-700 hover:text-indigo-800 border-2 border-dashed border-slate-300 hover:border-indigo-300 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {subiendoPdf ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                          Subiendo archivo PDF...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 text-indigo-600" />
+                          Subir PDF de Bind ERP
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <button

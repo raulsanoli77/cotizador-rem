@@ -17,6 +17,7 @@ export async function actualizarPedido(
     iva?: number;
     total?: number;
     partidasEliminadas?: string[];
+    po_url?: string | null;
   }
 ) {
   try {
@@ -26,6 +27,9 @@ export async function actualizarPedido(
     const updateData: Record<string, any> = { estatus: estatusNuevo };
     if (cotizacionBind !== undefined) {
       updateData.cotizacion_bind = cotizacionBind.trim() || null;
+    }
+    if (datosExtra?.po_url !== undefined) {
+      updateData.po_url = datosExtra.po_url || null;
     }
     if (datosExtra?.notas_cliente !== undefined) {
       updateData.notas_cliente = datosExtra.notas_cliente.trim() || null;

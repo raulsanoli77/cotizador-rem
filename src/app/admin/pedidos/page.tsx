@@ -97,6 +97,18 @@ export default async function AdminPedidosPage() {
                         ) : (
                           <div className="text-[11px] text-slate-400 italic">Sin asociar a Bind</div>
                         )}
+                        {pedido.po_url && (
+                          <div className="mt-1">
+                            <a
+                              href={pedido.po_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] rounded font-bold transition-colors"
+                            >
+                              📄 PDF Adjunto
+                            </a>
+                          </div>
+                        )}
                         {pedido.flete_urgente && (
                           <div className="mt-1">
                             <span className="inline-block px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded font-bold">

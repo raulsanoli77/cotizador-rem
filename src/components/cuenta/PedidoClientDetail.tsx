@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Package, Calendar, MessageSquare, MapPin, MessageCircle, Clock, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Package, Calendar, MessageSquare, MapPin, Clock, CheckCircle, FileText, Download } from 'lucide-react';
 import Link from 'next/link';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
@@ -61,16 +61,55 @@ export default function PedidoClientDetail({ pedido, partidas, vendedor }: Pedid
           </div>
         </div>
 
-        <a 
-          href={whatsappUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-600/20 transition-colors"
-        >
-          <WhatsAppIcon className="w-4 h-4 fill-current text-white" />
-          {vendedor ? `Contactar a ${vendedor.nombre} por WhatsApp` : 'Contactar Asesor por WhatsApp'}
-        </a>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {pedido.po_url && (
+            <a
+              href={pedido.po_url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-600/20 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Descargar Cotización PDF
+            </a>
+          )}
+          <a 
+            href={whatsappUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-600/20 transition-colors"
+          >
+            <WhatsAppIcon className="w-4 h-4 fill-current text-white" />
+            {vendedor ? `Contactar a ${vendedor.nombre} por WhatsApp` : 'Contactar Asesor por WhatsApp'}
+          </a>
+        </div>
       </div>
+
+      {/* Tarjeta de Cotización Formal en PDF si existe */}
+      {pedido.po_url && (
+        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 bg-indigo-100 text-indigo-700 rounded-xl shrink-0">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase text-indigo-800 tracking-wider">Documento Oficial Disponible</p>
+              <p className="text-sm sm:text-base font-extrabold text-slate-900">
+                Cotización Formal {pedido.cotizacion_bind ? `#${pedido.cotizacion_bind} ` : ''}en formato PDF
+              </p>
+            </div>
+          </div>
+          <a
+            href={pedido.po_url}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-indigo-100 text-indigo-800 border-2 border-indigo-300 font-bold text-xs sm:text-sm rounded-xl transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4 text-indigo-600" />
+            Ver / Descargar PDF Oficial
+          </a>
+        </div>
+      )}
 
       {/* Asesor Comercial Asignado */}
       {vendedor && (
