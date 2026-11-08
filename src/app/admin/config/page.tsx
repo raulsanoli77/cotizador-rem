@@ -23,7 +23,7 @@ export default function AdminConfig() {
   });
 
   // Estados PDF
-  const [pdfLegal, setPdfLegal] = useState<string>('Términos y condiciones sujetos a cambio sin previo aviso. Cotización válida por 15 días.');
+  const [pdfLegal, setPdfLegal] = useState<string>('Términos y condiciones sujetos a cambio sin previo aviso. Cotización válida por 7 días naturales o según se especifique en la misma.');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

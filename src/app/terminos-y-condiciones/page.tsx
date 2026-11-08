@@ -87,7 +87,7 @@ export default function TerminosYCondicionesPage() {
                   <strong>Tipo de Cambio Oficial:</strong> Las operaciones cotizadas en USD que sean liquidadas en Moneda Nacional (MXN) se solventarán al <strong>Tipo de Cambio para solventar obligaciones denominadas en moneda extranjera</strong> publicado por el <strong>Banco de México (Banxico)</strong> en el Diario Oficial de la Federación (DOF) correspondiente al día hábil de pago efectivo.
                 </li>
                 <li>
-                  <strong>Vigencia de Precios:</strong> Debido a la volatilidad en el costo internacional de materias primas (carburo de tungsteno, aceros rápidos, recubrimientos PVD/CVD) y logística portuaria, las cotizaciones formales emitidas tienen una vigencia estándar de <strong>15 (quince) días naturales</strong> contados a partir de su emisión, salvo estipulación en contrario indicada en el folio de cotización.
+                  <strong>Vigencia de Precios:</strong> Debido a la volatilidad en el costo internacional de materias primas (carburo de tungsteno, aceros rápidos, recubrimientos PVD/CVD) y logística portuaria, las cotizaciones formales emitidas tendrán una <strong>vigencia máxima de 7 (siete) días naturales</strong> contados a partir de su emisión cuando no se especifique un plazo distinto en el documento, o bien, la vigencia que expresamente se indique en el folio de la cotización formal respectiva. Transcurrido dicho plazo sin confirmación formal u orden de compra, los precios, condiciones y tiempos de entrega quedan sujetos a revalidación obligatoria.
                 </li>
               </ul>
             </section>
