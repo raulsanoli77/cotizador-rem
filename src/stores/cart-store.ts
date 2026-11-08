@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 import type { ProductoConPrecio } from '@/types/product';
 import type { ItemCarrito } from '@/types/quote';
+import { obtenerMultiploVenta } from '@/lib/pricing/formatters';
 
 interface CartState {
   items: ItemCarrito[];
@@ -24,6 +25,12 @@ export const useCartStore = create<CartState>()(
       monedaVenta: 'MXN' as const,
 
       agregarItem: (producto: ProductoConPrecio, cantidad = 1) => {
+        const multiplo = obtenerMultiploVenta(producto);
+        const cantAjustada =
+          multiplo > 1
+            ? Math.max(multiplo, Math.ceil(cantidad / multiplo) * multiplo)
+            : Math.max(1, cantidad);
+
         set((state) => {
           const existente = state.items.find(
             (item) => item.producto.id === producto.id
@@ -32,12 +39,12 @@ export const useCartStore = create<CartState>()(
             return {
               items: state.items.map((item) =>
                 item.producto.id === producto.id
-                  ? { ...item, cantidad: item.cantidad + cantidad }
+                  ? { ...item, cantidad: item.cantidad + cantAjustada }
                   : item
               ),
             };
           }
-          return { items: [...state.items, { producto, cantidad }] };
+          return { items: [...state.items, { producto, cantidad: cantAjustada }] };
         });
       },
 
@@ -53,9 +60,15 @@ export const useCartStore = create<CartState>()(
           return;
         }
         set((state) => ({
-          items: state.items.map((item) =>
-            item.producto.id === productoId ? { ...item, cantidad } : item
-          ),
+          items: state.items.map((item) => {
+            if (item.producto.id !== productoId) return item;
+            const multiplo = obtenerMultiploVenta(item.producto);
+            const cantValida =
+              multiplo > 1
+                ? Math.max(multiplo, Math.round(cantidad / multiplo) * multiplo)
+                : cantidad;
+            return { ...item, cantidad: cantValida };
+          }),
         }));
       },
 

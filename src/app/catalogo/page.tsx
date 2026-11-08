@@ -176,12 +176,17 @@ export default function CatalogoPage() {
             aplicaCruce,
             margenPublico
           );
+          const catObj = categorias.find(
+            (c) => c.nombre.toLowerCase().trim() === (prod.categoria || '').toLowerCase().trim()
+          );
+
           return {
             ...prod,
             precio_venta: resultado.precioVenta,
             precio_publico: resultado.precioPublico,
             moneda_venta: resultado.monedaVenta,
             formula_aplicada: resultado.formulaAplicada,
+            _campos_categoria: catObj?.campos_filtro,
           };
         });
 

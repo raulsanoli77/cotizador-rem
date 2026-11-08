@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { ShoppingCart, Plus, Minus } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Package } from 'lucide-react';
 import type { ProductoConPrecio } from '@/types/product';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import { useCartStore } from '@/stores/cart-store';
-import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
+import { formatearDescripcionProducto, obtenerMultiploVenta, obtenerEncabezadoComercialProducto } from '@/lib/pricing/formatters';
 import Link from 'next/link';
 
 interface ProductCardProps {
@@ -16,7 +16,10 @@ interface ProductCardProps {
 
 export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: ProductCardProps) {
   const agregarItem = useCartStore((s) => s.agregarItem);
-  const [cantidad, setCantidad] = useState(1);
+  const multiplo = obtenerMultiploVenta(producto);
+  const encabezado = obtenerEncabezadoComercialProducto(producto);
+  const [cantidad, setCantidad] = useState(multiplo);
+
   const handleAdd = (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
@@ -29,7 +32,7 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
       : producto;
       
     agregarItem(productoAgregado, cantidad);
-    setCantidad(1); // reset after adding
+    setCantidad(multiplo); // reset after adding
   };
 
   return (
@@ -59,9 +62,21 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
 
       {/* Info Principal */}
       <div className="p-3 sm:p-4 flex flex-col flex-1">
-        <span className="text-[10px] text-brand-600 font-bold uppercase tracking-wider mb-1">{producto.categoria}</span>
+        <div className="flex items-center justify-between gap-1 mb-1">
+          <span className="text-[10px] text-brand-600 font-bold uppercase tracking-wider truncate">{producto.categoria}</span>
+          {multiplo > 1 && (
+            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded shrink-0">
+              <Package className="h-2.5 w-2.5" /> Caja c/{multiplo}
+            </span>
+          )}
+        </div>
         <Link href={`/catalogo/${producto.id}`} className="text-left group-hover:text-brand-600 transition-colors mb-1 block">
-          <h3 className="font-mono font-bold text-slate-900 text-base leading-tight truncate">{producto.numero_parte}</h3>
+          <h3 className="font-mono font-bold text-slate-900 text-sm sm:text-base leading-tight truncate" title={encabezado.tituloPrincipal}>
+            {encabezado.tituloPrincipal}
+          </h3>
+          {encabezado.tituloPrincipal !== producto.numero_parte && (
+            <span className="text-[10px] font-mono text-slate-500 block">N/P: {producto.numero_parte}</span>
+          )}
         </Link>
         <p className="text-xs text-slate-600 leading-snug line-clamp-3 mb-3 flex-1" title={formatearDescripcionProducto(producto)}>
           {formatearDescripcionProducto(producto)}
@@ -84,7 +99,9 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
                 )}
                 <div className="text-lg sm:text-xl font-black text-slate-900 leading-none truncate">
                   ${producto.precio_venta.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  <span className="text-xs sm:text-sm text-slate-600 font-bold ml-1">{producto.moneda_venta}</span>
+                  <span className="text-xs sm:text-sm text-slate-600 font-bold ml-1">
+                    {producto.moneda_venta}{multiplo > 1 ? '/pza' : ''}
+                  </span>
                 </div>
               </div>
             </>
@@ -92,7 +109,9 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
             <div className="bg-slate-100/80 border-2 border-slate-200 rounded-xl p-2.5 text-center mb-1">
               {producto.precio_publico && (
                 <div className="mb-2">
-                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">Precio de Lista</span>
+                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+                    Precio de Lista {multiplo > 1 ? '(Por pza)' : ''}
+                  </span>
                   <span className="text-base font-black text-slate-900">
                     ${producto.precio_publico.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {producto.moneda_venta}
                   </span>
@@ -106,17 +125,19 @@ export default function ProductCard({ producto, marcaLogoUrl, isB2B = false }: P
 
           {/* ADD TO CART CONTROLS (SIEMPRE VISIBLES) */}
           <div className="flex gap-1.5 w-full mt-auto">
-            <div className="flex items-center justify-between border-2 border-slate-300 rounded-xl bg-white w-[70px] shrink-0 shadow-sm">
+            <div className="flex items-center justify-between border-2 border-slate-300 rounded-xl bg-white w-[74px] shrink-0 shadow-sm">
               <button 
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCantidad(Math.max(1, cantidad - 1)); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCantidad(Math.max(multiplo, cantidad - multiplo)); }}
                 className="py-1.5 px-2 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-l-lg transition-colors"
+                title={multiplo > 1 ? `Restar paquete de ${multiplo}` : 'Restar 1'}
               >
                 <Minus className="h-3 w-3" />
               </button>
               <span className="text-xs font-bold text-slate-900">{cantidad}</span>
               <button 
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCantidad(cantidad + 1); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCantidad(cantidad + multiplo); }}
                 className="py-1.5 px-2 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-r-lg transition-colors"
+                title={multiplo > 1 ? `Sumar paquete de ${multiplo}` : 'Sumar 1'}
               >
                 <Plus className="h-3 w-3" />
               </button>

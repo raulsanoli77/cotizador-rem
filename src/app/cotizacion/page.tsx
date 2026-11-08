@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { formatearPrecio } from '@/lib/pricing/engine';
 
 import { useAuthStore } from '@/stores/auth-store';
-import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
+import { formatearDescripcionProducto, obtenerMultiploVenta, obtenerEncabezadoComercialProducto } from '@/lib/pricing/formatters';
 
 // Importar PDF dinámicamente (solo client-side)
 const PDFDownloadButton = dynamic(
@@ -147,38 +147,67 @@ export default function CotizacionPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {items.map((item) => (
-                        <tr key={item.producto.id}>
-                          <td className="px-4 py-3">
-                            <p className="text-xs text-brand-600 font-semibold">{item.producto.marca}</p>
-                            <p className="text-sm font-medium text-gray-900">{item.producto.numero_parte}</p>
-                            <p className="text-xs text-gray-500 mt-0.5 leading-tight">{formatearDescripcionProducto(item.producto)}</p>
-                            {((item.producto.especificaciones_tecnicas as any)?.requiere_confirmacion === true ||
-                              (item.producto.especificaciones_tecnicas as any)?.requiere_confirmacion === 'true' ||
-                              item.producto.requiere_confirmacion === true) && (
-                              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-amber-800 bg-amber-100/90 px-1.5 py-0.5 rounded border border-amber-300">
-                                ⚠️ Precio y entrega sujetos a confirmación con planta
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-center gap-2">
-                              <button onClick={() => actualizarCantidad(item.producto.id, item.cantidad - 1)} className="p-1 hover:bg-gray-100 rounded"><Minus className="h-3 w-3" /></button>
-                              <span className="text-sm font-medium w-8 text-center">{item.cantidad}</span>
-                              <button onClick={() => actualizarCantidad(item.producto.id, item.cantidad + 1)} className="p-1 hover:bg-gray-100 rounded"><Plus className="h-3 w-3" /></button>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right text-sm text-gray-700">
-                            {formatearPrecio(item.producto.precio_venta, item.producto.moneda_venta)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                            {formatearPrecio(item.producto.precio_venta * item.cantidad, item.producto.moneda_venta)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <button onClick={() => removerItem(item.producto.id)} className="p-1 hover:bg-red-50 rounded text-red-500"><Trash2 className="h-4 w-4" /></button>
-                          </td>
-                        </tr>
-                      ))}
+                      {items.map((item) => {
+                        const multiplo = obtenerMultiploVenta(item.producto);
+                        const encabezado = obtenerEncabezadoComercialProducto(item.producto);
+                        return (
+                          <tr key={item.producto.id}>
+                            <td className="px-4 py-3">
+                              <p className="text-xs text-brand-600 font-semibold">{item.producto.marca}</p>
+                              <p className="text-sm font-bold text-gray-900">
+                                {encabezado.tituloPrincipal}
+                                {encabezado.tituloPrincipal !== item.producto.numero_parte && (
+                                  <span className="text-xs font-mono text-gray-500 font-normal ml-2">(N/P: {item.producto.numero_parte})</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-0.5 leading-tight">{formatearDescripcionProducto(item.producto)}</p>
+                              {((item.producto.especificaciones_tecnicas as any)?.requiere_confirmacion === true ||
+                                (item.producto.especificaciones_tecnicas as any)?.requiere_confirmacion === 'true' ||
+                                item.producto.requiere_confirmacion === true) && (
+                                <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-amber-800 bg-amber-100/90 px-1.5 py-0.5 rounded border border-amber-300">
+                                  ⚠️ Precio y entrega sujetos a confirmación con planta
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => actualizarCantidad(item.producto.id, item.cantidad - multiplo)}
+                                    className="p-1 hover:bg-gray-100 rounded border border-gray-200"
+                                    title={multiplo > 1 ? `Restar paquete de ${multiplo}` : 'Restar 1'}
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </button>
+                                  <span className="text-sm font-bold w-10 text-center">{item.cantidad}</span>
+                                  <button
+                                    onClick={() => actualizarCantidad(item.producto.id, item.cantidad + multiplo)}
+                                    className="p-1 hover:bg-gray-100 rounded border border-gray-200"
+                                    title={multiplo > 1 ? `Sumar paquete de ${multiplo}` : 'Sumar 1'}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </button>
+                                </div>
+                                {multiplo > 1 && (
+                                  <span className="text-[10px] font-bold text-brand-700 bg-brand-50 px-1.5 py-0.5 rounded border border-brand-200 whitespace-nowrap">
+                                    {item.cantidad / multiplo} paq. de {multiplo} pzas
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm text-gray-700">
+                              {formatearPrecio(item.producto.precio_venta, item.producto.moneda_venta)}
+                              {multiplo > 1 && <span className="text-[10px] text-gray-400 block">/ pza</span>}
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                              {formatearPrecio(item.producto.precio_venta * item.cantidad, item.producto.moneda_venta)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <button onClick={() => removerItem(item.producto.id)} className="p-1 hover:bg-red-50 rounded text-red-500"><Trash2 className="h-4 w-4" /></button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

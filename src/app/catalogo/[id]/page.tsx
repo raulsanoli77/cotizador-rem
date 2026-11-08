@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingCart, Plus, Minus, ChevronRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, ChevronRight, ArrowLeft, Loader2, Package } from 'lucide-react';
 import type { Producto, ProductoConPrecio } from '@/types';
 import { formatearPrecio, calcularPrecioVenta } from '@/lib/pricing/engine';
-import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
+import { formatearDescripcionProducto, obtenerMultiploVenta, obtenerEncabezadoComercialProducto } from '@/lib/pricing/formatters';
 import { useCartStore } from '@/stores/cart-store';
 import { supabase } from '@/lib/supabase/client';
 import { obtenerTipoCambio } from '@/lib/pricing/exchange-rate';
@@ -118,13 +118,18 @@ export default function ProductDetailPage() {
         }
         setOrdenCampos(mapOrden);
 
-        setProducto({
+        const prodConPrecio: ProductoConPrecio = {
           ...(prodData as Producto),
           precio_venta: resultado.precioVenta,
           precio_publico: resultado.precioPublico,
           moneda_venta: resultado.monedaVenta,
-          formula_aplicada: resultado.formulaAplicada
-        });
+          formula_aplicada: resultado.formulaAplicada,
+          _campos_categoria: catData?.campos_filtro,
+        };
+
+        setProducto(prodConPrecio);
+        const multiploInicial = obtenerMultiploVenta(prodConPrecio);
+        setCantidad(multiploInicial);
       } catch (err) {
         console.error('Error cargando producto:', err);
       } finally {
@@ -151,14 +156,17 @@ export default function ProductDetailPage() {
 
   if (!producto) return null;
 
+  const multiplo = obtenerMultiploVenta(producto);
+  const encabezado = obtenerEncabezadoComercialProducto(producto);
+
   const handleAdd = () => {
     const productoAgregado = !isB2B && producto.precio_publico 
       ? { ...producto, precio_venta: producto.precio_publico }
       : producto;
       
     agregarItem(productoAgregado, cantidad);
-    setCantidad(1);
-    alert('Producto agregado al carrito'); // Opcional: Toast sutil
+    setCantidad(multiplo);
+    alert(`Se agregaron ${cantidad} pza(s)${multiplo > 1 ? ` (${cantidad / multiplo} paquete(s) de ${multiplo})` : ''} al carrito`);
   };
 
   const specs = producto.especificaciones_tecnicas || {};
@@ -237,92 +245,84 @@ export default function ProductDetailPage() {
               {/* Columna Derecha: Información y Compra */}
               <div className="w-full lg:w-1/2 flex flex-col justify-center text-white py-4">
                 
-                <div className="flex flex-wrap items-center gap-3 mb-4">
-                  <span className="text-xs font-mono text-slate-300 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-md tracking-wider">
+                <div className="flex flex-wrap items-center gap-2.5 mb-4">
+                  <span className="text-xs font-mono text-amber-400 font-bold bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-md tracking-wider">
                     SKU: {producto.sku_interno || producto.id.split('-')[0]}
                   </span>
+                  {encabezado.tituloPrincipal !== producto.numero_parte && (
+                    <span className="text-xs font-mono text-slate-300 bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-md tracking-wider">
+                      N/P: {producto.numero_parte}
+                    </span>
+                  )}
+                  {encabezado.badgeMaterial && (
+                    <span className="text-xs font-bold text-slate-200 bg-slate-800/60 border border-slate-700 px-3 py-1.5 rounded-md">
+                      • {encabezado.badgeMaterial}
+                    </span>
+                  )}
                 </div>
 
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 tracking-tighter leading-tight drop-shadow-md">
-                  {producto.numero_parte}
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-3 tracking-tight leading-tight drop-shadow-md">
+                  {encabezado.tituloPrincipal}
                 </h1>
 
-                <p className="text-slate-300 text-lg md:text-xl mb-10 leading-relaxed font-medium">
+                {encabezado.subtituloComercial && (
+                  <h2 className="text-lg md:text-xl font-bold text-brand-400 mb-3 tracking-wide">
+                    {encabezado.subtituloComercial}
+                  </h2>
+                )}
+
+                <p className="text-slate-300 text-base md:text-lg mb-8 leading-relaxed font-medium">
                   {formatearDescripcionProducto(producto)}
                 </p>
 
                 {/* Módulo de Compra (Caja de Contraste) */}
                 <div className="bg-slate-800/80 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-2xl border border-slate-700 mt-auto">
                   {isB2B ? (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                      <div>
-                        {producto.precio_publico && producto.precio_publico > producto.precio_venta && (
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="text-sm text-slate-400 line-through">
-                              {formatearPrecio(producto.precio_publico, producto.moneda_venta)} {producto.moneda_venta}
-                            </span>
-                            <span className="text-xs font-bold text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded border border-emerald-800">
-                              Ahorras {Math.round((1 - (producto.precio_venta / producto.precio_publico)) * 100)}%
-                            </span>
-                          </div>
-                        )}
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Tu Precio de Cliente</p>
-                        <div className="text-4xl font-black text-white flex items-baseline gap-2 drop-shadow-md">
-                          {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
-                          <span className="text-lg font-medium text-slate-400 uppercase">{producto.moneda_venta}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
-                        <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden w-full sm:w-auto shadow-inner">
-                          <button 
-                            onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-                            className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                          >
-                            <Minus className="h-5 w-5" />
-                          </button>
-                          <span className="w-16 text-center text-xl font-bold text-white">{cantidad}</span>
-                          <button 
-                            onClick={() => setCantidad(cantidad + 1)}
-                            className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                          >
-                            <Plus className="h-5 w-5" />
-                          </button>
-                        </div>
-                        <button
-                          onClick={handleAdd}
-                          className="w-full bg-brand-600 hover:bg-brand-500 text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] hover:shadow-[0_0_25px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2"
-                        >
-                          <ShoppingCart className="h-5 w-5" /> Agregar al carrito
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-4">
                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                         <div>
-                          {producto.precio_publico && (
-                            <div>
-                              <span className="text-sm font-bold text-slate-400 uppercase tracking-wider block mb-1">Precio de Lista</span>
-                              <div className="text-3xl font-black text-slate-200">
-                                {formatearPrecio(producto.precio_publico, producto.moneda_venta)} <span className="text-lg text-slate-500">{producto.moneda_venta}</span>
-                              </div>
+                          {producto.precio_publico && producto.precio_publico > producto.precio_venta && (
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-sm text-slate-400 line-through">
+                                {formatearPrecio(producto.precio_publico, producto.moneda_venta)} {producto.moneda_venta}
+                              </span>
+                              <span className="text-xs font-bold text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded border border-emerald-800">
+                                Ahorras {Math.round((1 - (producto.precio_venta / producto.precio_publico)) * 100)}%
+                              </span>
                             </div>
                           )}
+                          <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
+                            Tu Precio de Cliente {multiplo > 1 ? '(Por Pieza)' : ''}
+                          </p>
+                          <div className="text-4xl font-black text-white flex items-baseline gap-2 drop-shadow-md">
+                            {formatearPrecio(producto.precio_venta, producto.moneda_venta)}
+                            <span className="text-lg font-medium text-slate-400 uppercase">
+                              {producto.moneda_venta}{multiplo > 1 ? ' / pza' : ''}
+                            </span>
+                          </div>
                         </div>
-                        
+
                         <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
                           <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden w-full sm:w-auto shadow-inner">
                             <button 
-                              onClick={() => setCantidad(Math.max(1, cantidad - 1))}
+                              onClick={() => setCantidad(Math.max(multiplo, cantidad - multiplo))}
                               className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                              title={multiplo > 1 ? `Restar paquete de ${multiplo} pzas` : 'Restar 1'}
                             >
                               <Minus className="h-5 w-5" />
                             </button>
-                            <span className="w-16 text-center text-xl font-bold text-white">{cantidad}</span>
+                            <div className="w-20 text-center flex flex-col items-center justify-center py-1">
+                              <span className="text-xl font-bold text-white leading-none">{cantidad}</span>
+                              {multiplo > 1 && (
+                                <span className="text-[10px] font-semibold text-brand-400 mt-0.5">
+                                  {cantidad / multiplo} paq.
+                                </span>
+                              )}
+                            </div>
                             <button 
-                              onClick={() => setCantidad(cantidad + 1)}
+                              onClick={() => setCantidad(cantidad + multiplo)}
                               className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                              title={multiplo > 1 ? `Sumar paquete de ${multiplo} pzas` : 'Sumar 1'}
                             >
                               <Plus className="h-5 w-5" />
                             </button>
@@ -335,6 +335,83 @@ export default function ProductDetailPage() {
                           </button>
                         </div>
                       </div>
+
+                      {multiplo > 1 && (
+                        <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/70 border border-brand-500/30 rounded-xl px-4 py-3 text-xs">
+                          <span className="flex items-center gap-2 text-slate-200 font-semibold">
+                            <Package className="h-4 w-4 text-brand-400 shrink-0" />
+                            Venta en múltiplos de {multiplo} piezas (Caja cerrada)
+                          </span>
+                          <span className="font-bold text-emerald-400">
+                            Total por {cantidad} pzas ({cantidad / multiplo} paq.): {formatearPrecio(producto.precio_venta * cantidad, producto.moneda_venta)} {producto.moneda_venta}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-6">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                        <div>
+                          {producto.precio_publico && (
+                            <div>
+                              <span className="text-sm font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                                Precio de Lista {multiplo > 1 ? '(Por Pieza)' : ''}
+                              </span>
+                              <div className="text-3xl font-black text-slate-200">
+                                {formatearPrecio(producto.precio_publico, producto.moneda_venta)}{' '}
+                                <span className="text-lg text-slate-500">
+                                  {producto.moneda_venta}{multiplo > 1 ? ' / pza' : ''}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-col items-end gap-3 w-full sm:w-auto">
+                          <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden w-full sm:w-auto shadow-inner">
+                            <button 
+                              onClick={() => setCantidad(Math.max(multiplo, cantidad - multiplo))}
+                              className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                              title={multiplo > 1 ? `Restar paquete de ${multiplo} pzas` : 'Restar 1'}
+                            >
+                              <Minus className="h-5 w-5" />
+                            </button>
+                            <div className="w-20 text-center flex flex-col items-center justify-center py-1">
+                              <span className="text-xl font-bold text-white leading-none">{cantidad}</span>
+                              {multiplo > 1 && (
+                                <span className="text-[10px] font-semibold text-brand-400 mt-0.5">
+                                  {cantidad / multiplo} paq.
+                                </span>
+                              )}
+                            </div>
+                            <button 
+                              onClick={() => setCantidad(cantidad + multiplo)}
+                              className="p-4 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                              title={multiplo > 1 ? `Sumar paquete de ${multiplo} pzas` : 'Sumar 1'}
+                            >
+                              <Plus className="h-5 w-5" />
+                            </button>
+                          </div>
+                          <button
+                            onClick={handleAdd}
+                            className="w-full bg-brand-600 hover:bg-brand-500 text-white px-8 py-4 rounded-lg font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] hover:shadow-[0_0_25px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2"
+                          >
+                            <ShoppingCart className="h-5 w-5" /> Agregar al carrito
+                          </button>
+                        </div>
+                      </div>
+
+                      {multiplo > 1 && producto.precio_publico && (
+                        <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/70 border border-brand-500/30 rounded-xl px-4 py-3 text-xs">
+                          <span className="flex items-center gap-2 text-slate-200 font-semibold">
+                            <Package className="h-4 w-4 text-brand-400 shrink-0" />
+                            Venta en múltiplos de {multiplo} piezas (Caja cerrada)
+                          </span>
+                          <span className="font-bold text-brand-300">
+                            Total por {cantidad} pzas ({cantidad / multiplo} paq.): {formatearPrecio(producto.precio_publico * cantidad, producto.moneda_venta)} {producto.moneda_venta}
+                          </span>
+                        </div>
+                      )}
 
                       <div className="bg-slate-900/50 rounded-xl p-5 border border-brand-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div>

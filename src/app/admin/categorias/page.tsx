@@ -13,6 +13,9 @@ interface CampoFiltro {
   opciones?: string[];
   opcionesText?: string;
   visible_en_filtros?: boolean;
+  visible_en_descripcion?: boolean;
+  formato_descripcion?: 'valor' | 'prefijo' | 'etiqueta';
+  prefijo_descripcion?: string;
 }
 
 interface Categoria {
@@ -92,6 +95,9 @@ export default function AdminCategorias() {
       opcionesText: (c.opciones || []).join(', '),
       opciones: c.opciones,
       visible_en_filtros: c.visible_en_filtros ?? true,
+      visible_en_descripcion: c.visible_en_descripcion ?? false,
+      formato_descripcion: c.formato_descripcion || 'valor',
+      prefijo_descripcion: c.prefijo_descripcion || '',
     })));
     setModalOpen(true);
   };
@@ -116,8 +122,14 @@ export default function AdminCategorias() {
       const payload: any = { 
         nombre: campo.nombre, 
         tipo: campo.tipo,
-        visible_en_filtros: campo.visible_en_filtros ?? true
+        visible_en_filtros: campo.visible_en_filtros ?? true,
+        visible_en_descripcion: campo.visible_en_descripcion ?? false,
+        formato_descripcion: campo.formato_descripcion || 'valor',
       };
+
+      if (campo.prefijo_descripcion && campo.prefijo_descripcion.trim()) {
+        payload.prefijo_descripcion = campo.prefijo_descripcion.trim();
+      }
 
       // Guardar sufijo solo si tiene valor
       if (campo.sufijo && campo.sufijo.trim()) {
@@ -151,7 +163,19 @@ export default function AdminCategorias() {
 
   // Funciones para manejar campos dinámicos
   const addCampo = () => {
-    setEditCampos([...editCampos, { nombre: '', tipo: 'texto', sufijo: '', opcionesText: '', visible_en_filtros: true }]);
+    setEditCampos([
+      ...editCampos,
+      {
+        nombre: '',
+        tipo: 'texto',
+        sufijo: '',
+        opcionesText: '',
+        visible_en_filtros: true,
+        visible_en_descripcion: false,
+        formato_descripcion: 'valor',
+        prefijo_descripcion: '',
+      },
+    ]);
   };
 
   const removeCampo = (index: number) => {
@@ -333,8 +357,8 @@ export default function AdminCategorias() {
               <div className="border-t border-gray-200 pt-6">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Campos Técnicos (Especificaciones)</h3>
-                    <p className="text-sm text-gray-500">Define los campos que necesitarás capturar por producto.</p>
+                    <h3 className="text-lg font-bold text-gray-900">Campos Técnicos y Descripción</h3>
+                    <p className="text-sm text-gray-500">Elige qué campos se usan como filtros y cuáles arman la descripción del producto (según el orden ↑ ↓).</p>
                   </div>
                   <button 
                     onClick={addCampo}
@@ -343,6 +367,36 @@ export default function AdminCategorias() {
                     <Plus className="h-4 w-4" /> Agregar Campo
                   </button>
                 </div>
+
+                {/* Vista previa en vivo de cómo se armará la descripción */}
+                {editCampos.some(c => c.visible_en_descripcion) ? (
+                  <div className="mb-5 p-4 bg-slate-900 text-white rounded-xl border border-slate-700 shadow-sm">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-brand-400">
+                        Vista Previa de Descripción Personalizada ({editCampos.filter(c => c.visible_en_descripcion).length} campos activos)
+                      </span>
+                      <span className="text-[10px] text-slate-400">Usa ↑ ↓ para cambiar el orden</span>
+                    </div>
+                    <p className="text-sm font-mono text-slate-100 leading-relaxed">
+                      {[
+                        (editNombre || 'CATEGORÍA').toUpperCase().replace(/ES$/, '').replace(/S$/, ''),
+                        ...editCampos
+                          .filter(c => c.visible_en_descripcion && c.nombre.trim())
+                          .map(c => {
+                            const ejVal = (c.opcionesText ? c.opcionesText.split(',')[0]?.trim() : null) || `<${c.nombre.toUpperCase()}>`;
+                            const conSufijo = c.sufijo ? `${ejVal}${c.sufijo}` : ejVal;
+                            if (c.formato_descripcion === 'etiqueta') return `${c.nombre.toUpperCase()}: ${conSufijo}`;
+                            if (c.formato_descripcion === 'prefijo' && c.prefijo_descripcion) return `${c.prefijo_descripcion.toUpperCase()} ${conSufijo}`;
+                            return conSufijo;
+                          })
+                      ].join(' ')}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mb-5 p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl text-xs text-blue-800">
+                    <strong>Modo Automático Inteligente activo:</strong> El sistema arma la descripción automáticamente según la categoría (Endmills, Brocas, Insertos, Medición). Si deseas elegir manualmente qué campos aparecen en la descripción, marca la casilla <strong>&quot;En Desc.&quot;</strong> en los campos deseados.
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   {editCampos.length === 0 ? (
@@ -354,9 +408,9 @@ export default function AdminCategorias() {
                     editCampos.map((campo, index) => (
                       <div key={index} className="flex flex-col gap-3 p-4 border border-gray-200 rounded-xl bg-gray-50 relative group">
                         
-                        <div className="flex gap-3 items-end">
+                        <div className="flex gap-3 items-end flex-wrap sm:flex-nowrap">
                           {/* Nombre del campo */}
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-[160px]">
                             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre del Campo</label>
                             <input 
                               type="text" 
@@ -368,7 +422,7 @@ export default function AdminCategorias() {
                           </div>
                           
                           {/* Tipo */}
-                          <div className="w-36">
+                          <div className="w-32">
                             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Tipo</label>
                             <select 
                               value={campo.tipo} 
@@ -381,7 +435,7 @@ export default function AdminCategorias() {
                           </div>
 
                           {/* Sufijo / Símbolo */}
-                          <div className="w-28">
+                          <div className="w-24">
                             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Sufijo</label>
                             <input 
                               type="text" 
@@ -393,7 +447,7 @@ export default function AdminCategorias() {
                           </div>
 
                           {/* Toggle Filtros */}
-                          <div className="w-20 shrink-0">
+                          <div className="w-16 shrink-0">
                             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 text-center">Filtro</label>
                             <div className="flex justify-center">
                               <input 
@@ -401,7 +455,21 @@ export default function AdminCategorias() {
                                 checked={campo.visible_en_filtros ?? true}
                                 onChange={e => updateCampo(index, 'visible_en_filtros', e.target.checked)}
                                 className="w-5 h-5 text-brand-600 rounded border-gray-300 focus:ring-brand-500"
-                                title="Mostrar como filtro en el catálogo"
+                                title="Mostrar como filtro en la barra lateral del catálogo"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Toggle En Descripción */}
+                          <div className="w-20 shrink-0">
+                            <label className="block text-xs font-bold text-brand-700 uppercase tracking-wider mb-2 text-center">En Desc.</label>
+                            <div className="flex justify-center">
+                              <input 
+                                type="checkbox"
+                                checked={campo.visible_en_descripcion ?? false}
+                                onChange={e => updateCampo(index, 'visible_en_descripcion', e.target.checked)}
+                                className="w-5 h-5 text-brand-600 rounded border-gray-300 focus:ring-brand-500"
+                                title="Incluir este campo en el texto de descripción del producto"
                               />
                             </div>
                           </div>
@@ -435,6 +503,31 @@ export default function AdminCategorias() {
                             </button>
                           </div>
                         </div>
+
+                        {/* Configuración de cómo se muestra en la descripción cuando "En Desc." está activo */}
+                        {campo.visible_en_descripcion && (
+                          <div className="flex flex-wrap items-center gap-3 bg-brand-50/60 border border-brand-200 rounded-lg px-3 py-2 text-xs">
+                            <span className="font-bold text-brand-800">Formato en descripción:</span>
+                            <select
+                              value={campo.formato_descripcion || 'valor'}
+                              onChange={e => updateCampo(index, 'formato_descripcion', e.target.value)}
+                              className="border border-brand-300 rounded-md px-2 py-1 bg-white text-gray-800 font-medium outline-none"
+                            >
+                              <option value="valor">Solo valor (ej. TPU 322)</option>
+                              <option value="prefijo">Prefijo corto + valor (ej. I.C. 3/8&quot;)</option>
+                              <option value="etiqueta">Nombre: Valor (ej. GRADO: TRACKER)</option>
+                            </select>
+                            {campo.formato_descripcion === 'prefijo' && (
+                              <input
+                                type="text"
+                                value={campo.prefijo_descripcion || ''}
+                                onChange={e => updateCampo(index, 'prefijo_descripcion', e.target.value)}
+                                placeholder="Prefijo (ej. I.C., R, ESP.)"
+                                className="border border-brand-300 rounded-md px-2.5 py-1 bg-white text-gray-800 w-44 outline-none"
+                              />
+                            )}
+                          </div>
+                        )}
 
                         {/* Previsualización del sufijo */}
                         {campo.sufijo && campo.sufijo.trim() && (

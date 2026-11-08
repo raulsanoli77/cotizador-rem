@@ -44,6 +44,9 @@ export interface CampoFiltro {
   unidad?: string;
   sufijo?: string;
   visible_en_filtros?: boolean;
+  visible_en_descripcion?: boolean;
+  formato_descripcion?: 'valor' | 'prefijo' | 'etiqueta';
+  prefijo_descripcion?: string;
 }
 
 export interface ProductoConPrecio extends Producto {
@@ -51,4 +54,5 @@ export interface ProductoConPrecio extends Producto {
   precio_publico?: number;
   moneda_venta: 'USD' | 'MXN';
   formula_aplicada: string;
+  _campos_categoria?: CampoFiltro[];
 }
