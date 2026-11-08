@@ -1,7 +1,9 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { exigirSesionUsuarioServerAction } from '@/lib/auth/admin-auth';
 import { enviarNotificacionVentas } from '@/lib/email/notifications';
+import { recalcularPartidasServidor, generarSufijoFolio } from '@/lib/pricing/server-verifier';
 
 export async function crearPedidoB2B({
   cliente_id,
@@ -17,10 +19,6 @@ export async function crearPedidoB2B({
   codigo_postal,
   flete_urgente,
   notas_cliente,
-  subtotal,
-  iva,
-  total,
-  moneda,
   partidas,
   guardar_direccion,
 }: {
@@ -37,10 +35,10 @@ export async function crearPedidoB2B({
   codigo_postal: string;
   flete_urgente?: boolean;
   notas_cliente?: string;
-  subtotal: number;
-  iva: number;
-  total: number;
-  moneda: string;
+  subtotal?: number;
+  iva?: number;
+  total?: number;
+  moneda?: string;
   partidas: Array<{
     producto_id: string;
     numero_parte: string;
@@ -52,24 +50,51 @@ export async function crearPedidoB2B({
   }>;
   guardar_direccion?: boolean;
 }) {
+  // 1. Verificar sesión autenticada y coincidencia con cliente_id
+  await exigirSesionUsuarioServerAction(cliente_id);
+
   const supabase = createAdminClient();
 
-  // 0. (Opcional) Guardar dirección en el perfil si el cliente lo solicitó
-  if (guardar_direccion) {
-    await supabase.from('perfiles_clientes').update({
-      calle: calle || null,
-      num_exterior: num_exterior || null,
-      num_interior: num_interior || null,
-      colonia: colonia || null,
-      ciudad,
-      estado,
-      codigo_postal,
-    }).eq('id', cliente_id);
+  // 2. Verificar que el perfil del cliente exista y esté aprobado
+  const { data: clienteData, error: errCliente } = await supabase
+    .from('perfiles_clientes')
+    .select('*, vendedor:vendedores(nombre, email, telefono, activo)')
+    .eq('id', cliente_id)
+    .single();
+
+  if (errCliente || !clienteData || clienteData.estatus !== 'aprobado') {
+    throw new Error('No autorizado: Tu cuenta empresarial debe estar aprobada para generar pedidos.');
   }
 
-  const folioGenerado = numero_po ? numero_po.replace(/^COT-/i, '') : `${Date.now().toString().slice(-6)}`;
+  // 3. Recalcular precios, múltiplos, subtotal, IVA y total en el servidor desde la BD
+  const verificado = await recalcularPartidasServidor(partidas, true);
+  const {
+    partidas: partidasOficiales,
+    subtotal: subtotalOficial,
+    iva: ivaOficial,
+    total: totalOficial,
+    moneda: monedaOficial,
+  } = verificado;
 
-  // 1. Crear el Pedido / Cotización Formal
+  // 4. (Opcional) Guardar dirección en el perfil si el cliente lo solicitó
+  if (guardar_direccion) {
+    await supabase
+      .from('perfiles_clientes')
+      .update({
+        calle: calle || null,
+        num_exterior: num_exterior || null,
+        num_interior: num_interior || null,
+        colonia: colonia || null,
+        ciudad,
+        estado,
+        codigo_postal,
+      })
+      .eq('id', cliente_id);
+  }
+
+  const folioGenerado = `${Date.now().toString().slice(-6)}${generarSufijoFolio(2)}`;
+
+  // 5. Crear el Pedido / Cotización Formal con importes verificados en servidor
   const { data: pedido, error: errorPedido } = await supabase
     .from('pedidos')
     .insert({
@@ -86,21 +111,21 @@ export async function crearPedidoB2B({
       codigo_postal,
       flete_urgente: flete_urgente || false,
       notas_cliente: notas_cliente || null,
-      subtotal,
-      iva,
-      total,
-      moneda,
+      subtotal: subtotalOficial,
+      iva: ivaOficial,
+      total: totalOficial,
+      moneda: monedaOficial,
       estatus: 'pendiente',
     })
     .select()
     .single();
 
-  if (errorPedido) {
-    throw new Error('Error al crear la solicitud: ' + errorPedido.message);
+  if (errorPedido || !pedido) {
+    throw new Error('Error al crear la solicitud: ' + (errorPedido?.message || 'Error desconocido'));
   }
 
-  // 2. Crear las partidas
-  const partidasParaInsertar = partidas.map((p) => ({
+  // 6. Crear las partidas verificadas; si falla, aplicar rollback del encabezado del pedido
+  const partidasParaInsertar = partidasOficiales.map((p) => ({
     pedido_id: pedido.id,
     producto_id: p.producto_id,
     numero_parte: p.numero_parte,
@@ -116,58 +141,55 @@ export async function crearPedidoB2B({
     .insert(partidasParaInsertar);
 
   if (errorPartidas) {
-    throw new Error('Error al guardar los productos: ' + errorPartidas.message);
+    // Rollback: eliminar el pedido huérfano recién insertado
+    await supabase.from('pedidos').delete().eq('id', pedido.id);
+    throw new Error('Error al guardar los productos del pedido: ' + errorPartidas.message);
   }
 
-  // 3. Obtener datos del cliente para la notificación por correo
+  // 7. Enviar notificación por correo con precios verificados
   try {
-    const { data: clienteData } = await supabase
-      .from('perfiles_clientes')
-      .select('*, vendedor:vendedores(nombre, email, telefono, activo)')
-      .eq('id', cliente_id)
-      .single();
+    const direccionCompleta = [
+      calle ? `${calle} ${num_exterior || ''}`.trim() : null,
+      colonia ? `Col. ${colonia}` : null,
+      `${ciudad}, ${estado}`,
+      `CP ${codigo_postal}`,
+      flete_urgente ? '⚡ SOLICITÓ FLETE URGENTE' : null,
+    ]
+      .filter(Boolean)
+      .join(' | ');
 
-    if (clienteData) {
-      const direccionCompleta = [
-        calle ? `${calle} ${num_exterior || ''}`.trim() : null,
-        colonia ? `Col. ${colonia}` : null,
-        `${ciudad}, ${estado}`,
-        `CP ${codigo_postal}`,
-        flete_urgente ? '⚡ SOLICITÓ FLETE URGENTE' : null,
-      ].filter(Boolean).join(' | ');
+    const vendedorInfo =
+      (clienteData.vendedor as any)?.activo !== false ? clienteData.vendedor : null;
 
-      const vendedorInfo = (clienteData.vendedor as any)?.activo !== false ? clienteData.vendedor : null;
-
-      await enviarNotificacionVentas({
-        lead: {
-          nombre_completo: clienteData.nombre_completo,
-          empresa: clienteData.empresa,
-          email: clienteData.email,
-          telefono: clienteData.telefono,
-          direccion: direccionCompleta,
-        },
-        vendedor: vendedorInfo as any,
-        partidas: partidas.map(p => ({
-          cantidad: p.cantidad,
-          marca: p.marca,
-          numero_parte: p.numero_parte,
-          descripcion: p.descripcion,
-          precio_unitario: p.precio_unitario,
-          total: p.importe,
-          moneda,
-        })),
-        subtotal,
-        moneda,
-        folio: folioGenerado,
-        fecha: new Date().toLocaleDateString('es-MX', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      });
-    }
+    await enviarNotificacionVentas({
+      lead: {
+        nombre_completo: clienteData.nombre_completo,
+        empresa: clienteData.empresa,
+        email: clienteData.email,
+        telefono: clienteData.telefono,
+        direccion: direccionCompleta,
+      },
+      vendedor: vendedorInfo as any,
+      partidas: partidasOficiales.map((p) => ({
+        cantidad: p.cantidad,
+        marca: p.marca,
+        numero_parte: p.numero_parte,
+        descripcion: p.descripcion,
+        precio_unitario: p.precio_unitario,
+        total: p.importe,
+        moneda: monedaOficial,
+      })),
+      subtotal: subtotalOficial,
+      moneda: monedaOficial,
+      folio: folioGenerado,
+      fecha: new Date().toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    });
   } catch (emailErr) {
     console.error('Error enviando correo a ventas:', emailErr);
   }

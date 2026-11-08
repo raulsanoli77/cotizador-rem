@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, syncAuthCookie } from '@/lib/supabase/client';
 import { useCartStore } from '@/stores/cart-store';
 import { formatearPrecio } from '@/lib/pricing/engine';
 import { Loader2, ShieldCheck, MapPin, CheckCircle, ArrowLeft, Send } from 'lucide-react';
@@ -57,6 +57,7 @@ export default function CheckoutB2BPage() {
         router.push('/admin/login');
         return;
       }
+      syncAuthCookie(session.access_token);
 
       const { data: perfilData } = await supabase
         .from('perfiles_clientes')
@@ -194,7 +195,7 @@ export default function CheckoutB2BPage() {
         importe: item.producto.precio_venta * item.cantidad,
       }));
 
-      await crearPedidoB2B({
+      const pedidoCreado = await crearPedidoB2B({
         cliente_id: cliente.id,
         numero_po: folio,
         es_po_verbal: false,
@@ -215,7 +216,7 @@ export default function CheckoutB2BPage() {
         guardar_direccion: guardarDireccion,
       });
 
-      setFolioGenerado(folio);
+      setFolioGenerado(pedidoCreado?.numero_po || folio);
       setCompletado(true);
       limpiarCarrito();
     } catch (err: any) {

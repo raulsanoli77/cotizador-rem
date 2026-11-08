@@ -1,13 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { enviarNotificacionVentas } from '@/lib/email/notifications';
+import { recalcularPartidasServidor, generarSufijoFolio } from '@/lib/pricing/server-verifier';
+
+async function verificarEsB2BDesdeRequest(request: NextRequest): Promise<boolean> {
+  try {
+    let token: string | null = null;
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.replace('Bearer ', '').trim();
+    }
+    if (!token) {
+      const cookieStore = await cookies();
+      token = cookieStore.get('rem-auth-token')?.value || null;
+    }
+    if (!token) return false;
+
+    const supabase = createAdminClient();
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData?.user) return false;
+
+    const { data: perfil } = await supabase
+      .from('perfiles_clientes')
+      .select('estatus')
+      .eq('id', userData.user.id)
+      .maybeSingle();
+
+    return perfil?.estatus === 'aprobado';
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { lead_id, partidas, subtotal, moneda_venta, tipo_cambio_usado, formula_aplicada, lead_info, enviar_notificacion } = body;
+    const {
+      lead_id,
+      partidas,
+      subtotal,
+      moneda_venta,
+      tipo_cambio_usado,
+      formula_aplicada,
+      lead_info,
+      enviar_notificacion,
+    } = body;
 
-    if (!lead_id || !partidas || partidas.length === 0) {
+    if (!lead_id || !partidas || !Array.isArray(partidas) || partidas.length === 0) {
       return NextResponse.json(
         { error: 'Datos de cotización incompletos' },
         { status: 400 }
@@ -15,28 +55,58 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createAdminClient();
+    const esB2B = await verificarEsB2BDesdeRequest(request);
 
-    // Generar folio único
+    // Recalcular precios en el servidor desde la BD si las partidas incluyen producto_id
+    let partidasFinales = partidas;
+    let subtotalFinal = Number(subtotal) || 0;
+    let monedaFinal = moneda_venta || 'MXN';
+    let tcFinal = tipo_cambio_usado || null;
+
+    const tieneProductoIds = partidas.every((p: any) => Boolean(p?.producto_id));
+    if (tieneProductoIds) {
+      const verificado = await recalcularPartidasServidor(partidas, esB2B);
+      partidasFinales = verificado.partidas;
+      subtotalFinal = verificado.subtotal;
+      monedaFinal = verificado.moneda;
+      tcFinal = verificado.tipoCambio;
+    }
+
     const now = new Date();
     const year = now.getFullYear();
-    const timestamp = now.getTime().toString().slice(-5);
-    const folio = `REM-${year}-${timestamp}`;
 
-    // Guardar cotización
-    const { data, error } = await supabase
-      .from('cotizaciones')
-      .insert({
-        lead_id,
-        folio,
-        partidas,
-        subtotal: subtotal || 0,
-        moneda_venta: moneda_venta || 'MXN',
-        tipo_cambio_usado,
-        formula_aplicada,
-        estatus: enviar_notificacion ? 'solicitada' : 'borrador',
-      })
-      .select()
-      .single();
+    // Generar e insertar folio con reintento ante colisión UNIQUE (23505)
+    let data: any = null;
+    let error: any = null;
+    let folio = '';
+
+    for (let intento = 0; intento < 3; intento++) {
+      const timestamp = Date.now().toString().slice(-6);
+      const sufijo = generarSufijoFolio(2);
+      folio = `REM-${year}-${timestamp}${sufijo}`;
+
+      const res = await supabase
+        .from('cotizaciones')
+        .insert({
+          lead_id,
+          folio,
+          partidas: partidasFinales,
+          subtotal: subtotalFinal,
+          moneda_venta: monedaFinal,
+          tipo_cambio_usado: tcFinal,
+          formula_aplicada: null,
+          estatus: enviar_notificacion ? 'solicitada' : 'borrador',
+        })
+        .select()
+        .single();
+
+      data = res.data;
+      error = res.error;
+
+      if (!error || error.code !== '23505') {
+        break;
+      }
+    }
 
     if (error) {
       console.error('[API/cotizaciones] Error al guardar:', error);
@@ -57,16 +127,14 @@ export async function POST(request: NextRequest) {
       try {
         await enviarNotificacionVentas({
           lead: lead_info,
-          partidas,
-          subtotal: subtotal || 0,
-          moneda: moneda_venta || 'MXN',
+          partidas: partidasFinales,
+          subtotal: subtotalFinal,
+          moneda: monedaFinal,
           folio,
           fecha,
         });
       } catch (err) {
         console.error('[API/cotizaciones] Error enviando email:', err);
-        // We still return success since the quote was saved, but maybe warn the UI?
-        // For now, logging is sufficient.
       }
     }
 
@@ -80,7 +148,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[API/cotizaciones] Error inesperado:', error);
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { error: error instanceof Error ? error.message : 'Error interno del servidor' },
       { status: 500 }
     );
   }

@@ -35,9 +35,13 @@ export interface QuotePDFProps {
 }
 
 export function generarFolio(): string {
-  const timestamp = Date.now().toString().slice(-5);
+  const timestamp = Date.now().toString().slice(-6);
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const rand =
+    chars.charAt(Math.floor(Math.random() * chars.length)) +
+    chars.charAt(Math.floor(Math.random() * chars.length));
   const year = new Date().getFullYear();
-  return `REM-${year}-${timestamp}`;
+  return `REM-${year}-${timestamp}${rand}`;
 }
 
 export function formatearMoneda(valor: number, moneda: 'USD' | 'MXN'): string {
