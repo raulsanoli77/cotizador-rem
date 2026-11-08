@@ -158,3 +158,65 @@ CREATE TRIGGER trg_proteger_campos_privilegiados_perfil
   BEFORE INSERT OR UPDATE ON public.perfiles_clientes
   FOR EACH ROW
   EXECUTE FUNCTION public.proteger_campos_privilegiados_perfil();
+
+-- =========================================================================
+-- 7. PRIVACIDAD DE DATOS DE CLIENTES, PEDIDOS Y COTIZACIONES (ANTI-ROBO DE DATOS)
+-- =========================================================================
+-- Asegura que ningún visitante ni otro cliente pueda descargar la lista de clientes,
+-- sus teléfonos, correos, RFCs ni sus pedidos/cotizaciones.
+
+-- A) Tabla `perfiles_clientes`: cada cliente solo ve su propio perfil; el Admin ve todos
+ALTER TABLE public.perfiles_clientes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Lectura publica de perfiles" ON public.perfiles_clientes;
+DROP POLICY IF EXISTS "Perfiles visibles para todos" ON public.perfiles_clientes;
+DROP POLICY IF EXISTS "Cliente ve su propio perfil o admin ve todos" ON public.perfiles_clientes;
+DROP POLICY IF EXISTS "Cliente actualiza su propio perfil o admin" ON public.perfiles_clientes;
+DROP POLICY IF EXISTS "Registro de nuevo perfil cliente" ON public.perfiles_clientes;
+
+CREATE POLICY "Cliente ve su propio perfil o admin ve todos"
+  ON public.perfiles_clientes
+  FOR SELECT
+  USING (id = auth.uid() OR public.es_admin_autenticado());
+
+CREATE POLICY "Cliente actualiza su propio perfil o admin"
+  ON public.perfiles_clientes
+  FOR UPDATE
+  USING (id = auth.uid() OR public.es_admin_autenticado())
+  WITH CHECK (id = auth.uid() OR public.es_admin_autenticado());
+
+CREATE POLICY "Registro de nuevo perfil cliente"
+  ON public.perfiles_clientes
+  FOR INSERT
+  WITH CHECK (id = auth.uid() OR public.es_admin_autenticado());
+
+-- B) Tabla `pedidos`: cada cliente solo ve sus propios pedidos; el Admin ve todos
+ALTER TABLE public.pedidos ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Cliente ve sus propios pedidos o admin" ON public.pedidos;
+CREATE POLICY "Cliente ve sus propios pedidos o admin"
+  ON public.pedidos
+  FOR SELECT
+  USING (cliente_id = auth.uid() OR public.es_admin_autenticado());
+
+-- C) Tabla `partidas_pedido`: cada cliente solo ve las partidas de sus propios pedidos; el Admin ve todas
+ALTER TABLE public.partidas_pedido ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Cliente ve sus propias partidas o admin" ON public.partidas_pedido;
+CREATE POLICY "Cliente ve sus propias partidas o admin"
+  ON public.partidas_pedido
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.pedidos p
+      WHERE p.id = partidas_pedido.pedido_id
+        AND p.cliente_id = auth.uid()
+    )
+    OR public.es_admin_autenticado()
+  );
+
+-- D) Tabla `cotizaciones`: solo el Admin (o el servidor) puede leer el historial de cotizaciones
+ALTER TABLE public.cotizaciones ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Cotizaciones visibles solo para admin" ON public.cotizaciones;
+CREATE POLICY "Cotizaciones visibles solo para admin"
+  ON public.cotizaciones
+  FOR SELECT
+  USING (public.es_admin_autenticado());
+
