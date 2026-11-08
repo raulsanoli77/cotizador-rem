@@ -569,7 +569,7 @@ export const QuotePDFDocument: React.FC<QuotePDFProps> = ({
               ¿Deseas asegurar precio, tiempos de entrega o tramitar tu orden?
             </Text>
             <Text style={styles.ctaSubtitle}>
-              Solicita tu Cotización Formal con tu asesor asignado o regístrate en nuestro portal para precios preferenciales y crédito comercial.
+              Solicita tu Cotización Formal con tu asesor asignado o regístrate en nuestro portal para precios preferenciales y atención personalizada.
             </Text>
           </View>
           <View style={styles.ctaRight}>

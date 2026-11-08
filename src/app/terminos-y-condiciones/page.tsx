@@ -119,7 +119,7 @@ export default function TerminosYCondicionesPage() {
                 Condiciones de Pago y Cláusula de Reserva de Dominio
               </h2>
               <p>
-                <strong>Términos de Pago:</strong> Las operaciones son de riguroso <strong>Contado</strong> mediante transferencia electrónica bancaria vía SPEI, salvo que <em>EL CLIENTE</em> cuente con una línea de crédito comercial previamente autorizada por escrito por el departamento de Crédito y Cobranza de <em>EL PROVEEDOR</em> (ej. 15, 30 o 45 días).
+                <strong>Términos de Pago:</strong> Toda operación comercial es de riguroso <strong>Contado</strong> mediante transferencia electrónica bancaria vía SPEI. <em>EL PROVEEDOR</em> no otorga crédito comercial de manera abierta ni automática; cualquier condición de pago diferido es de carácter estrictamente excepcional, discrecional y requiere autorización previa y por escrito de la administración de <em>EL PROVEEDOR</em>.
               </p>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs sm:text-sm text-amber-900 space-y-1.5">
                 <p className="font-bold flex items-center gap-1.5">

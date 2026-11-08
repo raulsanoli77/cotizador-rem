@@ -140,7 +140,7 @@ export default function AvisoDePrivacidadPage() {
                 <li>Emitir Órdenes de Pedido, verificar existencias de almacén, coordinar importaciones y validar tiempos estimados de entrega (ETA).</li>
                 <li>Gestionar la logística de despacho y entrega física de mercancías a través de transporte propio o empresas fleteras/paqueterías certificadas.</li>
                 <li>Emitir los Comprobantes Fiscales Digitales por Internet (CFDI) ante el Servicio de Administración Tributaria (SAT).</li>
-                <li>Evaluar solicitudes de crédito comercial y gestionar cobranza en caso de términos pactados a crédito.</li>
+                <li>Gestión de cobranza y cumplimiento de las condiciones comerciales y de pago pactadas.</li>
                 <li>Tramitar garantías de fábrica, solicitudes de soporte técnico y seguimiento postventa.</li>
               </ul>
 
