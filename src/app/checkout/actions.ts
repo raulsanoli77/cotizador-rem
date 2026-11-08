@@ -2,7 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { exigirSesionUsuarioServerAction } from '@/lib/auth/admin-auth';
-import { enviarNotificacionVentas } from '@/lib/email/notifications';
+import { enviarNotificacionVentas, enviarConfirmacionPedidoCliente } from '@/lib/email/notifications';
 import { recalcularPartidasServidor, generarSufijoFolio } from '@/lib/pricing/server-verifier';
 
 export async function crearPedidoB2B({
@@ -189,6 +189,29 @@ export async function crearPedidoB2B({
         hour: '2-digit',
         minute: '2-digit',
       }),
+    });
+
+    await enviarConfirmacionPedidoCliente({
+      cliente: {
+        nombre_completo: clienteData.nombre_completo,
+        empresa: clienteData.empresa,
+        email: clienteData.email,
+      },
+      vendedor: vendedorInfo as any,
+      partidas: partidasOficiales.map((p) => ({
+        cantidad: p.cantidad,
+        marca: p.marca,
+        numero_parte: p.numero_parte,
+        descripcion: p.descripcion,
+        precio_unitario: p.precio_unitario,
+        total: p.importe,
+      })),
+      subtotal: subtotalOficial,
+      iva: ivaOficial,
+      total: totalOficial,
+      moneda: monedaOficial,
+      folio: folioGenerado,
+      pedidoId: pedido.id,
     });
   } catch (emailErr) {
     console.error('Error enviando correo a ventas:', emailErr);

@@ -345,3 +345,156 @@ export async function enviarCorreoRevisionCliente(email: string, nombre: string,
     return { success: false };
   }
 }
+
+/**
+ * Envía un correo automático de confirmación al cliente cuando registra
+ * una solicitud de cotización formal en el portal.
+ * Incluye fallback automático a modo Sandbox mientras el dominio DNS no esté verificado.
+ */
+export async function enviarConfirmacionPedidoCliente(params: {
+  cliente: {
+    nombre_completo: string;
+    empresa: string;
+    email: string;
+  };
+  vendedor?: {
+    nombre: string;
+    email: string;
+    telefono: string;
+  } | null;
+  partidas: Array<{
+    cantidad: number;
+    marca: string;
+    numero_parte: string;
+    descripcion: string;
+    precio_unitario: number;
+    total: number;
+  }>;
+  subtotal: number;
+  iva: number;
+  total: number;
+  moneda: string;
+  folio: string;
+  pedidoId: string;
+}): Promise<{ success: boolean }> {
+  if (!params.cliente.email || params.cliente.email.includes('no-email.rem')) {
+    return { success: false };
+  }
+
+  const folioLimpio = escapeHtml(params.folio.replace(/^COT-/i, ''));
+  const safeNombre = escapeHtml(params.cliente.nombre_completo);
+  const safeEmpresa = escapeHtml(params.cliente.empresa);
+  const safeMoneda = escapeHtml(params.moneda);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://cotizador-rem.vercel.app';
+
+  const filasHtml = params.partidas
+    .map(
+      (p, idx) => `
+      <tr style="border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 8px; text-align: center; font-size: 12px; color: #64748b;">${idx + 1}</td>
+        <td style="padding: 8px; font-size: 13px; font-weight: bold;">${escapeHtml(p.numero_parte)}</td>
+        <td style="padding: 8px; font-size: 12px; color: #475569;">${escapeHtml(p.marca)}</td>
+        <td style="padding: 8px; text-align: center; font-size: 13px;">${Number(p.cantidad)}</td>
+        <td style="padding: 8px; text-align: right; font-size: 13px; font-weight: bold;">$${Number(p.total).toFixed(2)}</td>
+      </tr>`
+    )
+    .join('');
+
+  const htmlBody = `
+  <!DOCTYPE html>
+  <html>
+  <head><meta charset="utf-8"></head>
+  <body style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 20px; color: #1e293b;">
+    <div style="background: #0f172a; padding: 22px; border-radius: 10px 10px 0 0;">
+      <h1 style="color: white; margin: 0; font-size: 20px;">🔧 REM Industrial</h1>
+      <p style="color: #94a3b8; margin: 4px 0 0; font-size: 13px;">Confirmación de Solicitud de Cotización #${folioLimpio}</p>
+    </div>
+
+    <div style="background: #ffffff; padding: 22px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
+      <p style="margin-top: 0; font-size: 14px;">Hola <strong>${safeNombre}</strong> (${safeEmpresa}),</p>
+      <p style="font-size: 14px; color: #334155; line-height: 1.5;">
+        Hemos recibido correctamente tu solicitud de cotización formal con el folio <strong>#${folioLimpio}</strong>. Nuestro equipo comercial ya está revisando existencias, tiempos de entrega y costos de flete para tu ubicación.
+      </p>
+
+      ${
+        params.vendedor
+          ? `
+      <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 14px; border-radius: 8px; margin: 16px 0;">
+        <p style="margin: 0 0 4px; font-size: 11px; text-transform: uppercase; font-weight: bold; color: #047857;">Tu Asesor Comercial Asignado</p>
+        <p style="margin: 0; font-size: 14px; font-weight: bold; color: #065f46;">${escapeHtml(params.vendedor.nombre)}</p>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #047857;">
+          ✉️ ${escapeHtml(params.vendedor.email)} &nbsp;|&nbsp; 💬 WhatsApp: ${escapeHtml(params.vendedor.telefono)}
+        </p>
+      </div>`
+          : ''
+      }
+
+      <table style="width: 100%; border-collapse: collapse; margin: 18px 0; border: 1px solid #e2e8f0;">
+        <thead>
+          <tr style="background: #f8fafc;">
+            <th style="padding: 8px; text-align: center; font-size: 11px; text-transform: uppercase; color: #64748b;">#</th>
+            <th style="padding: 8px; text-align: left; font-size: 11px; text-transform: uppercase; color: #64748b;">No. Parte</th>
+            <th style="padding: 8px; text-align: left; font-size: 11px; text-transform: uppercase; color: #64748b;">Marca</th>
+            <th style="padding: 8px; text-align: center; font-size: 11px; text-transform: uppercase; color: #64748b;">Cant.</th>
+            <th style="padding: 8px; text-align: right; font-size: 11px; text-transform: uppercase; color: #64748b;">Importe</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filasHtml}
+        </tbody>
+        <tfoot>
+          <tr style="background: #f8fafc;">
+            <td colspan="4" style="padding: 8px; text-align: right; font-size: 12px; color: #475569;">Subtotal (${safeMoneda}):</td>
+            <td style="padding: 8px; text-align: right; font-size: 13px; font-weight: bold;">$${Number(params.subtotal).toFixed(2)}</td>
+          </tr>
+          <tr style="background: #f8fafc;">
+            <td colspan="4" style="padding: 8px; text-align: right; font-size: 12px; color: #475569;">IVA (16%):</td>
+            <td style="padding: 8px; text-align: right; font-size: 13px; font-weight: bold;">$${Number(params.iva).toFixed(2)}</td>
+          </tr>
+          <tr style="background: #f1f5f9;">
+            <td colspan="4" style="padding: 10px 8px; text-align: right; font-size: 14px; font-weight: bold;">Total Cotizado (${safeMoneda}):</td>
+            <td style="padding: 10px 8px; text-align: right; font-size: 14px; font-weight: bold; color: #2563eb;">$${Number(params.total).toFixed(2)}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="${escapeHtml(appUrl)}/cuenta/pedidos/${escapeHtml(params.pedidoId)}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">
+          Ver Estatus de mi Solicitud en el Portal
+        </a>
+      </div>
+    </div>
+  </body>
+  </html>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: DEFAULT_FROM,
+      to: [params.cliente.email],
+      subject: `Confirmación de Solicitud #${params.folio.replace(/^COT-/i, '')} - REM Industrial`,
+      html: htmlBody,
+    });
+
+    if (error) {
+      if (
+        error.message?.includes('testing emails to your own email address') ||
+        error.message?.includes('verify a domain')
+      ) {
+        const match = error.message.match(/\(([^)]+)\)/);
+        const ownerEmail = match ? match[1] : 'raulsanoli77@gmail.com';
+        await resend.emails.send({
+          from: DEFAULT_FROM,
+          to: [ownerEmail],
+          subject: `[COPIA PRUEBA CLIENTE: ${params.cliente.email}] Confirmación Solicitud #${params.folio.replace(/^COT-/i, '')}`,
+          html: htmlBody,
+        });
+      }
+      return { success: false };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('[Email Cliente] Error:', err);
+    return { success: false };
+  }
+}
