@@ -34,6 +34,48 @@ function normalizeKey(key: string): string {
   return key.trim().toLowerCase();
 }
 
+function parsearCostoMonedaSeguro(valorRaw: any): number | null {
+  if (typeof valorRaw === 'number') {
+    return Number.isFinite(valorRaw) ? valorRaw : null;
+  }
+  if (valorRaw === null || valorRaw === undefined) return null;
+
+  let str = String(valorRaw).replace(/[$€£\s]|USD|MXN|MN|M\.N\.|US\$/gi, '').trim();
+  if (!str) return null;
+
+  const tieneComa = str.includes(',');
+  const tienePunto = str.includes('.');
+
+  if (tieneComa && tienePunto) {
+    if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+      // Formato europeo: 1.250,50 -> 1250.50
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Formato estándar MX/US: 1,250.50 -> 1250.50
+      str = str.replace(/,/g, '');
+    }
+  } else if (tieneComa && !tienePunto) {
+    const partes = str.split(',');
+    if (partes.length > 2) {
+      str = str.replace(/,/g, '');
+    } else {
+      const [entero, fraccion] = partes;
+      if (fraccion.length === 3 && entero !== '0' && entero !== '-0' && /^\d{1,3}$/.test(entero.replace(/^-/, ''))) {
+        str = str.replace(',', '');
+      } else {
+        str = str.replace(',', '.');
+      }
+    }
+  }
+
+  if (!/^-?\d+(\.\d+)?$/.test(str)) {
+    return null;
+  }
+
+  const parsed = Number(str);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
   const errores: string[] = [];
   const productos: any[] = [];
@@ -137,6 +179,12 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
         return; 
       }
 
+      const costoLimpio = parsearCostoMonedaSeguro(mapped.costo_base);
+      if (costoLimpio === null || isNaN(costoLimpio) || costoLimpio < 0) {
+        errores.push(`Fila ${rowNum}: El COSTO "${mapped.costo_base}" no es un número válido para el SKU ${mapped.sku_interno}`);
+        return;
+      }
+
       if (!mapped.numero_parte) {
         errores.push(`Fila ${rowNum}: Falta Numero_Parte / NUMERO DE PARTE (${mapped.sku_interno})`);
         return;
@@ -155,7 +203,7 @@ export function parsearExcelProductos(fileBuffer: ArrayBuffer): ParseResult {
         numero_parte: String(mapped.numero_parte).trim(),
         marca: String(mapped.marca).trim(),
         proveedor_origen: String(mapped.proveedor_origen || 'No especificado').trim(),
-        costo_base: parseFloat(mapped.costo_base) || 0,
+        costo_base: costoLimpio,
         moneda_costo: String(mapped.moneda_costo || 'USD').trim().toUpperCase(),
         categoria: String(mapped.categoria).trim(),
         imagen_url: mapped.imagen_url ? String(mapped.imagen_url).trim() : null,

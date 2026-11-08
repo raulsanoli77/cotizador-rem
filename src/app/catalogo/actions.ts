@@ -271,3 +271,83 @@ export async function obtenerDetalleProductoPublico(
     isB2B,
   };
 }
+
+/**
+ * Sincroniza los productos almacenados en el carrito (localStorage) con los precios,
+ * tipo de cambio, nivel de cliente (B2B vs Público) y múltiplos vigentes en el servidor.
+ */
+export async function sincronizarPreciosCarrito(
+  productoIds: string[],
+  accessToken?: string | null
+): Promise<ProductoConPrecio[]> {
+  if (!productoIds || productoIds.length === 0) return [];
+
+  const uniqueIds = Array.from(new Set(productoIds.filter(Boolean)));
+  if (uniqueIds.length === 0) return [];
+
+  const supabase = createAdminClient();
+
+  const [isB2B, tcCache, prodsRes, categoriasRes, configsRes] = await Promise.all([
+    verificarClienteB2B(accessToken),
+    obtenerTipoCambio(),
+    supabase.from('productos').select('*').in('id', uniqueIds).eq('activo', true),
+    supabase.from('categorias').select('*'),
+    supabase
+      .from('configuracion')
+      .select('clave, valor')
+      .in('clave', [
+        'marcas_margenes',
+        'marcas_cruce_volumen',
+        'marcas_margenes_publico',
+      ]),
+  ]);
+
+  if (prodsRes.error || !prodsRes.data) return [];
+
+  const catByLowerName = new Map<string, Categoria>();
+  ((categoriasRes.data as Categoria[]) || []).forEach((c) => {
+    catByLowerName.set(c.nombre.toLowerCase().trim(), c);
+  });
+
+  const configMap: Record<string, any> = {};
+  (configsRes.data || []).forEach((row: { clave: string; valor: any }) => {
+    configMap[row.clave] = row.valor;
+  });
+
+  const margenesMap: Record<string, number> = configMap['marcas_margenes'] || {};
+  const crucesMap: Record<string, boolean> = configMap['marcas_cruce_volumen'] || {};
+  const margenesPubMap: Record<string, number> = configMap['marcas_margenes_publico'] || {};
+
+  const monedaVenta = 'MXN' as const;
+  const tipoCambio = tcCache.valor;
+
+  return (prodsRes.data as Producto[]).map((prod) => {
+    const marcaKey = prod.marca ? prod.marca.toUpperCase() : '';
+    const margenPersonalizado = marcaKey ? margenesMap[marcaKey] : undefined;
+    const margenPublico = marcaKey && margenesPubMap[marcaKey] ? margenesPubMap[marcaKey] : 1.35;
+    const aplicaCruce = marcaKey ? Boolean(crucesMap[marcaKey]) : false;
+
+    const resultado = calcularPrecioVenta(
+      prod.costo_base,
+      prod.moneda_costo,
+      monedaVenta,
+      tipoCambio,
+      margenPersonalizado,
+      aplicaCruce,
+      margenPublico
+    );
+
+    const catObj = catByLowerName.get((prod.categoria || '').toLowerCase().trim());
+    const precioPublicoFinal = resultado.precioPublico ?? resultado.precioVenta;
+
+    return {
+      ...prod,
+      costo_base: 0,
+      precio_venta: isB2B ? resultado.precioVenta : precioPublicoFinal,
+      precio_publico: precioPublicoFinal,
+      moneda_venta: resultado.monedaVenta,
+      formula_aplicada: '',
+      _campos_categoria: catObj?.campos_filtro,
+    };
+  });
+}

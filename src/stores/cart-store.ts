@@ -11,6 +11,7 @@ interface CartState {
   agregarItem: (producto: ProductoConPrecio, cantidad?: number) => void;
   removerItem: (productoId: string) => void;
   actualizarCantidad: (productoId: string, cantidad: number) => void;
+  sincronizarProductos: (productosActualizados: ProductoConPrecio[]) => void;
   limpiarCarrito: () => void;
   setMonedaVenta: (moneda: 'USD' | 'MXN') => void;
   obtenerSubtotal: () => number;
@@ -74,6 +75,28 @@ export const useCartStore = create<CartState>()(
 
       limpiarCarrito: () => set({ items: [] }),
       setMonedaVenta: (moneda) => set({ monedaVenta: moneda }),
+
+      sincronizarProductos: (productosActualizados: ProductoConPrecio[]) => {
+        if (!productosActualizados || productosActualizados.length === 0) return;
+        const mapa = new Map<string, ProductoConPrecio>();
+        productosActualizados.forEach((p) => mapa.set(p.id, p));
+
+        set((state) => ({
+          items: state.items.map((item) => {
+            const actualizado = mapa.get(item.producto.id);
+            if (!actualizado) return item;
+            const multiplo = obtenerMultiploVenta(actualizado);
+            const cantValida =
+              multiplo > 1
+                ? Math.max(multiplo, Math.ceil(item.cantidad / multiplo) * multiplo)
+                : Math.max(1, item.cantidad);
+            return {
+              producto: actualizado,
+              cantidad: cantValida,
+            };
+          }),
+        }));
+      },
 
       obtenerSubtotal: () => {
         return get().items.reduce(

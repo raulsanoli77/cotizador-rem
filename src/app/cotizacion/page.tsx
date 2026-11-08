@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, Send, ShoppingCart, Loader2, CheckCircle, Minus, Plus, Trash2, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, Send, ShoppingCart, Loader2, CheckCircle, Minus, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Header from '@/components/layout/Header';
@@ -11,6 +11,8 @@ import AddressForm from '@/components/cotizacion/AddressForm';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuth } from '@/hooks/useAuth';
 import { formatearPrecio } from '@/lib/pricing/engine';
+import { supabase, syncAuthCookie } from '@/lib/supabase/client';
+import { sincronizarPreciosCarrito } from '@/app/catalogo/actions';
 
 import { useAuthStore } from '@/stores/auth-store';
 import { formatearDescripcionProducto, obtenerMultiploVenta } from '@/lib/pricing/formatters';
@@ -24,6 +26,7 @@ const PDFDownloadButton = dynamic(
 export default function CotizacionPage() {
   const items = useCartStore((s) => s.items);
   const actualizarCantidad = useCartStore((s) => s.actualizarCantidad);
+  const sincronizarProductos = useCartStore((s) => s.sincronizarProductos);
   const removerItem = useCartStore((s) => s.removerItem);
   const limpiarCarrito = useCartStore((s) => s.limpiarCarrito);
   const obtenerSubtotal = useCartStore((s) => s.obtenerSubtotal);
@@ -35,6 +38,34 @@ export default function CotizacionPage() {
   const [autoDownloadPDF, setAutoDownloadPDF] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+
+  // Sincronizar precios vigentes y múltiplos del carrito al abrir la página
+  useEffect(() => {
+    const currentItems = useCartStore.getState().items;
+    if (currentItems.length === 0) return;
+
+    let isMounted = true;
+    async function refrescarCarrito() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          syncAuthCookie(session.access_token);
+        }
+        const ids = currentItems.map((i) => i.producto.id);
+        const actualizados = await sincronizarPreciosCarrito(ids, session?.access_token || null);
+        if (isMounted && actualizados.length > 0) {
+          sincronizarProductos(actualizados);
+        }
+      } catch (err) {
+        console.warn('No se pudieron sincronizar los precios del carrito:', err);
+      }
+    }
+
+    refrescarCarrito();
+    return () => {
+      isMounted = false;
+    };
+  }, [sincronizarProductos]);
 
   // Preparar partidas para API
   const prepararPartidas = () =>

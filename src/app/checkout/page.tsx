@@ -9,6 +9,7 @@ import { Loader2, ShieldCheck, MapPin, CheckCircle, ArrowLeft, Send } from 'luci
 import Header from '@/components/layout/Header';
 import Link from 'next/link';
 import { crearPedidoB2B } from './actions';
+import { sincronizarPreciosCarrito } from '@/app/catalogo/actions';
 import { formatearDescripcionProducto } from '@/lib/pricing/formatters';
 
 export default function CheckoutB2BPage() {
@@ -16,6 +17,7 @@ export default function CheckoutB2BPage() {
   const items = useCartStore((s) => s.items);
   const obtenerSubtotal = useCartStore((s) => s.obtenerSubtotal);
   const limpiarCarrito = useCartStore((s) => s.limpiarCarrito);
+  const sincronizarProductos = useCartStore((s) => s.sincronizarProductos);
   
   const [loading, setLoading] = useState(true);
   const [procesando, setProcesando] = useState(false);
@@ -72,6 +74,19 @@ export default function CheckoutB2BPage() {
 
       setCliente(session.user);
       setPerfil(perfilData);
+
+      // Sincronizar precios vigentes de los productos del carrito en segundo plano
+      try {
+        const ids = useCartStore.getState().items.map((i) => i.producto.id);
+        if (ids.length > 0) {
+          const actualizados = await sincronizarPreciosCarrito(ids, session.access_token);
+          if (actualizados.length > 0) {
+            sincronizarProductos(actualizados);
+          }
+        }
+      } catch (err) {
+        console.warn('No se pudieron sincronizar precios en checkout:', err);
+      }
       
       // Si tiene al menos código postal guardado en su perfil
       if (perfilData.codigo_postal) {
