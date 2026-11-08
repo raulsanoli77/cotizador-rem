@@ -6,14 +6,84 @@ import { useRouter } from 'next/navigation';
 import { ShoppingCart, Menu, X, Search, Loader2, Package, Plus, Check, ArrowRight, FolderOpen } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { supabase } from '@/lib/supabase/client';
-import { buscarVistaPreviaRapida } from '@/app/catalogo/actions';
+import { obtenerCatalogoPublico } from '@/app/catalogo/actions';
 import { formatearPrecio } from '@/lib/pricing/engine';
-import { obtenerMultiploVenta } from '@/lib/pricing/formatters';
-import type { ProductoConPrecio } from '@/types';
+import { obtenerMultiploVenta, formatearDescripcionProducto } from '@/lib/pricing/formatters';
+import type { ProductoConPrecio, Categoria } from '@/types';
 import CartDrawer from './CartDrawer';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
 
-type ProductoPreview = ProductoConPrecio & { descripcion_formateada: string };
+type ProductoPreview = ProductoConPrecio & {
+  descripcion_formateada: string;
+  _texto_busqueda?: string;
+  _num_parte_lower?: string;
+  _sku_lower?: string;
+  _marca_lower?: string;
+  _cat_lower?: string;
+  _desc_lower?: string;
+};
+
+// Caché en memoria del navegador para que el buscador instantáneo haga
+// 1 SOLA petición en toda la sesión y 0 invocaciones por cada letra escrita.
+let indiceBusquedaNavegador: {
+  productos: ProductoPreview[];
+  categorias: Categoria[];
+} | null = null;
+let promesaCargaIndice: Promise<{
+  productos: ProductoPreview[];
+  categorias: Categoria[];
+}> | null = null;
+
+async function obtenerIndiceBusquedaLocal(): Promise<{
+  productos: ProductoPreview[];
+  categorias: Categoria[];
+}> {
+  if (indiceBusquedaNavegador) return indiceBusquedaNavegador;
+  if (promesaCargaIndice) return promesaCargaIndice;
+
+  promesaCargaIndice = (async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await obtenerCatalogoPublico(null, session?.access_token || null);
+
+      const productosIndexados: ProductoPreview[] = res.productos.map((prod) => {
+        const descFormateada = formatearDescripcionProducto(prod);
+        const numParteLower = (prod.numero_parte || '').toLowerCase();
+        const skuLower = (prod.sku_interno || '').toLowerCase();
+        const marcaLower = (prod.marca || '').toLowerCase();
+        const catLower = (prod.categoria || '').toLowerCase();
+        const descLower = descFormateada.toLowerCase();
+        let specsText = '';
+        if (prod.especificaciones_tecnicas) {
+          specsText = Object.values(prod.especificaciones_tecnicas)
+            .map((v) => String(v ?? '').toLowerCase())
+            .join(' ');
+        }
+
+        return {
+          ...prod,
+          descripcion_formateada: descFormateada,
+          _texto_busqueda: `${numParteLower} ${skuLower} ${marcaLower} ${catLower} ${descLower} ${specsText}`,
+          _num_parte_lower: numParteLower,
+          _sku_lower: skuLower,
+          _marca_lower: marcaLower,
+          _cat_lower: catLower,
+          _desc_lower: descLower,
+        };
+      });
+
+      indiceBusquedaNavegador = {
+        productos: productosIndexados,
+        categorias: res.categorias,
+      };
+      return indiceBusquedaNavegador;
+    } finally {
+      promesaCargaIndice = null;
+    }
+  })();
+
+  return promesaCargaIndice;
+}
 
 export default function Header() {
   const router = useRouter();
@@ -89,6 +159,7 @@ export default function Header() {
     checkAuth();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      indiceBusquedaNavegador = null; // Invalidar caché local si cambia la sesión (B2B vs Público)
       setIsAuthenticated(!!session);
       if (session) checkAuth(); // re-check on change
       else {
@@ -123,9 +194,9 @@ export default function Header() {
     };
   }, []);
 
-  // Debounce de búsqueda instantánea
+  // Búsqueda instantánea 100% en memoria del navegador (solo descarga el índice 1 vez por sesión)
   useEffect(() => {
-    const q = headerBusqueda.trim();
+    const q = headerBusqueda.trim().toLowerCase();
     if (q.length < 2) {
       setProductosPreview([]);
       setCategoriasPreview([]);
@@ -135,27 +206,76 @@ export default function Header() {
     }
 
     let cancelado = false;
-    setBuscandoPreview(true);
 
-    const timer = setTimeout(async () => {
+    async function filtrarEnNavegador() {
+      if (!indiceBusquedaNavegador) {
+        setBuscandoPreview(true);
+      }
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await buscarVistaPreviaRapida(q, session?.access_token || null, 6);
-        if (!cancelado) {
-          setProductosPreview(res.productos);
-          setCategoriasPreview(res.categorias);
-          setTotalPreview(res.totalCoincidencias);
-          setBuscandoPreview(false);
+        const { productos, categorias } = await obtenerIndiceBusquedaLocal();
+        if (cancelado) return;
+
+        const tokens = q.split(/\s+/).filter(Boolean).slice(0, 10);
+        const imagenesCatMap = new Map<string, string | null>();
+        categorias.forEach((c) => {
+          imagenesCatMap.set(c.nombre.toLowerCase().trim(), c.imagen_url || null);
+        });
+
+        const conteoCategorias: Record<string, number> = {};
+        const coincidencias: { prod: ProductoPreview; score: number }[] = [];
+
+        for (const prod of productos) {
+          const texto = prod._texto_busqueda || '';
+          if (!tokens.every((tk) => texto.includes(tk))) continue;
+
+          const catNombre = prod.categoria ? prod.categoria.trim() : 'General';
+          conteoCategorias[catNombre] = (conteoCategorias[catNombre] || 0) + 1;
+
+          const np = prod._num_parte_lower || '';
+          const sku = prod._sku_lower || '';
+          const marca = prod._marca_lower || '';
+          const cat = prod._cat_lower || '';
+          const desc = prod._desc_lower || '';
+
+          let score = 10;
+          if (np === q || sku === q) score = 100;
+          else if (np.startsWith(q) || sku.startsWith(q)) score = 85;
+          else if (np.includes(q) || sku.includes(q)) score = 70;
+          else if (marca === q || cat === q) score = 55;
+          else if (desc.startsWith(q) || marca.startsWith(q) || cat.startsWith(q)) score = 40;
+          else if (desc.includes(q)) score = 25;
+
+          coincidencias.push({ prod, score });
         }
+
+        coincidencias.sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return (a.prod._num_parte_lower || '').localeCompare(b.prod._num_parte_lower || '');
+        });
+
+        const catsOrdenadas = Object.entries(conteoCategorias)
+          .map(([nombre, cantidad]) => ({
+            nombre,
+            cantidad,
+            imagen_url: imagenesCatMap.get(nombre.toLowerCase()) || null,
+          }))
+          .sort((a, b) => b.cantidad - a.cantidad)
+          .slice(0, 4);
+
+        setProductosPreview(coincidencias.slice(0, 6).map((c) => c.prod));
+        setCategoriasPreview(catsOrdenadas);
+        setTotalPreview(coincidencias.length);
       } catch (err) {
         console.error('Error en vista previa de búsqueda:', err);
+      } finally {
         if (!cancelado) setBuscandoPreview(false);
       }
-    }, 220);
+    }
+
+    filtrarEnNavegador();
 
     return () => {
       cancelado = true;
-      clearTimeout(timer);
     };
   }, [headerBusqueda]);
 
