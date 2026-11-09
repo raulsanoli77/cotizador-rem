@@ -6,12 +6,104 @@ export interface MiembroEquipo {
   nivelJerarquico: 1 | 2 | 3; // 1: Dirección / Liderazgo, 2: Ventas & Asesoría Técnica, 3: Atención & Soporte
   foto_url?: string;
   telefono?: string;
+  codigo_pais?: string;           // ej: '+52', '+1' (código internacional para WhatsApp y llamadas)
+  codigoPais?: string;            // alias de compatibilidad
   email?: string;
   descripcion?: string;
   mostrarTelefono?: boolean;      // Ver texto con número de teléfono
   mostrarEmail?: boolean;         // Ver texto con correo electrónico
   mostrarBotonWhatsapp?: boolean; // Ver botón de WhatsApp
   mostrarBotonEmail?: boolean;    // Ver botón de correo electrónico
+}
+
+/**
+ * Resuelve la URL de WhatsApp y el formato telefónico de un miembro del equipo,
+ * detectando automáticamente si es de México (+52), EE. UU. (+1 / El Paso TX) o internacional.
+ */
+export function resolverWhatsAppMiembro(
+  m: {
+    nombre?: string;
+    telefono?: string;
+    codigo_pais?: string;
+    codigoPais?: string;
+  }
+): {
+  waUrl: string;
+  waNumeroLimpio: string;
+  telefonoVisual: string;
+  codigoPaisFinal: string;
+} {
+  const telRaw = (m.telefono || '').trim();
+  const digitsOnly = telRaw.replace(/\D/g, '');
+
+  if (!digitsOnly) {
+    return {
+      waUrl: '',
+      waNumeroLimpio: '',
+      telefonoVisual: '',
+      codigoPaisFinal: '+52',
+    };
+  }
+
+  // 1. Determinar código de país explícito si existe
+  let rawCode = (m.codigo_pais || m.codigoPais || '').trim();
+
+  // Si no hay código explícito pero el teléfono inicia con '+'
+  if (!rawCode && telRaw.startsWith('+')) {
+    if (telRaw.startsWith('+1')) rawCode = '+1';
+    else if (telRaw.startsWith('+52')) rawCode = '+52';
+    else {
+      const match = telRaw.match(/^\+(\d{1,4})/);
+      if (match) rawCode = `+${match[1]}`;
+    }
+  }
+
+  // 2. Desglose de dígitos
+  let codeDigits = rawCode.replace(/\D/g, '');
+  let phoneDigits = digitsOnly;
+
+  if (!codeDigits) {
+    if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+      // 1 seguido de 10 dígitos (EE. UU.)
+      codeDigits = '1';
+      phoneDigits = digitsOnly.slice(1);
+    } else if (digitsOnly.length === 12 && digitsOnly.startsWith('52')) {
+      // 52 seguido de 10 dígitos (México)
+      codeDigits = '52';
+      phoneDigits = digitsOnly.slice(2);
+    } else if (digitsOnly.length === 10 && digitsOnly.startsWith('915')) {
+      // Área 915 es El Paso, Texas (EE. UU.)
+      codeDigits = '1';
+    } else {
+      // Por defecto México (+52)
+      codeDigits = '52';
+    }
+  } else {
+    // Si se especificó el código, verificar si digitsOnly ya lo incluye repetido al frente
+    if (codeDigits === '1' && digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+      phoneDigits = digitsOnly.slice(1);
+    } else if (codeDigits === '52' && digitsOnly.length === 12 && digitsOnly.startsWith('52')) {
+      phoneDigits = digitsOnly.slice(2);
+    }
+  }
+
+  const codigoPaisFinal = `+${codeDigits}`;
+  const waNumeroLimpio = `${codeDigits}${phoneDigits}`;
+  const nombreEnc = encodeURIComponent(m.nombre || 'Asesor');
+  const waUrl = `https://wa.me/${waNumeroLimpio}?text=Hola%20${nombreEnc},%20te%20contacto%20desde%20la%20p%C3%A1gina%20de%20REM%20Industrial.`;
+
+  // Formato visual legible (ej: "+1 (915) 726-0022" o "+1 9157260022")
+  let telefonoVisual = telRaw;
+  if (!telRaw.startsWith('+')) {
+    telefonoVisual = `${codigoPaisFinal} ${telRaw}`;
+  }
+
+  return {
+    waUrl,
+    waNumeroLimpio,
+    telefonoVisual,
+    codigoPaisFinal,
+  };
 }
 
 export interface TelefonoItem {
@@ -228,13 +320,14 @@ export function normalizarNosotrosConfig(raw?: any): NosotrosConfig {
 export const EQUIPO_INICIAL: MiembroEquipo[] = [
   {
     id: '1',
-    nombre: 'Dirección General',
+    nombre: 'Roberto Ávila Silva',
     puesto: 'Director General & Operaciones',
     departamento: 'Dirección',
     nivelJerarquico: 1,
     foto_url: '',
-    telefono: '6566341516',
-    email: 'ventasrem@remindustrial.mx',
+    telefono: '9157260022',
+    codigo_pais: '+1',
+    email: 'Roberto@remindustrial.mx',
     descripcion: 'Liderazgo estratégico y desarrollo de alianzas con fabricantes internacionales de herramental.',
   },
   {

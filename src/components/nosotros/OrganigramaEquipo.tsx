@@ -10,7 +10,7 @@ import {
   Grid
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/ui/WhatsAppIcon';
-import { EQUIPO_INICIAL, MiembroEquipo } from '@/data/equipo';
+import { EQUIPO_INICIAL, MiembroEquipo, resolverWhatsAppMiembro } from '@/data/equipo';
 
 const DEPARTAMENTOS: MiembroEquipo['departamento'][] = [
   'Dirección',
@@ -55,7 +55,7 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
   };
 
   const renderCard = (m: MiembroEquipo) => {
-    const telLimpio = (m.telefono || '').replace(/\D/g, '');
+    const contacto = resolverWhatsAppMiembro(m);
     const iniciales = m.nombre
       .split(' ')
       .map((n) => n[0])
@@ -116,7 +116,7 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
         {/* Contenedor de contacto y acciones */}
         {((m.telefono && m.mostrarTelefono !== false) ||
           (m.email && m.mostrarEmail !== false) ||
-          (telLimpio && m.mostrarBotonWhatsapp !== false) ||
+          (contacto.waUrl && m.mostrarBotonWhatsapp !== false) ||
           (m.email && m.mostrarBotonEmail !== false)) && (
           <div className="w-full mt-auto pt-3 border-t border-slate-700/60 space-y-3">
             {/* Teléfono y Correo en texto */}
@@ -124,12 +124,12 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
               <div className="space-y-1.5 text-left">
                 {m.telefono && m.mostrarTelefono !== false && (
                   <a
-                    href={`tel:${telLimpio}`}
+                    href={`tel:+${contacto.waNumeroLimpio}`}
                     className="flex items-center gap-2 text-slate-300 hover:text-cyan-300 transition-colors group/tel font-mono text-xs sm:text-sm font-medium"
                     title="Llamar"
                   >
                     <Phone className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                    <span className="truncate">{m.telefono}</span>
+                    <span className="truncate">{contacto.telefonoVisual || m.telefono}</span>
                   </a>
                 )}
                 {m.email && m.mostrarEmail !== false && (
@@ -146,11 +146,11 @@ export default function OrganigramaEquipo({ miembros = EQUIPO_INICIAL }: Organig
             )}
 
             {/* Botones de acción */}
-            {((telLimpio && m.mostrarBotonWhatsapp !== false) || (m.email && m.mostrarBotonEmail !== false)) && (
+            {((contacto.waUrl && m.mostrarBotonWhatsapp !== false) || (m.email && m.mostrarBotonEmail !== false)) && (
               <div className={`flex items-center justify-center gap-2 ${((m.telefono && m.mostrarTelefono !== false) || (m.email && m.mostrarEmail !== false)) ? 'pt-2.5 border-t border-slate-700/40' : ''}`}>
-                {telLimpio && m.mostrarBotonWhatsapp !== false && (
+                {contacto.waUrl && m.mostrarBotonWhatsapp !== false && (
                   <a
-                    href={`https://wa.me/52${telLimpio}?text=Hola%20${encodeURIComponent(m.nombre)},%20te%20contacto%20desde%20la%20página%20de%20REM%20Industrial.`}
+                    href={contacto.waUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="flex-1 py-2.5 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold transition-all"
